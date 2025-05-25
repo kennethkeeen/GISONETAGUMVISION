@@ -464,9 +464,20 @@ function closeViewCostsModal() {
     if (modal) utils.hideElement(modal);
 }
 </script>
-<script id="projects-data" type="application/json">{{ projects|json_script:"projects-data" }}</script>
+{{ projects|json_script:"projects-data" }}
 <script>
-window.projects = JSON.parse(document.getElementById('projects-data').textContent);
+var projectsDataElement = document.getElementById('projects-data');
+if (projectsDataElement) {
+    try {
+        window.projects = JSON.parse(projectsDataElement.textContent);
+    } catch (e) {
+        console.error('Error parsing projects-data JSON:', e, projectsDataElement.textContent);
+        window.projects = [];
+    }
+} else {
+    window.projects = [];
+}
+console.log("window.projects:", window.projects);
 </script>
 {% endblock %}
 

@@ -305,7 +305,17 @@
 {{ block.super }}
 {{ projects_data|json_script:"projects-data" }}
 <script>
-window.projects = JSON.parse(document.getElementById('projects-data').textContent || '[]');
+var projectsDataElement = document.getElementById('projects-data');
+if (projectsDataElement) {
+    try {
+        window.projects = JSON.parse(projectsDataElement.textContent);
+    } catch (e) {
+        console.error('Error parsing projects-data JSON:', e, projectsDataElement.textContent);
+        window.projects = [];
+    }
+} else {
+    window.projects = [];
+}
 console.log('window.projects:', window.projects, 'Type:', typeof window.projects, 'IsArray:', Array.isArray(window.projects));
 const barangayCoordinates = {
     'Apokon': [7.4237747, 125.8259557],
