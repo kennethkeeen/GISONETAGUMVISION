@@ -1,0 +1,693 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col items-center w-full px-2 py-8 md:px-6 md:py-12">
+    <div class="flex flex-col md:flex-row justify-between items-center w-full mb-6 gap-4 px-2 md:px-8">
+        <div class="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
+            <form id="barangay-filter-form" method="get" class="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
+                <span class="text-3xl font-bold mr-4">Project List</span>
+                <label for="barangay-filter" class="font-semibold text-gray-700">Barangay:</label>
+                <select id="barangay-filter" name="barangay" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" onchange="this.form.submit()">
+                    <option value="" {% if not request.GET.barangay %}selected{% endif %}>All</option>
+                    <option value="Apokon" {% if request.GET.barangay == 'Apokon' %}selected{% endif %}>Apokon</option>
+                    <option value="Bincungan" {% if request.GET.barangay == 'Bincungan' %}selected{% endif %}>Bincungan</option>
+                    <option value="Busaon" {% if request.GET.barangay == 'Busaon' %}selected{% endif %}>Busaon</option>
+                    <option value="Canocotan" {% if request.GET.barangay == 'Canocotan' %}selected{% endif %}>Canocotan</option>
+                    <option value="Cuambogan" {% if request.GET.barangay == 'Cuambogan' %}selected{% endif %}>Cuambogan</option>
+                    <option value="La Filipina" {% if request.GET.barangay == 'La Filipina' %}selected{% endif %}>La Filipina</option>
+                    <option value="Liboganon" {% if request.GET.barangay == 'Liboganon' %}selected{% endif %}>Liboganon</option>
+                    <option value="Madaum" {% if request.GET.barangay == 'Madaum' %}selected{% endif %}>Madaum</option>
+                    <option value="Magdum" {% if request.GET.barangay == 'Magdum' %}selected{% endif %}>Magdum</option>
+                    <option value="Magugpo East" {% if request.GET.barangay == 'Magugpo East' %}selected{% endif %}>Magugpo East</option>
+                    <option value="Magugpo North" {% if request.GET.barangay == 'Magugpo North' %}selected{% endif %}>Magugpo North</option>
+                    <option value="Magugpo Poblacion" {% if request.GET.barangay == 'Magugpo Poblacion' %}selected{% endif %}>Magugpo Poblacion</option>
+                    <option value="Magugpo South" {% if request.GET.barangay == 'Magugpo South' %}selected{% endif %}>Magugpo South</option>
+                    <option value="Magugpo West" {% if request.GET.barangay == 'Magugpo West' %}selected{% endif %}>Magugpo West</option>
+                    <option value="Mankilam" {% if request.GET.barangay == 'Mankilam' %}selected{% endif %}>Mankilam</option>
+                    <option value="New Balamban" {% if request.GET.barangay == 'New Balamban' %}selected{% endif %}>New Balamban</option>
+                    <option value="Nueva Fuerza" {% if request.GET.barangay == 'Nueva Fuerza' %}selected{% endif %}>Nueva Fuerza</option>
+                    <option value="Pagsabangan" {% if request.GET.barangay == 'Pagsabangan' %}selected{% endif %}>Pagsabangan</option>
+                    <option value="Pandapan" {% if request.GET.barangay == 'Pandapan' %}selected{% endif %}>Pandapan</option>
+                    <option value="San Agustin" {% if request.GET.barangay == 'San Agustin' %}selected{% endif %}>San Agustin</option>
+                    <option value="San Isidro" {% if request.GET.barangay == 'San Isidro' %}selected{% endif %}>San Isidro</option>
+                    <option value="San Miguel" {% if request.GET.barangay == 'San Miguel' %}selected{% endif %}>San Miguel</option>
+                    <option value="Visayan Village" {% if request.GET.barangay == 'Visayan Village' %}selected{% endif %}>Visayan Village</option>
+                </select>
+            </form>
+        </div>
+        <button id="add-project-btn" class="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow transition w-full md:w-auto">Add Project</button>
+    </div>
+    <div class="w-full bg-white rounded-2xl shadow-lg p-2 md:p-6 overflow-x-auto">
+        <table class="w-full min-w-[900px] divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">#</th>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">PRN#</th>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">Name of Project</th>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">Project Description</th>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">Location</th>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">Project Cost</th>
+                    <th class="px-3 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider">Source of Funds</th>
+                    <th class="px-3 py-3 text-center font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th class="px-3 py-3 text-center font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="project-table-body" class="bg-white divide-y divide-gray-200">
+                {% for project in page_obj.object_list %}
+                <tr data-project-id="{{ project.id }}">
+                    <td class="px-3 py-3 text-xs md:text-sm">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+                    <td class="px-3 py-3 text-xs md:text-sm project-prn">{{ project.prn|default_if_none:'' }}</td>
+                    <td class="px-3 py-3 font-semibold text-blue-900 text-xs md:text-sm break-words project-name">{{ project.name }}</td>
+                    <td class="px-3 py-3 text-xs md:text-sm break-words project-description">{{ project.description|truncatechars:35 }}</td>
+                    <td class="px-3 py-3 text-xs md:text-sm project-barangay">{{ project.barangay|default_if_none:'' }}</td>
+                    <td class="px-3 py-3 text-xs md:text-sm project-cost">{{ project.project_cost|default_if_none:'' }}</td>
+                    <td class="px-3 py-3 text-xs md:text-sm project-funds">{{ project.source_of_funds|default_if_none:'' }}</td>
+                    <td class="px-3 py-3 text-xs md:text-sm project-status">
+                        {% if project.status == 'completed' %}
+                            <span class="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-semibold">Completed</span>
+                        {% elif project.status == 'ongoing' or project.status == 'in_progress' %}
+                            <span class="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">Ongoing</span>
+                        {% elif project.status == 'planned' or project.status == 'pending' %}
+                            <span class="inline-block px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 font-semibold">Planned</span>
+                        {% elif project.status == 'delayed' %}
+                            <span class="inline-block px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">Delayed</span>
+                        {% else %}
+                            {{ project.status }}
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-center flex gap-2 justify-center">
+                        <button title="View" onclick="openDetailsModal({{ project.id }})" class="transition-colors duration-200 hover:text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                        <button title="Edit" onclick="openEditModal({{ project.id }})" class="transition-colors duration-200 hover:text-yellow-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2M12 7v10m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </button>
+                        <button title="Delete" onclick="openDeleteModal({{ project.id }})" class="transition-colors duration-200 hover:text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2h6" /></svg>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-6 text-gray-400">No projects found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+      
+
+        <div class="flex justify-end mt-6">
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.barangay %}&barangay={{ request.GET.barangay }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        Previous
+                    </a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span aria-current="page" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                            {{ num }}
+                        </span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if request.GET.barangay %}&barangay={{ request.GET.barangay }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.barangay %}&barangay={{ request.GET.barangay }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        Next
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+
+    <!-- Add/Edit Project Modal -->
+    <div id="project-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl p-0 relative mx-4 my-8 max-h-[90vh] overflow-y-auto animate-modal-scale">
+            <button id="close-modal" class="absolute top-6 right-6 z-30 w-12 h-12 flex items-center justify-center bg-blue-700 text-white text-3xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
+            <form id="project-form" method="post" enctype="multipart/form-data" class="w-full p-8 md:p-12">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex flex-col gap-4">
+                        <label class="font-semibold text-gray-700">PRN</label>
+                        <input type="text" name="prn" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                        <label class="font-semibold text-gray-700">Name</label>
+                        <input type="text" name="name" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                        <label class="font-semibold text-gray-700">Description</label>
+                        <textarea name="description" rows="3" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required></textarea>
+                        <label class="font-semibold text-gray-700">Barangay</label>
+                        <select name="barangay" id="modal-barangay-select" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required>
+                            <option value="">---------</option>
+                            <option value="Apokon">Apokon</option>
+                            <option value="Bincungan">Bincungan</option>
+                            <option value="Busaon">Busaon</option>
+                            <option value="Canocotan">Canocotan</option>
+                            <option value="Cuambogan">Cuambogan</option>
+                            <option value="La Filipina">La Filipina</option>
+                            <option value="Liboganon">Liboganon</option>
+                            <option value="Madaum">Madaum</option>
+                            <option value="Magdum">Magdum</option>
+                            <option value="Magugpo East">Magugpo East</option>
+                            <option value="Magugpo North">Magugpo North</option>
+                            <option value="Magugpo Poblacion">Magugpo Poblacion</option>
+                            <option value="Magugpo South">Magugpo South</option>
+                            <option value="Magugpo West">Magugpo West</option>
+                            <option value="Mankilam">Mankilam</option>
+                            <option value="New Balamban">New Balamban</option>
+                            <option value="Nueva Fuerza">Nueva Fuerza</option>
+                            <option value="Pagsabangan">Pagsabangan</option>
+                            <option value="Pandapan">Pandapan</option>
+                            <option value="San Agustin">San Agustin</option>
+                            <option value="San Isidro">San Isidro</option>
+                            <option value="San Miguel">San Miguel</option>
+                            <option value="Visayan Village">Visayan Village</option>
+                        </select>
+                        <label class="font-semibold text-gray-700">Project Cost</label>
+                        <input type="text" name="project_cost" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                        <label class="font-semibold text-gray-700">Source of Funds</label>
+                        <input type="text" name="source_of_funds" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                        <label class="font-semibold text-gray-700">Status</label>
+                        <select name="status" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required>
+                            <option value="">---------</option>
+                            <option value="planned">Planned</option>
+                            <option value="in_progress">Ongoing</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <label class="font-semibold text-gray-700">Assigned Engineers</label>
+                        {{ form.assigned_engineers }}
+                    </div>
+                    <div class="flex flex-col gap-4">
+                        <label class="font-semibold text-gray-700">Latitude</label>
+                        <input type="number" step="any" name="latitude" id="latitude-input" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                        <label class="font-semibold text-gray-700">Longitude</label>
+                        <input type="number" step="any" name="longitude" id="longitude-input" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                        <button type="button" id="map-fullscreen-btn" class="mt-2 mb-4 w-fit bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2" title="Set map location">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" /></svg>
+                            Set Map Location
+                        </button>
+                        <label class="font-semibold text-gray-700">Start Date</label>
+                        <input type="date" name="start_date" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                        <label class="font-semibold text-gray-700">End Date</label>
+                        <input type="date" name="end_date" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                        <label class="font-semibold text-gray-700">Image</label>
+                        <input type="file" name="image" class="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" id="image-input" />
+                    </div>
+                </div>
+                <div class="flex justify-end gap-4 pt-8 mt-6 border-t border-gray-100">
+                    <button type="button" onclick="closeProjectModal()" class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Cancel</button>
+                    <button type="submit" class="px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        Save Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div id="details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl p-0 relative mx-4 my-8 max-h-[90vh] overflow-y-auto animate-modal-scale">
+            <button id="close-details-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+            <div class="flex flex-col items-center px-8 pt-8 pb-4">
+                <img id="details-image" class="w-40 h-40 object-cover object-center rounded-2xl mb-4 bg-gray-100 border-2 border-gray-200 shadow aspect-square" alt="Project image" />
+                <div class="w-full">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl font-extrabold text-blue-900" id="details-title">Project Details</span>
+                        <span id="details-status"></span>
+                    </div>
+                    <div class="text-lg font-bold text-gray-800 mb-1" id="details-name"></div>
+                    <div class="text-sm text-gray-500 mb-2" id="details-prn"></div>
+                </div>
+            </div>
+            <div class="px-8 pb-8">
+                <div class="mb-4">
+                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Project Info</div>
+                    <div class="mb-2"><span class="font-semibold">Description:</span> <span id="details-description"></span></div>
+                </div>
+                <div class="mb-4">
+                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Location</div>
+                    <div class="mb-2"><span class="font-semibold">Barangay:</span> <span id="details-barangay"></span></div>
+                    <div class="mb-2 flex gap-4"><span class="font-semibold">Latitude:</span> <span id="details-latitude"></span> <span class="font-semibold">Longitude:</span> <span id="details-longitude"></span></div>
+                    <div class="mb-2"><div id="details-map" class="w-full h-40 rounded-lg border border-gray-200"></div></div>
+                </div>
+                <div class="mb-4 flex gap-8">
+                    <div>
+                        <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Start Date</div>
+                        <div class="flex items-center gap-2"><svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span id="details-start-date"></span></div>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-blue-700 text-xs uppercase mb-1">End Date</div>
+                        <div class="flex items-center gap-2"><svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span id="details-end-date"></span></div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Financial</div>
+                    <div class="mb-2"><span class="font-semibold">Project Cost:</span> <span id="details-cost"></span></div>
+                    <div class="mb-2"><span class="font-semibold">Source of Funds:</span> <span id="details-funds"></span></div>
+                </div>
+                <!-- Project Progress (Visible only for Ongoing projects with progress) -->
+                <div id="details-progress-section" class="mb-4 hidden">
+                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Progress</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div id="details-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <div id="details-progress-text" class="text-sm text-gray-600 mt-1">0%</div>
+                </div>
+                <!-- Assigned Engineers -->
+                <div class="mb-4">
+                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Assigned Engineer(s)</div>
+                    <div id="details-assigned-engineers" class="text-sm text-gray-600"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative mx-2">
+            <button id="close-delete-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+            <h2 class="text-xl font-bold mb-4 text-red-700">Delete Project</h2>
+            <p class="mb-6">Are you sure you want to delete this project?</p>
+            <div class="flex justify-end gap-2">
+                <button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition">Delete</button>
+                <button id="cancel-delete-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-2 rounded-lg shadow transition">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="success-toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 hidden transition-all duration-300"></div>
+
+    <!-- Popup Map Modal -->
+    <div id="map-popup-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-0 relative mx-4 my-8 max-h-[90vh] flex flex-col">
+            <button type="button" id="close-map-popup" class="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center bg-blue-700 text-white text-2xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
+            <div id="popup-map" style="min-height:300px; height:60vh; background:#eee;" class="rounded-lg border border-gray-300 w-full"></div>
+            <div class="flex justify-end gap-4 p-4">
+                <button type="button" id="close-map-popup-btn" class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+{{ projects_data|json_script:"projects-data" }}
+<script>
+window.projects = JSON.parse(document.getElementById('projects-data').textContent);
+console.log('window.projects:', window.projects, 'Type:', typeof window.projects, 'IsArray:', Array.isArray(window.projects));
+const barangayCoordinates = {
+    'Apokon': [7.4237747, 125.8259557],
+    'Bincungan': [7.3788027, 125.7547817],
+    'Busaon': [7.3599983, 125.7535189],
+    'Canocotan': [7.4001209, 125.7740386],
+    'Cuambogan': [7.4912804, 125.7927462],
+    'La Filipina': [7.4764565, 125.8053029],
+    'Liboganon': [7.3464940, 125.7767654],
+    'Madaum': [7.3826395, 125.8087180],
+    'Magdum': [7.4692173, 125.8347371],
+    'Magugpo East': [7.4493737, 125.8196061],
+    'Magugpo North': [7.4596946, 125.8161767],
+    'Magugpo Poblacion': [7.4472333, 125.8043897],
+    'Magugpo South': [7.4472497, 125.7950305],
+    'Magugpo West': [7.4567492, 125.8031452],
+    'Mankilam': [7.4607703, 125.7848619],
+    'New Balamban': [7.4952507, 125.8452198],
+    'Nueva Fuerza': [7.4993765, 125.8186816],
+    'Pagsabangan': [7.4825329, 125.7518306],
+    'Pandapan': [7.4826495, 125.8758813],
+    'San Agustin': [7.4920504, 125.8259339],
+    'San Isidro': [7.3939060, 125.7854038],
+    'San Miguel': [7.4422203, 125.7761364],
+    'Visayan Village': [7.4318430, 125.8037910],
+};
+
+// --- Modal Logic ---
+let deleteProjectId = null;
+let editProjectId = null;
+const projectModal = document.getElementById('project-modal');
+const projectForm = document.getElementById('project-form');
+const addProjectBtn = document.getElementById('add-project-btn');
+const closeModal = document.getElementById('close-modal');
+const cancelBtn = document.querySelector('button[type="button"][onclick="closeProjectModal()"]');
+const imageInput = document.getElementById('image-input');
+const closeDetailsModal = document.getElementById('close-details-modal');
+const closeDeleteModal = document.getElementById('close-delete-modal');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+const successToast = document.getElementById('success-toast');
+const modalBarangaySelect = document.getElementById('modal-barangay-select');
+
+function showToast(message) {
+    if (successToast) {
+        successToast.textContent = message;
+        successToast.classList.remove('hidden');
+        setTimeout(() => {
+            successToast.classList.add('hidden');
+        }, 2000);
+    }
+}
+
+function showModal() {
+    if (projectModal) {
+        projectModal.classList.remove('opacity-0', 'pointer-events-none');
+        setTimeout(() => projectModal.classList.add('opacity-100'), 10);
+    }
+}
+function hideModal() {
+    if (projectModal) {
+        projectModal.classList.remove('opacity-100');
+        setTimeout(() => projectModal.classList.add('opacity-0', 'pointer-events-none'), 300);
+    }
+    projectForm.reset();
+    editProjectId = null;
+    projectForm.setAttribute('data-mode', 'add');
+}
+window.closeProjectModal = hideModal;
+
+if (addProjectBtn) {
+    addProjectBtn.addEventListener('click', function() {
+        editProjectId = null;
+        projectForm.setAttribute('data-mode', 'add');
+        if (imageInput) imageInput.required = true;
+        showModal();
+    });
+}
+if (closeModal) closeModal.addEventListener('click', hideModal);
+if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+
+// --- View Details Modal ---
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr;
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+window.openDetailsModal = function(id) {
+    const detailsModal = document.getElementById('details-modal');
+    const detailsImage = document.getElementById('details-image');
+    if (detailsModal && detailsImage) {
+        detailsModal.classList.remove('hidden');
+        const project = window.projects.find(p => p.id == id || p.id === id || String(p.id) === String(id));
+        if (project) {
+            document.getElementById('details-title').textContent = project.name || '';
+            document.getElementById('details-status').innerHTML = getStatusBadge(project.status || '');
+            document.getElementById('details-name').textContent = project.name || '';
+            document.getElementById('details-prn').textContent = `PRN#: ${project.prn || ''}`;
+            document.getElementById('details-barangay').textContent = project.barangay || '';
+            document.getElementById('details-cost').textContent = project.project_cost || '';
+            document.getElementById('details-funds').textContent = project.source_of_funds || '';
+            document.getElementById('details-description').textContent = project.description || 'No description';
+            document.getElementById('details-latitude').textContent = project.latitude || '';
+            document.getElementById('details-longitude').textContent = project.longitude || '';
+            document.getElementById('details-start-date').textContent = formatDate(project.start_date) || '';
+            document.getElementById('details-end-date').textContent = formatDate(project.end_date) || '';
+            if (project.image) {
+                detailsImage.src = project.image;
+                detailsImage.classList.remove('hidden');
+            } else {
+                detailsImage.src = '';
+                detailsImage.classList.add('hidden');
+            }
+            setTimeout(() => {
+                if (window.detailsMap) {
+                    window.detailsMap.remove();
+                }
+                if (project.latitude && project.longitude) {
+                    window.detailsMap = L.map('details-map').setView([project.latitude, project.longitude], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(window.detailsMap);
+                    L.marker([project.latitude, project.longitude]).addTo(window.detailsMap);
+                    setTimeout(() => { window.detailsMap.invalidateSize(); }, 350);
+                } else {
+                    document.getElementById('details-map').innerHTML = '<div class="text-gray-400 text-center py-8">No location set</div>';
+                }
+            }, 100);
+
+            // --- Handle Progress Bar ---
+            const progressSection = document.getElementById('details-progress-section');
+            const progressBar = document.getElementById('details-progress-bar');
+            const progressText = document.getElementById('details-progress-text');
+
+            // Check if project status is 'ongoing' or 'in_progress' and if progress data exists
+            if ((project.status === 'ongoing' || project.status === 'in_progress') && project.progress !== undefined && project.progress !== null) {
+                const progressValue = parseInt(project.progress, 10);
+                if (!isNaN(progressValue) && progressValue >= 0 && progressValue <= 100) {
+                    progressSection.classList.remove('hidden');
+                    progressBar.style.width = progressValue + '%';
+                    progressText.textContent = progressValue + '% Complete';
+                } else {
+                    // Hide if progress data is invalid
+                    progressSection.classList.add('hidden');
+                }
+            } else {
+                // Hide if status is not ongoing or progress data is missing
+                progressSection.classList.add('hidden');
+            }
+            // --- End Progress Bar Handling ---
+
+            // --- Display Assigned Engineers ---
+            const assignedEngineersElement = document.getElementById('details-assigned-engineers');
+            if (assignedEngineersElement) {
+                if (project.assigned_engineers && project.assigned_engineers.length > 0) {
+                    assignedEngineersElement.textContent = project.assigned_engineers.join(', ');
+                } else {
+                    assignedEngineersElement.textContent = 'None assigned';
+                }
+            }
+            // --- End Assigned Engineers Display ---
+
+        } else {
+            alert('Project data not found for id: ' + id);
+        }
+    }
+};
+window.closeDetailsModalFunc = function() {
+    const detailsModal = document.getElementById('details-modal');
+    if (detailsModal) {
+        detailsModal.classList.add('hidden');
+    }
+};
+if (closeDetailsModal) closeDetailsModal.addEventListener('click', window.closeDetailsModalFunc);
+
+// --- Delete Modal ---
+window.openDeleteModal = function(id) {
+    const deleteModal = document.getElementById('delete-modal');
+    if (deleteModal) {
+        deleteModal.classList.remove('hidden');
+        deleteProjectId = id;
+    }
+};
+window.closeDeleteModalFunc = function() {
+    const deleteModal = document.getElementById('delete-modal');
+    if (deleteModal) {
+        deleteModal.classList.add('hidden');
+        deleteProjectId = null;
+    }
+};
+if (closeDeleteModal) closeDeleteModal.addEventListener('click', window.closeDeleteModalFunc);
+if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', window.closeDeleteModalFunc);
+if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (deleteProjectId) {
+            // Get CSRF token from cookie
+            const csrftoken = document.cookie.split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+
+            fetch(`/projects/${deleteProjectId}/api/delete/`, { 
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the row from the table
+                        const row = document.querySelector(`tr[data-project-id='${deleteProjectId}']`);
+                        if (row) {
+                            row.remove();
+                            renumberProjectRows();
+                        }
+                        showToast('Project deleted successfully!');
+                    } else {
+                        alert('Delete failed.');
+                    }
+                    window.closeDeleteModalFunc();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the project.');
+                    window.closeDeleteModalFunc();
+                });
+        }
+    });
+}
+
+// --- Popup Map Modal Logic ---
+let popupMap = null; // Initialize popupMap to null
+let popupMarker = null; // Initialize popupMarker to null
+const mapPopupModal = document.getElementById('map-popup-modal');
+const popupMapDiv = document.getElementById('popup-map');
+const closeMapPopup = document.getElementById('close-map-popup');
+const closeMapPopupBtn = document.getElementById('close-map-popup-btn');
+const mapFullscreenBtn = document.getElementById('map-fullscreen-btn');
+const latInput = document.getElementById('latitude-input');
+const lngInput = document.getElementById('longitude-input');
+
+function showPopupMap() {
+    if (mapPopupModal) {
+        mapPopupModal.classList.remove('hidden');
+        setTimeout(() => {
+            let lat = parseFloat(latInput.value) || 7.4475; // Default to a central location if inputs are empty
+            let lng = parseFloat(lngInput.value) || 125.8078;
+            let zoom = 13; // Default zoom
+
+            // Use barangay coordinates if a barangay is selected in the add/edit modal
+            const selectedBarangay = modalBarangaySelect.value; // modalBarangaySelect is defined earlier
+            if (selectedBarangay && barangayCoordinates[selectedBarangay]) {
+                 [lat, lng] = barangayCoordinates[selectedBarangay];
+                 zoom = 14; // Adjust zoom level when centering on a barangay
+            } else if (latInput.value && lngInput.value) {
+                 // If latitude/longitude inputs already have values, use them
+                 lat = parseFloat(latInput.value);
+                 lng = parseFloat(lngInput.value);
+                 zoom = 14; // Zoom in if coordinates are pre-filled
+            }
+
+            if (!popupMap) {
+                // Initialize the map only if it doesn't exist
+                // Fix for Leaflet map container reuse error
+                if (L.DomUtil.get('popup-map')) {
+                    L.DomUtil.get('popup-map')._leaflet_id = null;
+                }
+                popupMap = L.map('popup-map').setView([lat, lng], zoom);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(popupMap);
+                 // Add click listener only once to update inputs and marker
+                popupMap.on('click', function(e) {
+                    const clickedLat = e.latlng.lat;
+                    const clickedLng = e.latlng.lng;
+                    latInput.value = clickedLat;
+                    lngInput.value = clickedLng;
+                    if (popupMarker) { popupMarker.setLatLng([clickedLat, clickedLng]); }
+                    else { popupMarker = L.marker([clickedLat, clickedLng]).addTo(popupMap); }
+                });
+            } else {
+                // If map already exists, just set the view
+                popupMap.setView([lat, lng], zoom);
+            }
+
+            // Remove existing marker before adding a new one
+             if (popupMarker) {
+                 popupMap.removeLayer(popupMarker);
+                 popupMarker = null;
+             }
+
+            // Create and add marker AFTER setting the view if coordinates exist
+            if (lat && lng) {
+                popupMarker = L.marker([lat, lng]).addTo(popupMap);
+            }
+
+            setTimeout(() => { popupMap.invalidateSize(); }, 350);
+        }, 100);
+    }
+}
+
+function hidePopupMap() {
+    if (mapPopupModal) {
+        mapPopupModal.classList.add('hidden');
+        // Optional: Clear marker when hiding map
+        // if (popupMarker) {
+        //     popupMap.removeLayer(popupMarker);
+        //     popupMarker = null;
+        // }
+    }
+}
+
+if (mapFullscreenBtn) {
+    mapFullscreenBtn.addEventListener('click', showPopupMap);
+}
+if (closeMapPopup) closeMapPopup.addEventListener('click', hidePopupMap);
+if (closeMapPopupBtn) closeMapPopupBtn.addEventListener('click', hidePopupMap);
+
+// Close modal when clicking outside the modal content (Popup Map Modal)
+if (mapPopupModal) {
+    mapPopupModal.addEventListener('mousedown', function(e) {
+        if (e.target === mapPopupModal) {
+            hidePopupMap();
+        }
+    });
+}
+
+// --- Utility Functions ---
+function getStatusBadge(status) {
+    if (status === 'completed') {
+        return '<span class="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-semibold">Completed</span>';
+    } else if (status === 'in_progress' || status === 'ongoing') {
+        return '<span class="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">Ongoing</span>';
+    } else if (status === 'planned' || status === 'pending') {
+        return '<span class="inline-block px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 font-semibold">Planned</span>';
+    } else if (status === 'delayed') {
+        return '<span class="inline-block px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">Delayed</span>';
+    } else {
+        return status;
+    }
+}
+function renumberProjectRows() {
+    const rows = document.querySelectorAll('#project-table-body tr');
+    rows.forEach((row, idx) => {
+        const numberCell = row.querySelector('td:first-child');
+        if (numberCell) {
+            numberCell.textContent = idx + 1;
+        }
+    });
+}
+
+window.openEditModal = function(id) {
+    const project = window.projects.find(p => p.id == id || p.id === id || String(p.id) === String(id));
+    if (!project) {
+        alert('Project data not found for id: ' + id);
+        return;
+    }
+    editProjectId = id;
+    projectForm.setAttribute('data-mode', 'edit');
+    if (imageInput) imageInput.required = false;
+    // Populate form fields
+    projectForm.elements['prn'].value = project.prn || '';
+    projectForm.elements['name'].value = project.name || '';
+    projectForm.elements['description'].value = project.description || '';
+    projectForm.elements['barangay'].value = project.barangay || '';
+    projectForm.elements['project_cost'].value = project.project_cost || '';
+    projectForm.elements['source_of_funds'].value = project.source_of_funds || '';
+    projectForm.elements['status'].value = project.status || '';
+    projectForm.elements['latitude'].value = project.latitude || '';
+    projectForm.elements['longitude'].value = project.longitude || '';
+    projectForm.elements['start_date'].value = project.start_date || '';
+    projectForm.elements['end_date'].value = project.end_date || '';
+    // Assigned engineers (if select multiple)
+    const assignedEngineersField = projectForm.elements['assigned_engineers'];
+    if (assignedEngineersField && assignedEngineersField.options) {
+        for (let i = 0; i < assignedEngineersField.options.length; i++) {
+            assignedEngineersField.options[i].selected = project.assigned_engineers && project.assigned_engineers.includes(assignedEngineersField.options[i].value);
+        }
+    }
+    showModal();
+};
+</script>
+{% endblock %}

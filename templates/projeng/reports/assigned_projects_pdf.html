@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assigned Projects Report</title>
+    <style>
+        body { font-family: sans-serif; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .status-pill { padding: 2px 8px; border-radius: 12px; font-size: 0.75em; }
+        .status-planned { background-color: #ffebcd; color: #ff9800; }
+        .status-in_progress { background-color: #bbdefb; color: #2196f3; }
+        .status-completed { background-color: #c8e6c9; color: #4caf50; }
+        .status-cancelled { background-color: #ffcdd2; color: #f44336; }
+        .status-delayed { background-color: #ffcdd2; color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>Assigned Projects Report</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>PRN#</th>
+                <th>Name of Project</th>
+                <th>Project Description</th>
+                <th>Barangay</th>
+                <th>Project Cost</th>
+                <th>Source of Funds</th>
+                <th>Date Started</th>
+                <th>Date Ended</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ project.prn|default:'' }}</td>
+                    <td>{{ project.name|default:'' }}</td>
+                    <td>{{ project.description|default:'' }}</td>
+                    <td>{{ project.barangay|default:'' }}</td>
+                    <td>₱{{ project.project_cost|floatformat:2|default:'' }}</td>
+                    <td>{{ project.source_of_funds|default:'' }}</td>
+                    <td>{{ project.start_date|date:'Y-m-d'|default:'' }}</td>
+                    <td>{{ project.end_date|date:'Y-m-d'|default:'' }}</td>
+                    <td>
+                        <span class="status-pill status-{{ project.status|lower|replace:' ','_' }}">
+                            {{ project.get_status_display|default:'' }}
+                        </span>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html> 

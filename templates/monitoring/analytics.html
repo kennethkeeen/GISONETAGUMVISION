@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if user_role == 'project_engineer' %}
+        My Projects Analytics
+    {% else %}
+        All Projects Analytics
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            {% if user_role == 'project_engineer' %}
+                My Projects Analytics
+            {% else %}
+                All Projects Analytics
+            {% endif %}
+        </h1>
+        <p class="text-gray-600">
+            {% if user_role == 'project_engineer' %}
+                Track and manage your assigned projects
+            {% else %}
+                Monitor and analyze all projects across the system
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div id="card-all" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('all', this)">
+            <div class="flex items-center gap-3">
+                <span class="bg-blue-100 text-blue-600 rounded-full p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+                    </svg>
+                </span>
+                <h3 class="text-lg font-semibold text-gray-700">Total Projects</h3>
+            </div>
+            <p class="text-3xl font-bold text-blue-600 mt-2 group-hover:text-blue-800 transition">{{ total_projects }}</p>
+        </div>
+        <div id="card-completed" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('completed', this)">
+            <div class="flex items-center gap-3">
+                <span class="bg-green-100 text-green-600 rounded-full p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </span>
+                <h3 class="text-lg font-semibold text-gray-700">Completed</h3>
+            </div>
+            <p class="text-3xl font-bold text-green-600 mt-2 group-hover:text-green-800 transition">{{ completed_projects }}</p>
+        </div>
+        <div id="card-inprogress" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('in_progress', this)">
+            <div class="flex items-center gap-3">
+                <span class="bg-yellow-100 text-yellow-600 rounded-full p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
+                    </svg>
+                </span>
+                <h3 class="text-lg font-semibold text-gray-700">In Progress</h3>
+            </div>
+            <p class="text-3xl font-bold text-yellow-600 mt-2 group-hover:text-yellow-800 transition">{{ ongoing_projects }}</p>
+        </div>
+        <div id="card-planned" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('planned', this)">
+            <div class="flex items-center gap-3">
+                <span class="bg-purple-100 text-purple-600 rounded-full p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect width="20" height="20" x="2" y="2" rx="5" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
+                    </svg>
+                </span>
+                <h3 class="text-lg font-semibold text-gray-700">Planned</h3>
+            </div>
+            <p class="text-3xl font-bold text-purple-600 mt-2 group-hover:text-purple-800 transition">{{ planned_projects }}</p>
+        </div>
+        <div id="card-delayed" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('delayed', this)">
+            <div class="flex items-center gap-3">
+                <span class="bg-red-100 text-red-600 rounded-full p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" />
+                        <circle cx="12" cy="12" r="10" />
+                    </svg>
+                </span>
+                <h3 class="text-lg font-semibold text-gray-700">Delayed</h3>
+            </div>
+            <p class="text-3xl font-bold text-red-600 mt-2 group-hover:text-red-800 transition">{{ delayed_projects }}</p>
+        </div>
+    </div>
+
+    <!-- Projects Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-4 border-b border-gray-200">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <h2 class="text-xl font-semibold text-gray-900">Projects List</h2>
+                <div class="flex gap-4">
+                    <input type="text" id="search-input" placeholder="Search projects..." 
+                           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select id="filter-barangay" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Barangays</option>
+                        {% for project in projects %}
+                            <option value="{{ project.barangay }}">{{ project.barangay }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangay</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                        {% if user_role == 'head_engineer' %}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                        {% endif %}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="projects-table-body">
+                    {% for project in projects %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ project.name }}</div>
+                            <div class="text-sm text-gray-500">{{ project.prn }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ project.barangay }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ project.total_progress }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-500">{{ project.total_progress }}%</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if project.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif project.status in 'ongoing,in_progress' %}bg-blue-100 text-blue-800
+                                {% elif project.status in 'planned,pending' %}bg-yellow-100 text-yellow-800
+                                {% elif project.status == 'delayed' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ project.status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ project.start_date }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ project.end_date }}
+                        </td>
+                        {% if user_role == 'head_engineer' %}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ project.assigned_to|join:', ' }}
+                        </td>
+                        {% endif %}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="javascript:void(0);" onclick="openProjectModal({{ project.id }})" class="text-blue-600 hover:text-blue-900">View</a>
+                            {% if user_role == 'project_engineer' %}
+                                <a href="{% url 'project_update' project.id %}" class="ml-4 text-green-600 hover:text-green-900">Update</a>
+                            {% endif %}
+                            {% if user_role == 'head_engineer' %}
+                            <a href="javascript:void(0);" onclick="openViewCostsModal({{ project.id }})" class="ml-4 text-purple-600 hover:text-purple-900">View Costs</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Project Details Modal -->
+<div id="project-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <button onclick="closeProjectModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+        <div id="modal-content">
+            <!-- Content will be filled by JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Cost Entry Modal Placeholder -->
+<div id="cost-entry-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <button onclick="closeViewCostsModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+        <div id="cost-entry-modal-content">
+            <h2 class="text-2xl font-bold mb-4">Cost Entries for Project <span id="cost-entry-project-name"></span></h2>
+            <!-- Cost Entry list will be filled by JS -->
+            <div id="cost-entries-list"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+.analytics-card.active-blue {
+    border: 2px solid #2563eb !important;
+    background-color: #eff6ff !important;
+    box-shadow: 0 0 0 2px #2563eb33;
+}
+.analytics-card.active-green {
+    border: 2px solid #16a34a !important;
+    background-color: #f0fdf4 !important;
+    box-shadow: 0 0 0 2px #16a34a33;
+}
+.analytics-card.active-yellow {
+    border: 2px solid #eab308 !important;
+    background-color: #fefce8 !important;
+    box-shadow: 0 0 0 2px #eab30833;
+}
+.analytics-card.active-purple {
+    border: 2px solid #a21caf !important;
+    background-color: #faf5ff !important;
+    box-shadow: 0 0 0 2px #a21caf33;
+}
+.analytics-card.active-red {
+    border: 2px solid #dc2626 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 0 0 0 2px #dc262633;
+}
+</style>
+
+{% block extra_js %}
+<script>
+// Utility functions
+const utils = {
+    getElement: (id) => document.getElementById(id),
+    getElements: (selector) => document.querySelectorAll(selector),
+    showElement: (element) => element?.classList.remove('hidden'),
+    hideElement: (element) => element?.classList.add('hidden'),
+    toggleElement: (element) => element?.classList.toggle('hidden'),
+    getCookie: (name) => {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+};
+
+// Store projects data
+window.projects = {{ projects|safe }};
+
+// Modal functions
+function openProjectModal(id) {
+    const modal = utils.getElement('project-modal');
+    const content = utils.getElement('modal-content');
+    const project = window.projects.find(p => p.id === id);
+
+    if (!project || !modal || !content) return;
+
+    const totalProgress = project.total_progress || 0;
+    const assignedEngineers = project.assigned_engineers ? project.assigned_engineers.join(', ') : '';
+
+    let html = `
+        <h2 class="text-2xl font-bold mb-2">${project.name}</h2>
+        <div class="mb-2 text-gray-600">PRN: ${project.prn || ''}</div>
+        <div class="mb-2 text-gray-600">Barangay: ${project.barangay || ''}</div>
+        <div class="mb-2 text-gray-600">Status: ${project.status || ''}</div>
+        <div class="mb-2 text-gray-600">Assigned: ${assignedEngineers}</div>
+        <div class="mb-4">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${totalProgress}%"></div>
+            </div>
+            <span class="text-sm text-gray-500">${totalProgress}% Complete</span>
+        </div>
+        <h3 class="text-lg font-semibold mb-2">Progress Updates</h3>
+    `;
+
+    if (project.progress_updates?.length > 0) {
+        html += project.progress_updates.map((update, idx) => `
+            <div class="border rounded-lg mb-3 p-3 bg-gray-50 cursor-pointer" onclick="toggleUpdateDetails('update-details-${idx}')">
+                <div class="font-semibold">${update.date} - ${update.percentage_complete}% <span class="text-xs text-gray-500">by ${update.engineer}</span></div>
+                <div id="update-details-${idx}" class="mt-2 hidden">
+                    <div class="mb-2">${update.description}</div>
+                    <div>
+                        ${update.photos?.length > 0 ? update.photos.map(url => `<img src="${url}" style="max-width:80px; margin-right:6px; border-radius:4px; border:1px solid #ccc;">`).join('') : '<span class="text-gray-400">No photos</span>'}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        html += `<div class="text-gray-400">No progress updates yet.</div>`;
+    }
+
+    content.innerHTML = html;
+    utils.showElement(modal);
+}
+
+function closeProjectModal() {
+    const modal = utils.getElement('project-modal');
+    if (modal) utils.hideElement(modal);
+}
+
+function toggleUpdateDetails(id) {
+    const el = utils.getElement(id);
+    if (el) utils.toggleElement(el);
+}
+
+// Filter functions
+function filterByStatus(status, card) {
+    const cards = utils.getElements('.analytics-card');
+    cards.forEach(el => el.classList.remove('active-blue', 'active-green', 'active-yellow', 'active-purple', 'active-red'));
+
+    if (card) {
+        const statusClasses = {
+            'all': 'active-blue',
+            'completed': 'active-green',
+            'in_progress': 'active-yellow',
+            'planned': 'active-purple',
+            'delayed': 'active-red'
+        };
+        const className = statusClasses[status];
+        if (className) card.classList.add(className);
+    }
+
+    const tableBody = utils.getElement('projects-table-body');
+    if (!tableBody) return;
+
+    const rows = tableBody.getElementsByTagName('tr');
+    for (let row of rows) {
+        const statusCell = row.querySelector('td:nth-child(4) span');
+        if (!statusCell) continue;
+
+        const projectStatus = statusCell.textContent.trim().toLowerCase().replace(/[_ ]/g, '');
+        const statusMap = {
+            'all': () => true,
+            'in_progress': (status) => ['inprogress', 'in_progress', 'ongoing'].includes(status),
+            'planned': (status) => ['planned', 'pending'].includes(status),
+            'delayed': (status) => status === 'delayed',
+            'completed': (status) => status === 'completed'
+        };
+
+        const shouldShow = statusMap[status]?.(projectStatus) ?? (projectStatus === status);
+        row.style.display = shouldShow ? '' : 'none';
+    }
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize status filter
+    const cardAll = utils.getElement('card-all');
+    if (cardAll) filterByStatus('all', cardAll);
+
+    // Initialize search and filter
+    const searchInput = utils.getElement('search-input');
+    const filterBarangay = utils.getElement('filter-barangay');
+    const tableBody = utils.getElement('projects-table-body');
+    const costEntryForm = utils.getElement('cost-entry-form');
+
+    if (tableBody) {
+        const rows = tableBody.getElementsByTagName('tr');
+
+        function filterTable() {
+            const searchTerm = searchInput?.value.toLowerCase() || '';
+            const selectedBarangay = filterBarangay?.value.toLowerCase() || '';
+
+            for (let row of rows) {
+                if (!row.cells[0] || !row.cells[1]) continue;
+                
+                const projectName = row.cells[0].textContent.toLowerCase();
+                const barangay = row.cells[1].textContent.toLowerCase();
+                
+                const matchesSearch = projectName.includes(searchTerm);
+                const matchesBarangay = !selectedBarangay || barangay === selectedBarangay;
+
+                row.style.display = matchesSearch && matchesBarangay ? '' : 'none';
+            }
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterTable);
+        if (filterBarangay) filterBarangay.addEventListener('change', filterTable);
+    }
+
+    // Initialize cost entry form
+    if (costEntryForm) {
+        costEntryForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(costEntryForm);
+            const projectId = formData.get('project_id');
+            const addCostUrl = `/projeng/projects/${projectId}/add-cost/`;
+
+            try {
+                const response = await fetch(addCostUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': utils.getCookie('csrftoken'),
+                    },
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Cost entry added successfully!');
+                    closeViewCostsModal();
+                } else {
+                    alert('Error adding cost entry: ' + (data.error || JSON.stringify(data.errors)));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while adding the cost entry.');
+            }
+        });
+    }
+});
+
+// Cost modal functions
+function openViewCostsModal(id) {
+    const modal = utils.getElement('cost-entry-modal');
+    const costEntriesListDiv = utils.getElement('cost-entries-list');
+    const projectNameElement = utils.getElement('cost-entry-project-name');
+    const project = window.projects.find(p => p.id === id);
+
+    if (!project || !modal || !costEntriesListDiv || !projectNameElement) return;
+
+    projectNameElement.textContent = project.name;
+    costEntriesListDiv.innerHTML = '';
+
+    if (project.cost_entries?.length > 0) {
+        const costsHtml = project.cost_entries.map(cost => `
+            <div class="border rounded-lg mb-3 p-3 bg-gray-50">
+                <div class="font-semibold">${cost.date} - ${cost.cost_type} - ${cost.amount}</div>
+                <div class="mt-2 text-sm text-gray-700">${cost.description || ''}</div>
+                ${cost.receipt_url ? `<div class="mt-2"><a href="${cost.receipt_url}" target="_blank" class="text-blue-600 hover:underline">View Receipt</a></div>` : ''}
+            </div>
+        `).join('');
+        costEntriesListDiv.innerHTML = costsHtml;
+    } else {
+        costEntriesListDiv.innerHTML = '<div class="text-gray-400">No cost entries yet.</div>';
+    }
+
+    utils.showElement(modal);
+}
+
+function closeViewCostsModal() {
+    const modal = utils.getElement('cost-entry-modal');
+    if (modal) utils.hideElement(modal);
+}
+</script>
+{% endblock %}
+
+{% endblock %} 

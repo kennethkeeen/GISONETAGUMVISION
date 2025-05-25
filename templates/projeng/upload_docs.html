@@ -1,0 +1,150 @@
+{% extends 'projeng_base.html' %}
+
+{% block content %}
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Upload Project Documents</h1>
+
+    {# Upload Form Section #}
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Upload New Document</h2>
+        <form id="upload-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="project-select" class="block text-sm font-medium text-gray-700">Select Project:</label>
+                <select id="project-select" name="project_id" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">-- Select a Project --</option>
+                    {# Options will be populated by JavaScript or passed from view #}
+                    {% for project in assigned_projects %}
+                        <option value="{{ project.id }}">{{ project.name }} ({{ project.prn }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="document-name" class="block text-sm font-medium text-gray-700">Document Name:</label>
+                <input type="text" id="document-name" name="name" required class="mt-1 block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div class="mb-4">
+                <label for="document-file" class="block text-sm font-medium text-gray-700">Select File:</label>
+                <input type="file" id="document-file" name="file" required class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+            <div id="upload-status" class="mt-4 text-sm font-medium text-gray-700"></div>
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-green-500 focus:border-green-500">Upload Document</button>
+        </form>
+    </div>
+
+    {# Uploaded Documents Section #}
+    <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Uploaded Documents</h2>
+        {# Table or list to display uploaded documents #}
+        <div id="uploaded-documents-list">
+            <p class="text-gray-700">Uploaded documents will appear here.</p>
+            {# Documents will be loaded here by JavaScript or passed from view #}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadForm = document.getElementById('upload-form');
+        const uploadStatusDiv = document.getElementById('upload-status');
+        const uploadedDocumentsList = document.getElementById('uploaded-documents-list');
+        const projectSelect = document.getElementById('project-select');
+
+        // Function to fetch and display uploaded documents for the selected project
+        function loadUploadedDocuments(projectId) {
+            if (!projectId) {
+                uploadedDocumentsList.innerHTML = '<p class="text-gray-700">Please select a project to view documents.</p>';
+                return;
+            }
+
+            // Assuming an API endpoint exists to get documents for a project
+            // Example: /projeng/projects/{projectId}/documents/
+            fetch(`/projeng/projects/${projectId}/documents/`) // Replace with your actual API endpoint
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch documents');
+                    }
+                    return response.json();
+                })
+                .then(documents => {
+                    uploadedDocumentsList.innerHTML = ''; // Clear previous list
+                    if (documents.length === 0) {
+                        uploadedDocumentsList.innerHTML = '<p class="text-gray-700">No documents uploaded for this project yet.</p>';
+                    } else {
+                        const listHtml = documents.map(doc => `
+                            <div class="border-b border-gray-200 py-2 flex justify-between items-center">
+                                <a href="${doc.file_url}" class="text-blue-600 hover:underline" target="_blank">${doc.name}</a>
+                                <span class="text-sm text-gray-500">Uploaded by ${doc.uploaded_by} on ${doc.uploaded_at}</span>
+                            </div>
+                        `).join('');
+                        uploadedDocumentsList.innerHTML = listHtml;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading documents:', error);
+                    uploadedDocumentsList.innerHTML = `<p class="text-red-600">Error loading documents: ${error.message}</p>`;
+                });
+        }
+
+        // Load documents when a project is selected
+        projectSelect.addEventListener('change', function() {
+            loadUploadedDocuments(this.value);
+        });
+
+        // Handle form submission for uploading new document
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(uploadForm);
+            const projectId = projectSelect.value;
+
+            if (!projectId) {
+                uploadStatusDiv.textContent = 'Please select a project.';
+                uploadStatusDiv.className = 'mt-4 text-sm font-medium text-red-600';
+                return;
+            }
+
+            // Assuming an API endpoint exists for uploading documents
+            // Example: /projeng/projects/{projectId}/upload-document/
+            fetch(`/projeng/projects/${projectId}/upload-document/`, { // Replace with your actual API endpoint
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken') // Get CSRF token from form
+                }
+            })
+            .then(response => {
+                // Check for JSON response first
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json().then(data => {
+                        if (!response.ok) {
+                            // If response is not ok (e.g., 400, 500), handle as error
+                            throw new Error(data.error || 'Upload failed');
+                        }
+                        return data; // Return successful JSON data
+                    });
+                } else {
+                    // If not JSON, throw a generic error or handle as plain text if expected
+                    throw new Error(`Unexpected response from server: ${response.status} ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                uploadStatusDiv.textContent = data.message || 'Upload successful!';
+                uploadStatusDiv.className = 'mt-4 text-sm font-medium text-green-600';
+                uploadForm.reset(); // Clear form
+                loadUploadedDocuments(projectId); // Refresh the list of documents
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                uploadStatusDiv.textContent = error.message || 'An error occurred during upload.';
+                uploadStatusDiv.className = 'mt-4 text-sm font-medium text-red-600';
+            });
+        });
+
+        // Initial load of documents if a project is already selected (optional, depending on how the project list is populated)
+        // loadUploadedDocuments(projectSelect.value);
+    });
+</script>
+{% endblock %} 

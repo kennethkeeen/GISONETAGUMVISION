@@ -1,0 +1,96 @@
+{% extends 'projeng_base.html' %}
+{% block content %}
+<div class="container mx-auto p-6 bg-white shadow-md rounded-lg">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-3xl font-bold text-gray-800">Project Details: {{ project.name }}</h1>
+        <a href="{% url 'projeng_project_analytics' project.pk %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+            View Analytics
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="border-r pr-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Basic Information</h2>
+            <div class="space-y-3">
+                <p><strong class="font-medium text-gray-600">PRN:</strong> {{ project.prn|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Description:</strong> {{ project.description|default:"N/A" }}</p>
+                <div class="flex items-center gap-2">
+                     <strong class="font-medium text-gray-600">Status:</strong>
+                     <select id="project-status" class="rounded-md border border-gray-300 px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
+                         {% for value, text in project.STATUS_CHOICES %}
+                             <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>{{ text }}</option>
+                         {% endfor %}
+                     </select>
+                 </div>
+                <p><strong class="font-medium text-gray-600">Start Date:</strong> {{ project.start_date|date:"F j, Y"|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">End Date:</strong> {{ project.end_date|date:"F j, Y"|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Last Update:</strong> {{ project.last_update|date:"F j, Y"|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Created By:</strong> {{ project.created_by.get_full_name|default:project.created_by.username }}</p>
+                 <p><strong class="font-medium text-gray-600">Assigned Engineers:</strong>
+                    {% for engineer in project.assigned_engineers.all %}
+                        {{ engineer.get_full_name|default:engineer.username }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        N/A
+                    {% endfor %}
+                </p>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Location & Financials</h2>
+            <div class="space-y-3">
+                <p><strong class="font-medium text-gray-600">Barangay:</strong> {{ project.barangay|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Latitude:</strong> {{ project.latitude|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Longitude:</strong> {{ project.longitude|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Project Cost:</strong> {{ project.project_cost|default:"N/A" }}</p>
+                <p><strong class="font-medium text-gray-600">Source of Funds:</strong> {{ project.source_of_funds|default:"N/A" }}</p>
+            </div>
+            {% if project.image %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Project Image</h3>
+                <img src="{{ project.image.url }}" alt="Project Image" class="max-w-full h-auto rounded-md shadow">
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('project-status').addEventListener('change', function() {
+        const newStatus = this.value;
+        const projectId = {{ project.pk }};
+        const url = `{% url 'projeng_update_project_status' project.pk %}`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Status updated successfully:', data.new_status_display);
+                // Optionally update the status text on the page without a full reload
+                // const statusTextElement = document.querySelector('.project-status-text'); // You might want to add a class to your status text
+                // if (statusTextElement) {
+                //     statusTextElement.textContent = data.new_status_display;
+                // }
+            } else {
+                console.error('Error updating status:', data.error);
+                // Optionally revert the dropdown or show an error message to the user
+                // this.value = this.dataset.currentStatus; // Store current status in a data attribute
+                alert('Failed to update status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('An error occurred while updating status.');
+        });
+    });
+</script>
+
+{% endblock %} 

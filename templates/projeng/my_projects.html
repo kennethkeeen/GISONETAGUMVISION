@@ -1,0 +1,21 @@
+{% extends 'projeng_base.html' %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">My Projects</h1>
+    <div class="space-y-4">
+        {% for project in projects %}
+            <div class="bg-white rounded-xl shadow flex flex-col md:flex-row md:items-center justify-between px-6 py-4 gap-4">
+                <div>
+                    <div class="text-lg font-semibold text-gray-800">{{ project.title }}</div>
+                    <div class="text-sm text-gray-500">{{ project.status }} • Last Update: {{ project.last_update }}</div>
+                    <div class="text-sm text-gray-600 mt-1">{{ project.description }}</div>
+                    <div class="text-sm text-gray-500">Dates: {{ project.start_date }} to {{ project.end_date }}</div>
+                </div>
+                <a href="{% url 'projeng_project_detail' project.pk %}" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition inline-block">View Details</a>
+            </div>
+        {% empty %}
+            <p>No projects assigned yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

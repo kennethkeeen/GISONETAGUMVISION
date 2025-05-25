@@ -1,0 +1,337 @@
+{% load static %}
+{% load user_groups %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneTagumVision</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Leaflet and MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+</head>
+<body class="bg-gray-100 text-gray-900 h-screen">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-gray-100 flex flex-col items-center py-8 h-screen fixed top-0 left-0 overflow-y-auto z-50">
+            <!-- Logo/Icon -->
+            <div class="mb-8">
+                <a href="{% url 'home' %}" class="flex flex-col items-center group">
+                    <!-- City development SVG icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto group-hover:scale-110 transition-transform text-blue-500" viewBox="0 0 64 64" fill="none">
+                        <rect x="6" y="32" width="10" height="22" fill="#3B82F6"/>
+                        <rect x="20" y="24" width="12" height="30" fill="#2563EB"/>
+                        <rect x="36" y="16" width="10" height="38" fill="#1E40AF"/>
+                        <rect x="50" y="40" width="8" height="14" fill="#60A5FA"/>
+                        <rect x="0" y="54" width="64" height="4" fill="#1E293B"/>
+                        <rect x="12" y="38" width="2" height="4" fill="#FBBF24"/>
+                        <rect x="26" y="30" width="2" height="4" fill="#FBBF24"/>
+                        <rect x="42" y="22" width="2" height="4" fill="#FBBF24"/>
+                    </svg>
+                    <span class="block mt-2 text-xl font-bold tracking-wide text-blue-100">OneTagumVision</span>
+                </a>
+            </div>
+            <!-- Navigation -->
+            <nav class="flex flex-col gap-4 w-full px-4 flex-grow">
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-800{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6m-6 0H7m6 0v6m0 0H7m6 0h6" /></svg>
+                    Dashboard
+                </a>
+                <a href="{% url 'map_view' %}" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 {% if request.resolver_match.url_name == 'map_view' %}bg-gray-800{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67" />
+                    </svg>
+                    Map
+                </a>
+                <a href="{% url 'project_list' %}" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base font-medium rounded-md">
+                    <svg class="mr-4 h-6 w-6 text-gray-400 group-hover:text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Projects
+                </a>
+                {% if user|has_group:"Head Engineer" %}
+                <a href="{% url 'head_engineer_analytics' %}" class="text-gray-300 hover:bg-gray-700 hover:text-white group flex items-center px-2 py-2 text-base font-medium rounded-md">
+                    <svg class="mr-4 h-6 w-6 text-gray-400 group-hover:text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    All Projects Analytics
+                </a>
+                {% endif %}
+                <a href="{% url 'reports' %}" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 {% if request.resolver_match.url_name == 'reports' %}bg-gray-800{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 018 0v2m-4-4V7m0 0V3m0 4a4 4 0 00-4 4v4" />
+                    </svg>
+                    Reports
+                </a>
+
+                {# Engineers Dropdown #}
+                <div class="relative w-full">
+                    <button class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 w-full text-left focus:outline-none">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c0 1.49-.293 2.96-.856 4.369a20.061 20.061 0 01-2.615 3.556M16 14c0 1.49-.293 2.96-.856 4.369a20.061 20.061 0 01-2.615 3.556"/>
+                        </svg>
+                        Engineers
+                         <svg class="ml-auto h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="engineers-dropdown-content" class="absolute left-0 top-full mt-0 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10 hidden">
+                         {# Dynamic engineer links will be added here by JavaScript #}
+                    </div>
+                </div>
+            </nav>
+            <!-- Logout Button -->
+            <div class="w-full px-4 mt-auto">
+                <a href="{% url 'logout' %}" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 text-red-400 hover:text-red-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+        <!-- Main Content -->
+        <main class="flex-1 h-full bg-gray-100 text-gray-900 ml-64">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <!-- Leaflet and MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        // JavaScript for Engineers dropdown
+        const engineersDropdownButton = document.querySelector('.relative.w-full > button');
+        const engineersDropdownContent = document.getElementById('engineers-dropdown-content');
+        let engineersLoaded = false;
+
+        if (engineersDropdownButton && engineersDropdownContent) {
+            console.log('Engineers dropdown elements found. Attaching event listener.');
+            // Use click to toggle dropdown and fetch data
+            engineersDropdownButton.addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent default button behavior if it was a link
+                console.log('Engineers button clicked. Toggling dropdown visibility.');
+                engineersDropdownContent.classList.toggle('hidden'); // Toggle visibility
+
+                // Fetch engineers only the first time the dropdown is opened
+                if (!engineersLoaded) {
+                    console.log('Engineers not yet loaded. Attempting to fetch...');
+                    fetch('{% url "get_project_engineers" %}')
+                        .then(response => {
+                            console.log('Fetch response received.', response);
+                            if (!response.ok) {
+                                console.error('Fetch failed with status:', response.status);
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json()
+                        })
+                        .then(data => {
+                            console.log('Engineers data received:', data);
+                            // Clear existing content (should be empty initially now)
+                            engineersDropdownContent.innerHTML = '';
+                            console.log('Cleared dropdown content before populating.');
+
+                            // Add engineer links
+                            if (data.length > 0) {
+                                data.forEach(engineer => {
+                                    const link = document.createElement('a');
+                                    link.href = '#';
+                                    link.classList.add('block', 'px-4', 'py-2', 'text-sm', 'text-gray-200', 'hover:bg-gray-700');
+                                    link.textContent = engineer.full_name || engineer.username;
+                                    link.setAttribute('data-id', engineer.id);
+                                    link.setAttribute('data-username', engineer.username);
+                                    link.setAttribute('data-full-name', engineer.full_name || engineer.username);
+                                    engineersDropdownContent.appendChild(link);
+                                    console.log(`Appended link for ${engineer.username}`);
+                                });
+
+                                // Add click listeners to the newly created engineer links
+                                engineersDropdownContent.querySelectorAll('a').forEach(engineerLink => {
+                                    engineerLink.addEventListener('click', function(e) {
+                                        e.preventDefault(); // Prevent the default link behavior
+                                        const engineerId = this.getAttribute('data-id');
+                                        const engineerUsername = this.getAttribute('data-username');
+                                        const engineerFullName = this.getAttribute('data-full-name');
+                                        
+                                        // Call the function to show the modal
+                                        showEngineerProjectsModal({ id: engineerId, username: engineerUsername, full_name: engineerFullName });
+                                        
+                                        // Optionally close the dropdown after clicking
+                                        engineersDropdownContent.classList.add('hidden');
+                                    });
+                                });
+
+                            } else {
+                                const noEngineers = document.createElement('span');
+                                noEngineers.classList.add('block', 'px-4', 'py-2', 'text-sm', 'text-gray-400');
+                                noEngineers.textContent = 'No engineers found';
+                                engineersDropdownContent.appendChild(noEngineers);
+                            }
+                            engineersLoaded = true;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching engineers:', error);
+                            engineersDropdownContent.innerHTML = ''; // Clear existing
+                             const errorItem = document.createElement('span');
+                             errorItem.classList.add('block', 'px-4', 'py-2', 'text-sm', 'text-red-400');
+                             errorItem.textContent = 'Error loading engineers';
+                             engineersDropdownContent.appendChild(errorItem);
+                        });
+                }
+            });
+        }
+        console.log('Engineers dropdown script finished setup.');
+    </script>
+
+    <!-- Engineer Projects Modal -->
+    <div id="engineer-projects-modal" class="fixed inset-0 z-[10001] flex items-center justify-center bg-black bg-opacity-40 hidden">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-0 relative mx-4 my-8 max-h-[90vh] overflow-y-auto animate-modal-scale">
+        <div class="bg-blue-700 rounded-t-3xl px-8 py-6 flex items-center gap-4">
+          <div id="engineer-avatar" class="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center text-2xl font-bold text-blue-800"></div>
+          <span class="text-2xl font-extrabold text-white" id="engineer-modal-title">Engineer Projects</span>
+          <button id="close-engineer-projects-modal" class="ml-auto text-white text-2xl hover:text-blue-200">&times;</button>
+        </div>
+        <div class="flex flex-col items-center px-8 pt-6 pb-4">
+          <div class="w-full">
+            <div id="engineer-modal-project-list" class="mb-6 space-y-3"></div>
+            <div class="mb-2 text-lg font-semibold text-blue-900">Projects by Status</div>
+            <div class="bg-gray-50 rounded-xl p-4 shadow">
+              <canvas id="engineer-modal-graph" class="w-full h-64"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    // Engineer modal logic
+    const engineerProjectsModal = document.getElementById('engineer-projects-modal');
+    const closeEngineerProjectsModal = document.getElementById('close-engineer-projects-modal');
+    const engineerModalTitle = document.getElementById('engineer-modal-title');
+    const engineerModalProjectList = document.getElementById('engineer-modal-project-list');
+    const engineerModalGraph = document.getElementById('engineer-modal-graph');
+    const engineerAvatar = document.getElementById('engineer-avatar');
+    let engineerChart = null;
+
+    function showEngineerProjectsModal(engineer) {
+      // Set modal title and avatar
+      engineerModalTitle.textContent = `${engineer.full_name || engineer.username}'s Projects`;
+      const initials = (engineer.full_name || engineer.username).split(' ').map(n => n[0]).join('').toUpperCase();
+      engineerAvatar.textContent = initials;
+      // Show modal
+      engineerProjectsModal.classList.remove('hidden');
+      // Fetch projects for this engineer
+      fetch(`/api/engineer-projects/${engineer.id}/`)
+        .then(res => res.json())
+        .then(data => {
+          // List projects
+          const projects = data.projects || [];
+          engineerModalProjectList.innerHTML = ''; // Clear existing list
+
+          if (projects.length > 0) {
+            // Group projects by status
+            const projectsByStatus = projects.reduce((acc, project) => {
+              const status = project.status || 'Unknown';
+              if (!acc[status]) {
+                acc[status] = [];
+              }
+              acc[status].push(project);
+              return acc;
+            }, {});
+
+            // Define a preferred order for statuses
+            const statusOrder = ['ongoing', 'in_progress', 'planned', 'pending', 'completed', 'delayed', 'cancelled', 'Unknown'];
+
+            // Generate HTML for status sections and project cards
+            let projectsHtml = '';
+            statusOrder.forEach(status => {
+              const projectsInStatus = projectsByStatus[status];
+              if (projectsInStatus && projectsInStatus.length > 0) {
+                // Add status heading (now as a card)
+                const statusDisplay = status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1);
+                projectsHtml += `
+                  <div class="bg-white rounded-lg shadow px-4 py-3 border border-gray-200 flex items-center justify-between mb-3 mt-2">
+                    <div class="text-lg font-semibold text-blue-900">${statusDisplay}</div>
+                    <span class="text-lg font-bold text-gray-700">${projectsInStatus.length}</span>
+                  </div>
+                `;
+              }
+            });
+
+            engineerModalProjectList.innerHTML = projectsHtml;
+
+          } else {
+            engineerModalProjectList.innerHTML = `
+              <div class="flex flex-col items-center py-8">
+                <svg class="w-16 h-16 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="text-gray-500">No projects assigned.</div>
+              </div>
+            `;
+          }
+          // Render status graph
+          const statusCounts = data.status_counts || {};
+          const statuses = Object.keys(statusCounts);
+          const counts = statuses.map(s => statusCounts[s]);
+          if (engineerChart) engineerChart.destroy();
+          engineerChart = new Chart(engineerModalGraph, {
+            type: 'bar',
+            data: {
+              labels: statuses,
+              datasets: [{
+                label: 'Projects by Status',
+                data: counts,
+                backgroundColor: ['#3B82F6', '#F59E42', '#10B981', '#FBBF24'],
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: { y: { beginAtZero: true, precision: 0 } }
+            }
+          });
+        });
+    }
+
+    // Attach click handler to engineer links after they are loaded
+    function setupEngineerLinks() {
+      const links = document.querySelectorAll('#engineers-dropdown-content a');
+      links.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const id = link.getAttribute('data-id');
+          const engineer = window.engineersData.find(e => String(e.id) === String(id));
+          if (engineer) showEngineerProjectsModal(engineer);
+        });
+      });
+    }
+    // Patch the dropdown fetch to save data and setup links
+    window.engineersData = [];
+    const engineersDropdownButton2 = document.querySelector('.relative.w-full > button');
+    const engineersDropdownContent2 = document.getElementById('engineers-dropdown-content');
+    if (engineersDropdownButton2 && engineersDropdownContent2) {
+      engineersDropdownButton2.addEventListener('click', function() {
+        setTimeout(() => {
+          // Save data if not already
+          if (engineersDropdownContent2.children.length) {
+            window.engineersData = Array.from(engineersDropdownContent2.children)
+              .filter(el => el.tagName === 'A')
+              .map(el => ({ username: el.textContent, full_name: el.textContent, id: el.getAttribute('data-id') }));
+          }
+          setupEngineerLinks();
+        }, 300);
+      });
+    }
+    // Close modal
+    if (closeEngineerProjectsModal) {
+      closeEngineerProjectsModal.addEventListener('click', () => {
+        engineerProjectsModal.classList.add('hidden');
+        if (engineerChart) engineerChart.destroy();
+      });
+    }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8 bg-gray-100 min-h-screen">
+    <!-- Welcome Section -->
+    <div class="flex flex-col items-center justify-center w-full text-center px-6 py-4 bg-white shadow-md rounded-lg mb-8">
+        <h1 class="text-4xl font-extrabold text-gray-800">Welcome to OneTagumVision</h1>
+    </div>
+
+    <!-- Top Row: Navigation Cards and Recent Projects -->
+    <div class="flex flex-col md:flex-row gap-8 mb-8">
+        <!-- Navigation Cards Section -->
+        <div class="w-full md:w-1/3">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Navigation</h2>
+            <div class="grid grid-cols-1 gap-4">
+                <!-- Map Card -->
+                <a href="{% url 'map_view' %}" class="bg-white rounded-lg shadow p-4 flex items-center hover:-translate-y-1 hover:shadow-lg transition-transform duration-200 group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 mr-3 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67" />
+                    </svg>
+                    <div>
+                        <div class="text-lg font-bold text-gray-800">Map</div>
+                        <div class="text-gray-600 text-sm">View and explore project locations</div>
+                    </div>
+                </a>
+                <!-- Project List Card -->
+                <a href="{% url 'project_list' %}" class="bg-white rounded-lg shadow p-4 flex items-center hover:-translate-y-1 hover:shadow-lg transition-transform duration-200 group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600 mr-3 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
+                    </svg>
+                    <div>
+                        <div class="text-lg font-bold text-gray-800">Projects</div>
+                        <div class="text-gray-600 text-sm">Manage and view project details</div>
+                    </div>
+                </a>
+                <!-- Reports Card -->
+                <a href="{% url 'reports' %}" class="bg-white rounded-lg shadow p-4 flex items-center hover:-translate-y-1 hover:shadow-lg transition-transform duration-200 group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 mr-3 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 018 0v2m-4-4V7m0 0V3m0 4a4 4 0 00-4 4v4" />
+                    </svg>
+                    <div>
+                        <div class="text-lg font-bold text-gray-800">Reports</div>
+                        <div class="text-gray-600 text-sm">Generate reports</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Projects Section -->
+        <div class="w-full md:w-2/3 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Recent Projects</h2>
+            <ul class="space-y-4">
+                {% for project in recent_projects %}
+                <li class="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 hover:bg-gray-100 transition duration-200">
+                    <div>
+                        <span class="font-semibold text-gray-800">{{ project.name }}</span>
+                        <span class="ml-2 text-xs px-2 py-1 rounded-full {% if project.status == 'completed' %}bg-green-100 text-green-700{% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-700{% endif %}">{{ project.status|title }}</span>
+                    </div>
+                    <span class="text-gray-500 text-xs">{{ project.created_at|date:"M d, Y" }}</span>
+                </li>
+                {% empty %}
+                <li class="text-gray-600">No recent projects.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Metrics and Chart Section -->
+    <div class="flex flex-col md:flex-row gap-8 mb-8 bg-white rounded-lg shadow-md p-6">
+        <!-- Dashboard Metrics Section -->
+        <div class="w-full md:w-1/3">
+             <h2 class="text-2xl font-bold text-gray-800 mb-6">Overall Project Metrics</h2>
+            <div class="grid grid-cols-1 gap-6">
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                    <div class="bg-blue-100 text-blue-700 rounded-full p-3 mr-4 flex-shrink-0">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6m-6 0H7m6 0v6m0 0H7m6 0h6" /></svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-blue-700">{{ project_count }}</div>
+                        <div class="text-gray-600 text-sm">Total Projects</div>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-green-50 rounded-lg">
+                    <div class="bg-green-100 text-green-700 rounded-full p-3 mr-4 flex-shrink-0">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-600">{{ completed_count }}</div>
+                        <div class="text-gray-600 text-sm">Completed</div>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-yellow-50 rounded-lg">
+                    <div class="bg-yellow-100 text-yellow-700 rounded-full p-3 mr-4 flex-shrink-0">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-yellow-500">{{ in_progress_count }}</div>
+                        <div class="text-gray-600 text-sm">In Progress</div>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-red-50 rounded-lg">
+                    <div class="bg-red-100 text-red-700 rounded-full p-3 mr-4 flex-shrink-0">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-red-600">{{ delayed_count }}</div>
+                        <div class="text-gray-600 text-sm">Delayed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Status Chart Section -->
+        <div class="w-full md:w-2/3">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Project Status Overview Chart</h2>
+            <div class="chart-container" style="position: relative; height:35vh; width:100%">
+                <canvas id="projectStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Any remaining content would go here -->
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('projectStatusChart').getContext('2d');
+        const projectStatusChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Total', 'Completed', 'In Progress', 'Delayed'],
+                datasets: [{
+                    label: 'Number of Projects',
+                    data: [{{ project_count }}, {{ completed_count }}, {{ in_progress_count }}, {{ delayed_count }}],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',  // blue-500 with alpha
+                        'rgba(34, 197, 94, 0.8)',   // green-500 with alpha
+                        'rgba(251, 191, 36, 0.8)',  // yellow-500 with alpha
+                        'rgba(239, 68, 68, 0.8)'    // red-500 with alpha
+                    ],
+                    borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(251, 191, 36, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Details - {{ project.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f9f9f9; }
+        .container { max-width: 700px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .label { font-weight: bold; color: #333; }
+        .value { margin-bottom: 18px; }
+        .project-image { max-width: 100%; height: auto; margin-bottom: 18px; border-radius: 6px; }
+        .back-link { margin-top: 30px; display: inline-block; color: #007bff; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Project Details</h1>
+        {% if project.image %}
+            <img src="{{ project.image.url }}" alt="Project Image" class="project-image">
+        {% endif %}
+        <div class="value"><span class="label">PRN:</span> {{ project.prn }}</div>
+        <div class="value"><span class="label">Name:</span> {{ project.name }}</div>
+        <div class="value"><span class="label">Description:</span> {{ project.description }}</div>
+        <div class="value"><span class="label">Barangay:</span> {{ project.barangay }}</div>
+        <div class="value"><span class="label">Project Cost:</span> {{ project.project_cost }}</div>
+        <div class="value"><span class="label">Source of Funds:</span> {{ project.source_of_funds }}</div>
+        <div class="value"><span class="label">Status:</span> {{ project.get_status_display }}</div>
+        <div class="value"><span class="label">Progress:</span> 
+            {% if latest_progress %}
+                <div style="width:100%;background:#eee;border-radius:6px;height:18px;overflow:hidden;margin-top:4px;">
+                    <div style="width:{{ latest_progress.percentage_complete }}%;background:#3490dc;height:100%;border-radius:6px;"></div>
+                </div>
+                <span>{{ latest_progress.percentage_complete }}% Complete</span>
+            {% else %}
+                0%
+            {% endif %}
+        </div>
+        <div class="value"><span class="label">Latitude:</span> {{ project.latitude }}</div>
+        <div class="value"><span class="label">Longitude:</span> {{ project.longitude }}</div>
+        <div class="value"><span class="label">Start Date:</span> {{ project.start_date }}</div>
+        <div class="value"><span class="label">End Date:</span> {{ project.end_date }}</div>
+        <div class="value"><span class="label">Created At:</span> {{ project.created_at }}</div>
+        <div class="value"><span class="label">Updated At:</span> {{ project.updated_at }}</div>
+        <div class="value"><span class="label">Assigned Engineers:</span>
+            {% for engineer in project.assigned_engineers.all %}
+                {{ engineer.get_full_name|default:engineer.username }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                None
+            {% endfor %}
+        </div>
+        <!-- Progress Updates Section -->
+        <div style="margin-top:40px;">
+            <h2 style="font-size:1.3em;font-weight:bold;margin-bottom:12px;">Progress Updates</h2>
+            {% if progress_updates and progress_updates|length > 0 %}
+                <div id="progress-updates">
+                    {% for update in progress_updates %}
+                        <div class="progress-card" onclick="toggleUpdateDetails(this)" style="border:1px solid #ddd;border-radius:8px;margin-bottom:12px;padding:12px;cursor:pointer;background:#f9f9f9;transition:box-shadow 0.2s;">
+                            <div class="progress-summary" style="font-weight:bold;display:flex;gap:12px;">
+                                <span>{{ update.date }}</span>
+                                <span>{{ update.percentage_complete }}%</span>
+                                <span>by {{ update.created_by.get_full_name|default:update.created_by.username }}</span>
+                            </div>
+                            <div class="progress-details" style="margin-top:8px;display:none;">
+                                <div>{{ update.description }}</div>
+                                <div style="margin-top:8px;">
+                                    {% for photo in update.photos.all %}
+                                        <img src="{{ photo.image.url }}" alt="Progress Photo" style="max-width:80px;margin-right:6px;border-radius:4px;border:1px solid #ccc;">
+                                    {% empty %}
+                                        <span style="color:#aaa;">No photos</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <script>
+                function toggleUpdateDetails(card) {
+                    var details = card.querySelector('.progress-details');
+                    if (details.style.display === 'none' || !details.style.display) {
+                        details.style.display = 'block';
+                    } else {
+                        details.style.display = 'none';
+                    }
+                }
+                </script>
+            {% else %}
+                <div style="color:#888;">No progress updates yet.</div>
+            {% endif %}
+        </div>
+        <!-- End Progress Updates Section -->
+        <a href="{% url 'project_list' %}" class="back-link">← Back to Projects</a>
+    </div>
+</body>
+</html> 

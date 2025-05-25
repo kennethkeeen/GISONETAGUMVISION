@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen w-full max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-col">
+  <!-- Header: Title -->
+  <div class="mb-2">
+    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Project Reports</h1>
+  </div>
+  <!-- Filters Row with Print Button on Right -->
+  <div class="flex flex-row gap-4 items-center mb-8">
+    <input id="filter-start-date" type="date" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm" placeholder="Start Date">
+    <input id="filter-end-date" type="date" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm" placeholder="End Date">
+    <select id="filter-barangay" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm">
+      <option>All Barangays</option>
+      <option>Apokon</option>
+      <option>Bincungan</option>
+      <option>Busaon</option>
+      <option>Canocotan</option>
+      <option>Cuambogan</option>
+      <option>La Filipina</option>
+      <option>Liboganon</option>
+      <option>Madaum</option>
+      <option>Magdum</option>
+      <option>Magugpo North</option>
+      <option>Magugpo South</option>
+      <option>Magugpo East</option>
+      <option>Magugpo West</option>
+      <option>Magugpo Poblacion</option>
+      <option>Mankilam</option>
+      <option>New Balamban</option>
+      <option>Nueva Fuerza</option>
+      <option>Pagsabangan</option>
+      <option>Pandapan</option>
+      <option>San Agustin</option>
+      <option>San Isidro</option>
+      <option>San Miguel</option>
+      <option>Visayan Village</option>
+    </select>
+    <select id="filter-status" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm">
+      <option>All Status</option>
+      <option>Completed</option>
+      <option>Ongoing</option>
+      <option>Planned</option>
+      <option>Delayed</option>
+    </select>
+    <input id="filter-search" type="text" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm w-56" placeholder="Search projects...">
+    <div class="ml-auto">
+      <button id="export-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-base font-semibold shadow-sm hover:bg-blue-700 transition">Print</button>
+    </div>
+  </div>
+
+  <!-- Main Content: Summary, Charts, Table -->
+  <div class="flex-1 flex flex-col min-h-0">
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 mb-4 md:mb-6 flex-shrink-0">
+      <div id="card-total" class="bg-white rounded-xl shadow p-4 md:p-5 flex flex-col items-center">
+        <span class="text-xl md:text-3xl font-extrabold text-blue-700">0</span>
+        <span class="mt-1 md:mt-2 text-gray-600 font-semibold text-xs md:text-base">Total Projects</span>
+      </div>
+      <div id="card-completed" class="bg-white rounded-xl shadow p-4 md:p-5 flex flex-col items-center">
+        <span class="text-xl md:text-3xl font-extrabold text-green-600">0</span>
+        <span class="mt-1 md:mt-2 text-gray-600 font-semibold text-xs md:text-base">Completed</span>
+      </div>
+      <div id="card-ongoing" class="bg-white rounded-xl shadow p-4 md:p-5 flex flex-col items-center">
+        <span class="text-xl md:text-3xl font-extrabold text-blue-600">0</span>
+        <span class="mt-1 md:mt-2 text-gray-600 font-semibold text-xs md:text-base">Ongoing</span>
+      </div>
+      <div id="card-planned" class="bg-white rounded-xl shadow p-4 md:p-5 flex flex-col items-center">
+        <span class="text-xl md:text-3xl font-extrabold text-yellow-500">0</span>
+        <span class="mt-1 md:mt-2 text-gray-600 font-semibold text-xs md:text-base">Planned</span>
+      </div>
+      <div id="card-delayed" class="bg-white rounded-xl shadow p-4 md:p-5 flex flex-col items-center">
+        <span class="text-xl md:text-3xl font-extrabold text-red-600">0</span>
+        <span class="mt-1 md:mt-2 text-gray-600 font-semibold text-xs md:text-base">Delayed</span>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-6 flex-shrink-0">
+      <div class="bg-white rounded-xl shadow p-4 md:p-5">
+        <h2 class="text-base md:text-lg font-bold mb-2 md:mb-4 text-gray-800">Projects by Status</h2>
+        <canvas id="barChart" height="120"></canvas>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 md:p-5">
+        <h2 class="text-base md:text-lg font-bold mb-2 md:mb-4 text-gray-800">Projects by Barangay</h2>
+        <canvas id="pieChart" height="120"></canvas>
+      </div>
+    </div>
+
+    <!-- Table (scrollable if needed) -->
+    <!-- Project list table removed from main page as requested -->
+
+  </div>
+
+  <!-- Project List Modal -->
+  <div id="project-list-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-2xl shadow-lg p-10 w-full max-w-full mx-auto relative">
+      <button id="close-modal-btn" class="absolute top-4 right-16 text-gray-500 hover:text-gray-700 text-2xl font-bold">&times;</button>
+      <div class="absolute top-4 right-4">
+        <button id="modal-export-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-base font-semibold shadow-sm hover:bg-blue-700 transition flex items-center">Export <span class="ml-2">▼</span></button>
+        <div id="modal-export-dropdown" class="hidden absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-10">
+          <a href="#" id="modal-export-pdf" class="block px-4 py-2 hover:bg-gray-100">Export as PDF</a>
+          <a href="#" id="modal-export-csv" class="block px-4 py-2 hover:bg-gray-100">Export as CSV</a>
+          <a href="#" id="modal-export-excel" class="block px-4 py-2 hover:bg-gray-100">Export as Excel</a>
+        </div>
+      </div>
+      <h2 class="text-2xl font-bold mb-4 text-gray-800">Project List</h2>
+      <div class="overflow-auto max-h-[60vh]">
+        <table id="modal-report-table" class="min-w-[1200px] w-full divide-y divide-gray-200 text-base">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">#</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">PRN#</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">Name of Project</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">Project Description</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">Location</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200 min-w-[130px]">Project Cost</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200 min-w-[180px]">Source of Funds</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">Date Started</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">Date Ended</th>
+              <th class="px-4 py-2 text-center font-semibold text-gray-700 border border-gray-200">Status</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-100">
+            <!-- Table rows will be rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Controller -->
+      <div class="flex justify-end items-center mt-4">
+        <nav id="modal-pagination" class="flex space-x-1"></nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Declare filteredProjects globally
+let filteredProjects = [];
+
+// Example data, replace with Django context variables
+const statusLabels = {{ status_labels|safe }};
+const statusCounts = {{ status_counts|safe }};
+const barangayLabels = {{ barangay_labels|safe }};
+const barangayCounts = {{ barangay_counts|safe }};
+const allProjects = JSON.parse('{{ projects_json|escapejs }}');
+
+// Bar Chart
+const barCtx = document.getElementById('barChart').getContext('2d');
+const barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: statusLabels,
+        datasets: [{
+            label: 'Projects',
+            data: statusCounts,
+            backgroundColor: [
+                '#3B82F6', '#10B981', '#F59E0B', '#F87171', '#6366F1', '#F472B6'
+            ],
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+
+// Pie Chart
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+const pieChart = new Chart(pieCtx, {
+    type: 'pie',
+    data: {
+        labels: barangayLabels,
+        datasets: [{
+            data: barangayCounts,
+            backgroundColor: [
+                '#3B82F6', '#10B981', '#F59E0B', '#F87171', '#6366F1', '#F472B6', '#34D399', '#FBBF24', '#A78BFA', '#FCA5A5', '#6EE7B7', '#FDE68A', '#C4B5FD', '#F9A8D4', '#FCD34D', '#818CF8', '#FECACA', '#A7F3D0', '#FDE68A', '#DDD6FE', '#FBCFE8', '#FDE68A', '#C7D2FE'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// Filtering logic
+const filterStartDate = document.getElementById('filter-start-date');
+const filterEndDate = document.getElementById('filter-end-date');
+const filterBarangay = document.getElementById('filter-barangay');
+const filterStatus = document.getElementById('filter-status');
+const filterSearch = document.getElementById('filter-search');
+
+function normalizeStatus(status) {
+    if (!status) return '';
+    status = status.toLowerCase();
+    if (status === 'in_progress' || status === 'ongoing') return 'Ongoing';
+    if (status === 'planned' || status === 'pending') return 'Planned';
+    if (status === 'completed') return 'Completed';
+    if (status === 'delayed') return 'Delayed';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function filterAndRender() {
+    const barangay = filterBarangay.value;
+    const status = filterStatus.value;
+    const search = filterSearch.value.trim().toLowerCase();
+    const startDate = filterStartDate.value;
+    const endDate = filterEndDate.value;
+    // Filter projects
+    filteredProjects = allProjects.filter(p => {
+        const matchesBarangay = (
+            barangay === 'All Barangays' ||
+            (p.barangay && p.barangay.trim().toLowerCase() === barangay.trim().toLowerCase())
+        );
+        const matchesStatus = (
+            status === 'All Status' ||
+            normalizeStatus(p.status) === status
+        );
+        const matchesSearch = (
+            !search ||
+            (p.name && p.name.toLowerCase().includes(search)) ||
+            (p.barangay && p.barangay.toLowerCase().includes(search)) ||
+            (p.status && normalizeStatus(p.status).toLowerCase().includes(search))
+        );
+        // Date filter logic
+        let matchesDate = true;
+        if (startDate) {
+            matchesDate = matchesDate && p.start_date && (new Date(p.start_date) >= new Date(startDate));
+        }
+        if (endDate) {
+            matchesDate = matchesDate && p.end_date && (new Date(p.end_date) <= new Date(endDate));
+        }
+        return matchesBarangay && matchesStatus && matchesSearch && matchesDate;
+    });
+    // Update summary cards
+    document.querySelector('#card-total span').textContent = filteredProjects.length;
+    document.querySelector('#card-completed span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Completed').length;
+    document.querySelector('#card-ongoing span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Ongoing').length;
+    document.querySelector('#card-planned span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Planned').length;
+    document.querySelector('#card-delayed span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Delayed').length;
+    // Update charts
+    // Bar chart (status)
+    const statusMap = {};
+    filteredProjects.forEach(p => {
+        const s = normalizeStatus(p.status);
+        statusMap[s] = (statusMap[s] || 0) + 1;
+    });
+    barChart.data.labels = Object.keys(statusMap);
+    barChart.data.datasets[0].data = Object.values(statusMap);
+    barChart.update();
+    // Pie chart (barangay)
+    const barangayMap = {};
+    filteredProjects.forEach(p => {
+        if (p.barangay) barangayMap[p.barangay] = (barangayMap[p.barangay] || 0) + 1;
+    });
+    pieChart.data.labels = Object.keys(barangayMap);
+    pieChart.data.datasets[0].data = Object.values(barangayMap);
+    pieChart.update();
+}
+
+filterStartDate.addEventListener('change', filterAndRender);
+filterEndDate.addEventListener('change', filterAndRender);
+filterBarangay.addEventListener('change', filterAndRender);
+filterStatus.addEventListener('change', filterAndRender);
+filterSearch.addEventListener('input', filterAndRender);
+
+// Initial render
+filterAndRender();
+
+// Modal logic
+const projectListModal = document.getElementById('project-list-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const modalReportTable = document.getElementById('modal-report-table').getElementsByTagName('tbody')[0];
+const modalPagination = document.getElementById('modal-pagination');
+const modalExportBtn = document.getElementById('modal-export-btn');
+const modalExportDropdown = document.getElementById('modal-export-dropdown');
+const MODAL_PAGE_SIZE = 10;
+let modalCurrentPage = 1;
+
+// Open modal on Print button click
+const exportBtn = document.getElementById('export-btn');
+if (exportBtn) {
+  exportBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    filterAndRender(); // Ensure filteredProjects is up to date
+    projectListModal.classList.remove('hidden');
+    modalCurrentPage = 1;
+    renderModalTablePage(modalCurrentPage);
+    renderModalPagination();
+  });
+}
+
+// Close modal on close button click
+closeModalBtn.addEventListener('click', function() {
+    projectListModal.classList.add('hidden');
+});
+// Close modal when clicking outside the modal content
+projectListModal.addEventListener('click', function(e) {
+    if (e.target === projectListModal) {
+        projectListModal.classList.add('hidden');
+    }
+});
+
+// Render paginated filtered projects in modal
+function renderModalTablePage(page) {
+    modalReportTable.innerHTML = '';
+    const start = (page - 1) * MODAL_PAGE_SIZE;
+    const end = start + MODAL_PAGE_SIZE;
+    const pageProjects = filteredProjects.slice(start, end);
+    pageProjects.forEach((project, idx) => {
+        let statusBadge = '';
+        const normStatus = normalizeStatus(project.status);
+        if (normStatus === 'Completed') {
+            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Completed</span>';
+        } else if (normStatus === 'Ongoing') {
+            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Ongoing</span>';
+        } else if (normStatus === 'Planned') {
+            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Planned</span>';
+        } else if (normStatus === 'Delayed') {
+            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Delayed</span>';
+        } else {
+            statusBadge = normStatus;
+        }
+        modalReportTable.innerHTML += `
+        <tr class="border border-gray-200">
+            <td class="px-4 py-1 text-center align-middle border border-gray-200">${start + idx + 1}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200 break-words" title="${project.prn || ''}">${wrapAfterNWords(project.prn || '')}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200 break-words" title="${capitalize(project.name) || ''}">${wrapAfterNWords(capitalize(project.name) || '')}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200 break-words" title="${project.description || ''}">${wrapAfterNWords(project.description || '')}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200 break-words" title="${project.location || ''}">${wrapAfterNWords(project.location || '')}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200 min-w-[130px]" title="${project.project_cost || ''}">${formatCost(project.project_cost)}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200 min-w-[180px] break-words" title="${project.source_of_funds || ''}">${wrapAfterNWords(project.source_of_funds || '')}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200" title="${formatDate(project.start_date)}">${formatDate(project.start_date)}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200" title="${formatDate(project.end_date)}">${formatDate(project.end_date)}</td>
+            <td class="px-4 py-1 text-center align-middle border border-gray-200">${statusBadge}</td>
+        </tr>`;
+    });
+}
+
+function renderModalPagination() {
+    modalPagination.innerHTML = '';
+    const totalPages = Math.ceil(filteredProjects.length / MODAL_PAGE_SIZE);
+    if (totalPages <= 1) return;
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-2 py-1 rounded ${i === modalCurrentPage ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} text-xs font-semibold`;
+        btn.onclick = () => {
+            modalCurrentPage = i;
+            renderModalTablePage(modalCurrentPage);
+            renderModalPagination();
+        };
+        modalPagination.appendChild(btn);
+    }
+}
+
+// Update modal table and pagination when filters change
+filterStartDate.addEventListener('change', function() {
+    if (!projectListModal.classList.contains('hidden')) {
+        modalCurrentPage = 1;
+        renderModalTablePage(modalCurrentPage);
+        renderModalPagination();
+    }
+});
+filterEndDate.addEventListener('change', function() {
+    if (!projectListModal.classList.contains('hidden')) {
+        modalCurrentPage = 1;
+        renderModalTablePage(modalCurrentPage);
+        renderModalPagination();
+    }
+});
+filterBarangay.addEventListener('change', function() {
+    if (!projectListModal.classList.contains('hidden')) {
+        modalCurrentPage = 1;
+        renderModalTablePage(modalCurrentPage);
+        renderModalPagination();
+    }
+});
+filterStatus.addEventListener('change', function() {
+    if (!projectListModal.classList.contains('hidden')) {
+        modalCurrentPage = 1;
+        renderModalTablePage(modalCurrentPage);
+        renderModalPagination();
+    }
+});
+filterSearch.addEventListener('input', function() {
+    if (!projectListModal.classList.contains('hidden')) {
+        modalCurrentPage = 1;
+        renderModalTablePage(modalCurrentPage);
+        renderModalPagination();
+    }
+});
+
+// Modal Export Dropdown Logic
+modalExportBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    modalExportDropdown.classList.toggle('hidden');
+});
+document.addEventListener('click', function(e) {
+    if (!modalExportDropdown.classList.contains('hidden')) {
+        modalExportDropdown.classList.add('hidden');
+    }
+});
+modalExportDropdown.addEventListener('click', function(e) {
+    e.stopPropagation(); // Prevent closing when clicking inside dropdown
+});
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function formatCost(cost) {
+    if (!cost) return '';
+    // Remove commas and non-numeric except dot
+    const num = Number(String(cost).replace(/[^\d.]/g, ''));
+    if (isNaN(num)) return cost;
+    return num.toLocaleString();
+}
+function capitalize(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function wrapAfterNWords(str, n = 3) {
+    if (!str) return '';
+    const words = str.split(' ');
+    let result = '';
+    for (let i = 0; i < words.length; i++) {
+        result += words[i];
+        if ((i + 1) % n === 0 && i !== words.length - 1) {
+            result += '<br>';
+        } else if (i !== words.length - 1) {
+            result += ' ';
+        }
+    }
+    return result;
+}
+</script>
+{% endblock %} 
