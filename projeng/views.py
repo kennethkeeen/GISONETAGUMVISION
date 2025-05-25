@@ -253,8 +253,33 @@ def my_reports_view(request):
 
     # Get distinct barangays for filtering from the original assigned projects
     # This ensures all possible barangays are listed, even if no projects are currently shown for a barangay due to other filters.
-    all_assigned_projects = Project.objects.filter(assigned_engineers=request.user)
-    barangays = all_assigned_projects.values_list('barangay', flat=True).distinct().exclude(barangay__isnull=True).exclude(barangay__exact='').order_by('barangay')
+    # all_assigned_projects = Project.objects.filter(assigned_engineers=request.user)
+    # barangays = all_assigned_projects.values_list('barangay', flat=True).distinct().exclude(barangay__isnull=True).exclude(barangay__exact='').order_by('barangay')
+    barangays = [
+        "Apokon",
+        "Bincungan",
+        "Busaon",
+        "Canocotan",
+        "Cuambogan",
+        "La Filipina",
+        "Liboganon",
+        "Madaum",
+        "Magdum",
+        "Magugpo East",
+        "Magugpo North",
+        "Magugpo Poblacion",
+        "Magugpo South",
+        "Magugpo West",
+        "Mankilam",
+        "New Balamban",
+        "Nueva Fuerza",
+        "Pagsabangan",
+        "Pandapan",
+        "San Agustin",
+        "San Isidro",
+        "San Miguel",
+        "Visayan Village"
+    ]
     statuses = Project.STATUS_CHOICES # Use defined status choices
 
     # --- Pagination Logic ---
