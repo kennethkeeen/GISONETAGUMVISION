@@ -38,6 +38,43 @@ A Django-based platform for monitoring and visualizing government projects using
 
 6. Visit http://127.0.0.1:8000/ to view the project list and map.
 
+## Data Migration (Restore Database and Media Files)
+
+To fully restore the project with all data and uploaded files on a new machine:
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/kennethkeeen/GISONETAGUMVISION.git
+   cd GISONETAGUMVISION
+   ```
+
+2. **Install dependencies:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+3. **Restore the database:**
+   - If using SQLite, copy the `.sqlite3` file if present.
+   - If using a SQL dump (e.g., `gistagumdb.sql`), import it into your database system:
+     - For SQLite: You can use the file directly.
+     - For PostgreSQL/MySQL: Use your DB tool to import the `.sql` file.
+
+4. **Restore media files:**
+   - The `media/` and `project_images/` folders are included in the repository. No extra steps needed.
+
+5. **Run migrations (if needed):**
+   ```sh
+   python manage.py migrate
+   ```
+
+6. **Run the development server:**
+   ```sh
+   python manage.py runserver
+   ```
+
+7. **Access the app:**
+   - Visit http://127.0.0.1:8000/ in your browser.
+
 ## Usage
 
 - Admin: http://127.0.0.1:8000/admin/
