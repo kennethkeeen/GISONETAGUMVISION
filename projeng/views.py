@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 import json
-from django.contrib.gis.geos import GEOSGeometry
+# from django.contrib.gis.geos import GEOSGeometry  # Temporarily disabled
 from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument, Notification
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
@@ -341,15 +341,15 @@ def save_layer(request):
                     'error': 'Missing required fields'
                 })
             
-            # Convert GeoJSON to GEOS geometry
-            geos_geometry = GEOSGeometry(json.dumps(geometry))
+            # Convert GeoJSON to GEOS geometry - Temporarily disabled
+            # geos_geometry = GEOSGeometry(json.dumps(geometry))
             
             # Create new layer
             layer = Layer.objects.create(
                 name=name,
                 description=description,
                 type=layer_type,
-                geometry=geos_geometry,
+                # geometry=geos_geometry,  # Temporarily disabled
                 created_by=request.user
             )
             

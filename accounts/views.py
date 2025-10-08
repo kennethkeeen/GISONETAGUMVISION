@@ -5,10 +5,18 @@ def dual_login(request):
     print("dual_login view received a request.") # Debug print at the very beginning
     error = None
     if request.method == 'POST':
-        username = request.POST['username']
+        username = request.POST['username'].strip()
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            # Allow superusers to bypass group checks
+            if user.is_superuser:
+                print(f"Authenticated superuser: {user.username}")
+                login(request, user)
+                return redirect('/dashboard/')
+            # Debug: show user groups
+            user_groups = list(user.groups.values_list('name', flat=True))
+            print(f"Authenticated user: {user.username}, groups={user_groups}")
             if user.groups.filter(name='Finance Manager').exists():
                 login(request, user)
                 return redirect('/finance/dashboard/')

@@ -21,6 +21,9 @@ wheels/
 .installed.cfg
 *.egg
 venv/
+# Also ignore capitalized Windows path just in case
+Venv/
+Lib/
 .env
 
 # Node
@@ -38,6 +41,8 @@ yarn-error.log*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+# Collected/static & uploaded media
+staticfiles/
 media/
 
 # Virtual Environment

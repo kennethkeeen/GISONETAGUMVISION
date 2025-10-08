@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.gis.db import models as gis_models
+# from django.contrib.gis.db import models as gis_models  # Temporarily disabled
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
@@ -14,7 +14,7 @@ class Layer(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     type = models.CharField(max_length=20, choices=LAYER_TYPES)
-    geometry = gis_models.GeometryField()
+    # geometry = gis_models.GeometryField()  # Temporarily disabled - GIS functionality
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

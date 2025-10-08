@@ -25,7 +25,7 @@ INSTALLED_APPS = [
     'theme',
     'django_browser_reload',
     'monitoring',
-    'django.contrib.gis',
+    # 'django.contrib.gis',  # Temporarily disabled due to GDAL issues
     'projeng',
     'django_extensions',
 ]
@@ -65,12 +65,8 @@ WSGI_APPLICATION = 'gistagum.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'gistagum',
-        'USER': 'postgres',         # or your actual postgres username
-        'PASSWORD': '0613',# replace with your actual password
-        'HOST': 'localhost',
-        'PORT': '5432',             # default PostgreSQL port
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -120,7 +116,8 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Specify the path to the GDAL and GEOS libraries if auto-detection fails
-# Replace 'C:/OSGeo4W/bin/' with the actual path to your OSGeo4W bin directory
 if os.name == 'nt':  # Check if the operating system is Windows
     GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
-    GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll' 
+    GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+    # Add OSGeo4W bin to PATH for DLL dependencies
+    os.environ['PATH'] = r'C:\OSGeo4W\bin;' + os.environ['PATH'] 
