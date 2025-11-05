@@ -1,6 +1,11 @@
 import os
 from pathlib import Path
-import dj_database_url
+from urllib.parse import urlparse, parse_qsl
+
+try:
+    import dj_database_url  # type: ignore
+except Exception:  # linter-safe optional dependency
+    dj_database_url = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,9 +75,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gistagum.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/gistagum'))
-}
+if dj_database_url:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/gistagum')
+        )
+    }
+else:
+    tmp = urlparse(os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/gistagum'))
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': tmp.path.lstrip('/') or 'postgres',
+            'USER': tmp.username or 'postgres',
+            'PASSWORD': (tmp.password or '0613'),
+            'HOST': tmp.hostname or 'localhost',
+            'PORT': tmp.port or 5432,
+            'OPTIONS': dict(parse_qsl(tmp.query)) if tmp.query else {},
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
