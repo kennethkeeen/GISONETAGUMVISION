@@ -5,7 +5,6 @@ django-tailwind==4.0.1
 django-model-utils==4.3.1
 openpyxl==3.1.2
 xhtml2pdf==0.2.11
-GDAL @ file://C:/Users/kenne/OneDrive/Desktop/GISTAGUM/gdal-3.10.2-cp312-cp312-win_amd64.whl#sha256=720e9e45d057231d990aa536c41dd2bd96a97e93a3edde10fff5321b3496388b
 gunicorn==23.0.0
 packaging==25.0
 pillow==11.2.1
@@ -13,3 +12,6 @@ psycopg2-binary==2.9.9
 sqlparse==0.5.3
 tzdata==2025.2
 django-extensions
+whitenoise==6.7.0
+dj-database-url==2.2.0
+GDAL==3.10.*

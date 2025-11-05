@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: gistagum-web
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    region: singapore
+    healthCheckPath: /
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: gistagum.settings
+      - key: DEBUG
+        value: "false"
+      # Set in the Render dashboard after first deploy
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: gistagum-web.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://gistagum-web.onrender.com
+    disk:
+      name: media
+      mountPath: /app/media
+      sizeGB: 2
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate --noinput
+    startCommand: |
+      gunicorn gistagum.wsgi:application --bind 0.0.0.0:$PORT
+
+databases:
+  - name: gistagum-db
+    plan: starter
+    databaseName: gistagum
+    user: gistagum
+    ipAllowList: []
+

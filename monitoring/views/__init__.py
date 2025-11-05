@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from .finance_manager import finance_dashboard, finance_projects, finance_cost_management, finance_notifications
 from projeng.models import Project
 from django.contrib.auth.models import Group
@@ -12,8 +13,13 @@ from collections import Counter, defaultdict
 from monitoring.forms import ProjectForm
 
 def home(request):
-    return render(request, 'monitoring/home.html')
+    """
+    Redirect to login page - no direct access to home
+    """
+    from django.shortcuts import redirect
+    return redirect('login')
 
+@login_required
 def dashboard(request):
     from projeng.models import Project
     from collections import Counter, defaultdict
@@ -62,6 +68,7 @@ def dashboard(request):
     }
     return render(request, 'monitoring/dashboard.html', context)
 
+@login_required
 def project_list(request):
     if request.method == 'POST':
         form = ProjectForm(request.POST, request.FILES)
@@ -121,6 +128,7 @@ def project_list(request):
         'projects_data': projects_data,
     })
 
+@login_required
 def map_view(request):
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         projects = Project.objects.all()
@@ -150,6 +158,7 @@ def map_view(request):
         })
     return render(request, 'monitoring/map.html', {'projects_data': projects_data})
 
+@login_required
 def reports(request):
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):

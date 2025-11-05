@@ -33,5 +33,25 @@ def dual_login(request):
     return render(request, 'registration/dual_login.html', {'error': error})
 
 def custom_logout(request):
+    """
+    Secure logout that clears all session data and prevents back button access
+    """
+    # Log the logout action
+    if request.user.is_authenticated:
+        print(f"User {request.user.username} logged out")
+    
+    # Clear all session data
+    request.session.flush()
+    
+    # Logout the user
     logout(request)
-    return redirect('/accounts/login/')
+    
+    # Create response with security headers
+    response = redirect('/accounts/login/')
+    
+    # Add cache control headers to prevent back button access
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    
+    return response

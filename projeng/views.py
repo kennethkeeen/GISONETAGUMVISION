@@ -20,7 +20,11 @@ from django.db import models as _models
 import openpyxl
 import io
 from django.template import Context
-from xhtml2pdf import pisa
+# Optional xhtml2pdf import (allow running without reportlab)
+try:
+    from xhtml2pdf import pisa  # type: ignore
+except Exception:  # pragma: no cover - allow missing dep
+    pisa = None
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.forms.fields import DateField # Import DateField
@@ -853,6 +857,10 @@ def export_reports_pdf(request):
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
     # --- End Filtering ---
+
+    # If xhtml2pdf is unavailable, return a friendly message
+    if pisa is None:
+        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
 
     # Render the HTML template for the PDF
     template_path = 'projeng/reports/assigned_projects_pdf.html'
