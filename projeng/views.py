@@ -288,9 +288,25 @@ def my_reports_view(request):
 # Placeholder view for project detail
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def project_detail_view(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-
-    return render(request, 'projeng/project_detail.html', {'project': project})
+    try:
+        # Optimize query with select_related and prefetch_related
+        project = Project.objects.select_related('created_by').prefetch_related('assigned_engineers').get(pk=pk)
+        
+        # Check permissions - head engineers can see all, project engineers only their assigned
+        if not is_head_engineer(request.user):
+            if request.user not in project.assigned_engineers.all():
+                raise PermissionDenied("You are not assigned to this project.")
+        
+        return render(request, 'projeng/project_detail.html', {'project': project})
+    except Project.DoesNotExist:
+        raise Http404("Project does not exist.")
+    except PermissionDenied:
+        return HttpResponseForbidden("You are not assigned to view this project.")
+    except Exception as e:
+        logging.error(f"Error in project_detail_view: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return HttpResponseServerError(f"An error occurred: {str(e)}")
 
 @user_passes_test(is_project_engineer, login_url='/accounts/login/')
 @csrf_exempt # Use csrf_exempt for simplicity in development, consider csrf_protect in production
