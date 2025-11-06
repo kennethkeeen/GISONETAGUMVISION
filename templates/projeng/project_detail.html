@@ -16,7 +16,7 @@
                 <div class="flex items-center gap-2">
                      <strong class="font-medium text-gray-600">Status:</strong>
                      <select id="project-status" class="rounded-md border border-gray-300 px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" title="Change project status">
-                         {% for value, text in project.STATUS_CHOICES %}
+                         {% for value, text in status_choices %}
                              <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>{{ text }}</option>
                          {% endfor %}
                      </select>

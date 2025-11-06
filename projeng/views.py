@@ -297,7 +297,10 @@ def project_detail_view(request, pk):
             if request.user not in project.assigned_engineers.all():
                 raise PermissionDenied("You are not assigned to this project.")
         
-        return render(request, 'projeng/project_detail.html', {'project': project})
+        return render(request, 'projeng/project_detail.html', {
+            'project': project,
+            'status_choices': Project.STATUS_CHOICES
+        })
     except Project.DoesNotExist:
         raise Http404("Project does not exist.")
     except PermissionDenied:

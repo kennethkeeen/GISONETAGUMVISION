@@ -194,22 +194,40 @@ CACHES = {
 REDIS_URL = os.environ.get('REDIS_URL', None)
 if REDIS_URL and not DEBUG:
     # Use Redis/Valkey for caching
-    # Note: Connection will be tested when first used, errors handled by Django
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'SSL_CERT_REQS': None,  # For DigitalOcean SSL connections (rediss://)
-                'CONNECTION_POOL_KWARGS': {
-                    'ssl_cert_reqs': None,  # Additional SSL setting
+    # Connection errors will be handled gracefully by Django's cache framework
+    # If connection fails, Django will raise an exception that can be caught
+    try:
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+                'LOCATION': REDIS_URL,
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    'SSL_CERT_REQS': None,  # For DigitalOcean SSL connections (rediss://)
+                    'CONNECTION_POOL_KWARGS': {
+                        'ssl_cert_reqs': None,  # Additional SSL setting
+                        'socket_connect_timeout': 5,  # 5 second connection timeout
+                        'socket_timeout': 5,  # 5 second socket timeout
+                        'retry_on_timeout': True,
+                    },
+                    'SOCKET_CONNECT_TIMEOUT': 5,
+                    'SOCKET_TIMEOUT': 5,
                 },
-            },
-            'KEY_PREFIX': 'gistagum',
-            'TIMEOUT': 300,  # 5 minutes default timeout
+                'KEY_PREFIX': 'gistagum',
+                'TIMEOUT': 300,  # 5 minutes default timeout
+            }
         }
-    }
+    except Exception as e:
+        # If there's an error configuring Redis/Valkey, fall back to in-memory cache
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to configure Redis/Valkey cache: {e}. Using in-memory cache.")
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'unique-snowflake',
+            }
+        }
 
 
 # WhiteNoise Configuration for Better Performance
