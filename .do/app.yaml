@@ -1,6 +1,13 @@
 name: one-tagumvision
 region: sgp
 
+databases:
+- name: gistagum-db
+  engine: PG
+  production: false
+  version: "15"
+  plan: db-s-dev-database
+
 services:
 - name: gisonetagumvision
   github:
@@ -30,6 +37,7 @@ services:
     value: https://*.ondigitalocean.app
   - key: DATABASE_URL
     scope: RUN_AND_BUILD_TIME
+    value: ${gistagum-db.DATABASE_URL}
     type: SECRET
   health_check:
     http_path: /
