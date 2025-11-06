@@ -40,6 +40,6 @@ services:
     value: ${gistagum-db.DATABASE_URL}
     type: SECRET
   health_check:
-    http_path: /
+    http_path: /health/
   routes:
   - path: /

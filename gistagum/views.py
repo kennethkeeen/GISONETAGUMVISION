@@ -43,6 +43,13 @@ def secure_home(request):
     # This view ensures proper authentication and cache control
     return redirect('/admin/')  # Redirect to admin or your main dashboard
 
+def health_check(request):
+    """
+    Simple health check endpoint for load balancers and monitoring
+    Returns 200 OK if the app is running
+    """
+    return HttpResponse("OK", status=200)
+
 def redirect_to_login(request):
     """
     Redirect root URL access based on authentication status

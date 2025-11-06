@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
 from django.views.generic import RedirectView
 from accounts.views import dual_login, custom_logout
-from gistagum.views import secure_logout, redirect_to_login
+from gistagum.views import secure_logout, redirect_to_login, health_check
 from monitoring import views as monitoring_views
 from django.shortcuts import redirect
 from projeng.views import engineer_projects_api
@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('__reload__/', include('django_browser_reload.urls')),
+    path('health/', health_check, name='health_check'),  # Health check endpoint
     path('logout/', secure_logout, name='logout'),
     path('accounts/login/', dual_login, name='login'),
     path('accounts/logout/', custom_logout, name='logout'),
