@@ -18,26 +18,38 @@ from django.db.models import Q, Count
 @require_GET
 @never_cache
 def sse_notifications(request):
-    """Server-Sent Events stream for real-time notifications"""
+    """Server-Sent Events stream for real-time notifications - Professional, non-intrusive"""
     
     def event_stream():
         last_notification_id = None
+        last_unread_count = None
+        
         while True:
             try:
-                # Get unread notifications
-                notifications = Notification.objects.filter(
+                # Get unread notifications count
+                unread_count = Notification.objects.filter(
                     recipient=request.user,
                     is_read=False
-                ).order_by('-created_at')
+                ).count()
                 
-                # Check for new notifications
-                if notifications.exists():
-                    latest = notifications.first()
-                    if latest.id != last_notification_id:
+                # Only send update if count changed (new notification)
+                if unread_count != last_unread_count:
+                    last_unread_count = unread_count
+                    
+                    # Get latest notification if there are unread ones
+                    latest = None
+                    if unread_count > 0:
+                        latest = Notification.objects.filter(
+                            recipient=request.user,
+                            is_read=False
+                        ).order_by('-created_at').first()
+                    
+                    # Only send notification data if it's a NEW notification
+                    if latest and latest.id != last_notification_id:
                         last_notification_id = latest.id
                         data = {
                             'type': 'notification',
-                            'unread_count': notifications.count(),
+                            'unread_count': unread_count,
                             'notification': {
                                 'id': latest.id,
                                 'message': latest.message,
@@ -45,10 +57,17 @@ def sse_notifications(request):
                             }
                         }
                         yield f"data: {json.dumps(data)}\n\n"
+                    elif unread_count == 0:
+                        # Send count update even if no new notification (for badge update)
+                        data = {
+                            'type': 'notification',
+                            'unread_count': 0
+                        }
+                        yield f"data: {json.dumps(data)}\n\n"
                 
                 # Send heartbeat every 30 seconds
                 yield f": heartbeat\n\n"
-                time.sleep(3)  # Check every 3 seconds
+                time.sleep(5)  # Check every 5 seconds (less frequent to reduce load)
                 
             except Exception as e:
                 yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
