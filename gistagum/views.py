@@ -47,8 +47,9 @@ def health_check(request):
     """
     Simple health check endpoint for load balancers and monitoring
     Returns 200 OK if the app is running
+    This endpoint should not require database access or authentication
     """
-    return HttpResponse("OK", status=200)
+    return HttpResponse("OK", status=200, content_type="text/plain")
 
 def redirect_to_login(request):
     """
