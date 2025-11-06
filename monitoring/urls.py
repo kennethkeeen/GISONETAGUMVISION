@@ -8,7 +8,13 @@ urlpatterns = [
     path('projects/', views.project_list, name='project_list'),
     path('map/', views.map_view, name='map_view'),
     path('reports/', views.reports, name='reports'),
+    path('reports/export/csv/', views.export_reports_csv, name='export_reports_csv'),
+    path('reports/export/excel/', views.export_reports_excel, name='export_reports_excel'),
+    path('reports/export/pdf/', views.export_reports_pdf, name='export_reports_pdf'),
     path('reports/budget/', views.budget_reports, name='budget_reports'),
+    path('reports/budget/export/csv/', views.export_budget_reports_csv, name='export_budget_reports_csv'),
+    path('reports/budget/export/excel/', views.export_budget_reports_excel, name='export_budget_reports_excel'),
+    path('reports/budget/export/pdf/', views.export_budget_reports_pdf, name='export_budget_reports_pdf'),
     path('projects/<int:pk>/api/update/', views.project_update_api, name='project_update_api'),
     
     path('projects/<int:pk>/api/delete/', views.project_delete_api, name='project_delete_api'),

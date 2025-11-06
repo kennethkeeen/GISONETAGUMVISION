@@ -1,13 +1,23 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from .finance_manager import finance_dashboard, finance_projects, finance_cost_management, finance_notifications
-from projeng.models import Project
+from projeng.models import Project, ProjectProgress, ProjectCost
 from django.contrib.auth.models import Group
 from django.core.paginator import Paginator
+from django.template.loader import get_template
+from django.utils import timezone
 import os
 import json
-from django.http import JsonResponse
+import csv
+import io
+from datetime import datetime
+import openpyxl
+# Optional xhtml2pdf import
+try:
+    from xhtml2pdf import pisa
+except Exception:
+    pisa = None
 from django.conf import settings
 from collections import Counter, defaultdict
 from monitoring.forms import ProjectForm
@@ -393,7 +403,328 @@ def barangay_geojson_view(request):
     return JsonResponse(geojson_data, safe=False)
 
 def export_project_timeline_pdf(request, pk):
-    return HttpResponse("export_project_timeline_pdf placeholder")
+    """Export project timeline as PDF"""
+    try:
+        project = Project.objects.get(pk=pk)
+    except Project.DoesNotExist:
+        return HttpResponse('Project not found.', status=404)
+    
+    # Get all progress updates
+    progress_updates = ProjectProgress.objects.filter(project=project).order_by('date')
+    costs = ProjectCost.objects.filter(project=project).order_by('date')
+    
+    # If xhtml2pdf is unavailable, return a friendly message
+    if pisa is None:
+        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
+    
+    # Render the HTML template for the PDF
+    template_path = 'monitoring/project_timeline_pdf.html'
+    template = get_template(template_path)
+    context = {
+        'project': project,
+        'progress_updates': progress_updates,
+        'costs': costs,
+        'total_cost': sum([float(c.amount) for c in costs]) if costs else 0,
+    }
+    html = template.render(context)
+    
+    # Create a PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="project_{project.id}_timeline_{timezone.now().strftime("%Y%m%d")}.pdf"'
+    
+    # Create a file-like object to write the PDF data to
+    buffer = io.BytesIO()
+    
+    # Create the PDF object, and write the HTML to it
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+    
+    # If there were no errors, return the PDF file
+    if not pisa_status.err:
+        return HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    
+    # If there were errors, return an error message
+    return HttpResponse('We had some errors generating the PDF.', content_type='text/plain')
+
+@login_required
+def export_reports_csv(request):
+    """Export monitoring reports as CSV"""
+    # Role-based queryset
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.all()
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # Create the HttpResponse object with the appropriate CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="projects_report_{timezone.now().strftime("%Y%m%d")}.csv"'
+    
+    writer = csv.writer(response)
+    # Write the header row
+    writer.writerow(['#', 'PRN#', 'Name of Project', 'Project Description', 'Barangay', 'Project Cost', 'Source of Funds', 'Date Started', 'Date Ended', 'Status'])
+    
+    # Write data rows
+    for i, project in enumerate(projects):
+        writer.writerow([
+            i + 1,
+            project.prn or '',
+            project.name or '',
+            project.description or '',
+            project.barangay or '',
+            project.project_cost if project.project_cost is not None else '',
+            project.source_of_funds or '',
+            project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
+            project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
+            project.get_status_display() or '',
+        ])
+    
+    return response
+
+@login_required
+def export_reports_excel(request):
+    """Export monitoring reports as Excel"""
+    # Role-based queryset
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.all()
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # Create a new workbook and select the active sheet
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Projects Report"
+    
+    # Write the header row
+    headers = ['#', 'PRN#', 'Name of Project', 'Project Description', 'Barangay', 'Project Cost', 'Source of Funds', 'Date Started', 'Date Ended', 'Status']
+    sheet.append(headers)
+    
+    # Write data rows
+    for i, project in enumerate(projects):
+        sheet.append([
+            i + 1,
+            project.prn or '',
+            project.name or '',
+            project.description or '',
+            project.barangay or '',
+            project.project_cost if project.project_cost is not None else '',
+            project.source_of_funds or '',
+            project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
+            project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
+            project.get_status_display() or '',
+        ])
+    
+    # Create an in-memory BytesIO stream
+    excel_file = io.BytesIO()
+    workbook.save(excel_file)
+    excel_file.seek(0)
+    
+    # Create the HttpResponse object with the appropriate Excel header
+    response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="projects_report_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+    
+    return response
+
+@login_required
+def export_reports_pdf(request):
+    """Export monitoring reports as PDF"""
+    # Role-based queryset
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.all()
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # If xhtml2pdf is unavailable, return a friendly message
+    if pisa is None:
+        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
+    
+    # Render the HTML template for the PDF
+    template_path = 'monitoring/reports_pdf.html'
+    template = get_template(template_path)
+    context = {'projects': projects}
+    html = template.render(context)
+    
+    # Create a PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="projects_report_{timezone.now().strftime("%Y%m%d")}.pdf"'
+    
+    # Create a file-like object to write the PDF data to
+    buffer = io.BytesIO()
+    
+    # Create the PDF object, and write the HTML to it
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+    
+    # If there were no errors, return the PDF file
+    if not pisa_status.err:
+        return HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    
+    # If there were errors, return an error message
+    return HttpResponse('We had some errors generating the PDF.', content_type='text/plain')
+
+@login_required
+def export_budget_reports_csv(request):
+    """Export budget reports as CSV"""
+    from projeng.models import ProjectCost
+    from collections import defaultdict
+    
+    # Role-based queryset
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.all()
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # Create the HttpResponse object with the appropriate CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="budget_report_{timezone.now().strftime("%Y%m%d")}.csv"'
+    
+    writer = csv.writer(response)
+    # Write the header row
+    writer.writerow(['#', 'PRN#', 'Project Name', 'Barangay', 'Budget', 'Spent', 'Remaining', 'Utilization %', 'Status', 'Over/Under Budget'])
+    
+    # Write data rows
+    for i, project in enumerate(projects):
+        costs = ProjectCost.objects.filter(project=project)
+        spent = sum([float(c.amount) for c in costs]) if costs else 0
+        budget = float(project.project_cost) if project.project_cost else 0
+        remaining = budget - spent
+        utilization = (spent / budget * 100) if budget > 0 else 0
+        over_under = 'Over' if spent > budget else 'Under'
+        
+        writer.writerow([
+            i + 1,
+            project.prn or '',
+            project.name or '',
+            project.barangay or '',
+            budget,
+            spent,
+            remaining,
+            f'{utilization:.2f}%',
+            project.get_status_display() or '',
+            over_under,
+        ])
+    
+    return response
+
+@login_required
+def export_budget_reports_excel(request):
+    """Export budget reports as Excel"""
+    from projeng.models import ProjectCost
+    
+    # Role-based queryset
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.all()
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # Create a new workbook and select the active sheet
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Budget Report"
+    
+    # Write the header row
+    headers = ['#', 'PRN#', 'Project Name', 'Barangay', 'Budget', 'Spent', 'Remaining', 'Utilization %', 'Status', 'Over/Under Budget']
+    sheet.append(headers)
+    
+    # Write data rows
+    for i, project in enumerate(projects):
+        costs = ProjectCost.objects.filter(project=project)
+        spent = sum([float(c.amount) for c in costs]) if costs else 0
+        budget = float(project.project_cost) if project.project_cost else 0
+        remaining = budget - spent
+        utilization = (spent / budget * 100) if budget > 0 else 0
+        over_under = 'Over' if spent > budget else 'Under'
+        
+        sheet.append([
+            i + 1,
+            project.prn or '',
+            project.name or '',
+            project.barangay or '',
+            budget,
+            spent,
+            remaining,
+            f'{utilization:.2f}%',
+            project.get_status_display() or '',
+            over_under,
+        ])
+    
+    # Create an in-memory BytesIO stream
+    excel_file = io.BytesIO()
+    workbook.save(excel_file)
+    excel_file.seek(0)
+    
+    # Create the HttpResponse object with the appropriate Excel header
+    response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="budget_report_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+    
+    return response
+
+@login_required
+def export_budget_reports_pdf(request):
+    """Export budget reports as PDF"""
+    from projeng.models import ProjectCost
+    from collections import defaultdict
+    
+    # Role-based queryset
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.all()
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # Prepare project data
+    project_data = []
+    for project in projects:
+        costs = ProjectCost.objects.filter(project=project)
+        spent = sum([float(c.amount) for c in costs]) if costs else 0
+        budget = float(project.project_cost) if project.project_cost else 0
+        remaining = budget - spent
+        utilization = (spent / budget * 100) if budget > 0 else 0
+        over_under = 'Over' if spent > budget else 'Under'
+        
+        project_data.append({
+            'project': project,
+            'budget': budget,
+            'spent': spent,
+            'remaining': remaining,
+            'utilization': utilization,
+            'over_under': over_under,
+        })
+    
+    # If xhtml2pdf is unavailable, return a friendly message
+    if pisa is None:
+        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
+    
+    # Render the HTML template for the PDF
+    template_path = 'monitoring/budget_reports_pdf.html'
+    template = get_template(template_path)
+    context = {'project_data': project_data}
+    html = template.render(context)
+    
+    # Create a PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="budget_report_{timezone.now().strftime("%Y%m%d")}.pdf"'
+    
+    # Create a file-like object to write the PDF data to
+    buffer = io.BytesIO()
+    
+    # Create the PDF object, and write the HTML to it
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+    
+    # If there were no errors, return the PDF file
+    if not pisa_status.err:
+        return HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    
+    # If there were errors, return an error message
+    return HttpResponse('We had some errors generating the PDF.', content_type='text/plain')
 
 def is_head_engineer(user):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Head Engineer').exists())

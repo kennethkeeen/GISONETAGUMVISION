@@ -56,12 +56,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                     Upload Documents
                 </a>
-                <a href="{% url 'projeng:projeng_notifications' %}" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 {% if request.resolver_match.url_name == 'projeng_notifications' %}bg-gray-800{% endif %}">
+                <a href="{% url 'projeng:projeng_notifications' %}" id="notification-bell" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 {% if request.resolver_match.url_name == 'projeng_notifications' %}bg-gray-800{% endif %} relative">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                     Notifications
-                    {% if unread_notifications_count > 0 %}
-                    <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-auto">{{ unread_notifications_count }}</span>
-                    {% endif %}
+                    <span id="notification-count" class="{% if unread_notifications_count > 0 %}bg-red-500{% else %}hidden{% endif %} text-white text-xs rounded-full px-2 py-1 ml-auto min-w-[20px] text-center">{{ unread_notifications_count|default:0 }}</span>
                 </a>
                 <a href="{% url 'projeng:projeng_my_reports' %}" class="flex items-center gap-2 py-2 px-4 rounded hover:bg-gray-800 {% if request.resolver_match.url_name == 'projeng_my_reports' %}bg-gray-800{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 018 0v2m-4-4V7m0 0V3m0 4a4 4 0 00-4 4v4" /></svg>
@@ -123,6 +121,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Leaflet Draw JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <!-- Real-time Updates -->
+    <script src="{% static 'js/realtime.js' %}"></script>
     <!-- CSRF Token for AJAX requests -->
     <script>
         function getCookie(name) {

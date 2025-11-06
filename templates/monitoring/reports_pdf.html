@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Projects Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+        }
+        h1 {
+            text-align: center;
+            color: #1e40af;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .header-info {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>Projects Report</h1>
+    <div class="header-info">
+        <p>Generated: {{ "now"|date:"F d, Y H:i" }}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>PRN#</th>
+                <th>Name of Project</th>
+                <th>Project Description</th>
+                <th>Barangay</th>
+                <th>Project Cost</th>
+                <th>Source of Funds</th>
+                <th>Date Started</th>
+                <th>Date Ended</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ project.prn|default:"" }}</td>
+                <td>{{ project.name|default:"" }}</td>
+                <td>{{ project.description|default:""|truncatewords:10 }}</td>
+                <td>{{ project.barangay|default:"" }}</td>
+                <td>₱{{ project.project_cost|default:0|floatformat:2 }}</td>
+                <td>{{ project.source_of_funds|default:"" }}</td>
+                <td>{{ project.start_date|date:"Y-m-d"|default:"" }}</td>
+                <td>{{ project.end_date|date:"Y-m-d"|default:"" }}</td>
+                <td>{{ project.get_status_display|default:"" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center;">No projects found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
+

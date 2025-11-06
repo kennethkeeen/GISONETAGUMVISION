@@ -1048,4 +1048,69 @@ def notifications_view(request):
         'notifications': notifications,
         'unread_count': unread_count,
     }
-    return render(request, 'projeng/notifications.html', context) 
+    return render(request, 'projeng/notifications.html', context)
+
+@login_required
+@require_GET
+def notifications_api(request):
+    """API endpoint for real-time notifications"""
+    if not (
+        request.user.groups.filter(name='Project Engineer').exists() or
+        request.user.groups.filter(name='Head Engineer').exists() or
+        request.user.is_superuser
+    ):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:10]
+    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    
+    return JsonResponse({
+        'unread_count': unread_count,
+        'notifications': [
+            {
+                'id': n.id,
+                'message': n.message,
+                'created_at': n.created_at.isoformat(),
+                'is_read': n.is_read
+            }
+            for n in notifications
+        ]
+    })
+
+@login_required
+@require_GET
+def projects_updates_api(request):
+    """API endpoint for real-time project updates"""
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    # Get projects updated in the last 5 minutes
+    recent_time = timezone.now() - timedelta(minutes=5)
+    
+    if request.user.groups.filter(name='Head Engineer').exists() or request.user.is_superuser:
+        # Head engineers see all projects
+        recent_projects = Project.objects.filter(
+            updated_at__gte=recent_time
+        ).order_by('-updated_at')[:10]
+    elif request.user.groups.filter(name='Project Engineer').exists():
+        # Project engineers see their assigned projects
+        recent_projects = Project.objects.filter(
+            assigned_engineers=request.user,
+            updated_at__gte=recent_time
+        ).order_by('-updated_at')[:10]
+    else:
+        recent_projects = Project.objects.none()
+    
+    return JsonResponse({
+        'updates': [
+            {
+                'id': p.id,
+                'name': p.name,
+                'status': p.status,
+                'updated_at': p.updated_at.isoformat(),
+                'barangay': p.barangay or '',
+            }
+            for p in recent_projects
+        ],
+        'count': recent_projects.count()
+    }) 

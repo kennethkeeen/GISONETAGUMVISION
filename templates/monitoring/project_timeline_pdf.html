@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Project Timeline - {{ project.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+        }
+        h1 {
+            text-align: center;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        .project-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 5px;
+        }
+        .info-row {
+            margin: 5px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .header-info {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        .text-right {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>Project Timeline Report</h1>
+    <div class="header-info">
+        <p>Generated: {{ "now"|date:"F d, Y H:i" }}</p>
+    </div>
+    
+    <div class="project-info">
+        <div class="info-row">
+            <span class="info-label">Project Name:</span>
+            <span>{{ project.name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">PRN:</span>
+            <span>{{ project.prn|default:"N/A" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Barangay:</span>
+            <span>{{ project.barangay|default:"N/A" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Status:</span>
+            <span>{{ project.get_status_display }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Start Date:</span>
+            <span>{{ project.start_date|date:"Y-m-d"|default:"N/A" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">End Date:</span>
+            <span>{{ project.end_date|date:"Y-m-d"|default:"N/A" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Budget:</span>
+            <span>₱{{ project.project_cost|default:0|floatformat:2 }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Total Spent:</span>
+            <span>₱{{ total_cost|floatformat:2 }}</span>
+        </div>
+    </div>
+    
+    <h2>Progress Updates</h2>
+    {% if progress_updates %}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Percentage Complete</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for update in progress_updates %}
+            <tr>
+                <td>{{ update.date|date:"Y-m-d" }}</td>
+                <td>{{ update.percentage_complete }}%</td>
+                <td>{{ update.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No progress updates available.</p>
+    {% endif %}
+    
+    <h2>Cost Entries</h2>
+    {% if costs %}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Cost Type</th>
+                <th>Description</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cost in costs %}
+            <tr>
+                <td>{{ cost.date|date:"Y-m-d" }}</td>
+                <td>{{ cost.get_cost_type_display }}</td>
+                <td>{{ cost.description }}</td>
+                <td class="text-right">₱{{ cost.amount|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="font-weight: bold; background-color: #e5e7eb;">
+                <td colspan="3" class="text-right">Total:</td>
+                <td class="text-right">₱{{ total_cost|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <p>No cost entries available.</p>
+    {% endif %}
+</body>
+</html>
+

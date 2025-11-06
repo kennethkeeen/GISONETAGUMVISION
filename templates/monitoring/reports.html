@@ -98,9 +98,9 @@
       <div class="absolute top-4 right-4">
         <button id="modal-export-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-base font-semibold shadow-sm hover:bg-blue-700 transition flex items-center">Export <span class="ml-2">▼</span></button>
         <div id="modal-export-dropdown" class="hidden absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-10">
-          <a href="#" id="modal-export-pdf" class="block px-4 py-2 hover:bg-gray-100">Export as PDF</a>
-          <a href="#" id="modal-export-csv" class="block px-4 py-2 hover:bg-gray-100">Export as CSV</a>
-          <a href="#" id="modal-export-excel" class="block px-4 py-2 hover:bg-gray-100">Export as Excel</a>
+          <a href="{% url 'export_reports_pdf' %}" id="modal-export-pdf" class="block px-4 py-2 hover:bg-gray-100">Export as PDF</a>
+          <a href="{% url 'export_reports_csv' %}" id="modal-export-csv" class="block px-4 py-2 hover:bg-gray-100">Export as CSV</a>
+          <a href="{% url 'export_reports_excel' %}" id="modal-export-excel" class="block px-4 py-2 hover:bg-gray-100">Export as Excel</a>
         </div>
       </div>
       <h2 class="text-2xl font-bold mb-4 text-gray-800">Project List</h2>

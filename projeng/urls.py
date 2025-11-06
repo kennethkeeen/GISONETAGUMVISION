@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import realtime
 
 urlpatterns = [
     path('dashboard/', views.dashboard, name='projeng_dashboard'),
@@ -39,4 +40,11 @@ urlpatterns = [
     
     # Add project delete API endpoint
     path('projects/<int:pk>/api/delete/', views.project_delete_api, name='project_delete_api'),
+    
+    # Real-time SSE endpoints
+    path('api/realtime/notifications/', realtime.sse_notifications, name='realtime_notifications'),
+    path('api/realtime/dashboard/', realtime.sse_dashboard_updates, name='realtime_dashboard'),
+    path('api/realtime/projects/', realtime.sse_project_status, name='realtime_projects'),
+    path('api/realtime/projects/<int:project_id>/', realtime.sse_project_status, name='realtime_project_detail'),
+    path('api/realtime/status/', realtime.realtime_api_status, name='realtime_status'),
 ] 

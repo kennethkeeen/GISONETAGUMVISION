@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Budget Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+        }
+        h1 {
+            text-align: center;
+            color: #1e40af;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .header-info {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Budget Report</h1>
+    <div class="header-info">
+        <p>Generated: {{ "now"|date:"F d, Y H:i" }}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>PRN#</th>
+                <th>Project Name</th>
+                <th>Barangay</th>
+                <th class="text-right">Budget</th>
+                <th class="text-right">Spent</th>
+                <th class="text-right">Remaining</th>
+                <th class="text-center">Utilization %</th>
+                <th>Status</th>
+                <th class="text-center">Over/Under</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in project_data %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ p.project.prn|default:"" }}</td>
+                <td>{{ p.project.name|default:"" }}</td>
+                <td>{{ p.project.barangay|default:"" }}</td>
+                <td class="text-right">₱{{ p.budget|floatformat:2 }}</td>
+                <td class="text-right">₱{{ p.spent|floatformat:2 }}</td>
+                <td class="text-right">₱{{ p.remaining|floatformat:2 }}</td>
+                <td class="text-center">{{ p.utilization|floatformat:2 }}%</td>
+                <td>{{ p.project.get_status_display|default:"" }}</td>
+                <td class="text-center">{{ p.over_under }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center;">No projects found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
+
