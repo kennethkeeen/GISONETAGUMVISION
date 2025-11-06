@@ -52,18 +52,26 @@ def dashboard(request):
     try:
         from .models import Project, ProjectProgress
         if is_head_engineer(request.user):
-            assigned_projects = Project.objects.all().order_by('-pk')[:5]
-            all_assigned_projects = Project.objects.all()
+            assigned_projects = Project.objects.select_related('created_by').prefetch_related('assigned_engineers').order_by('-pk')[:5]
+            all_assigned_projects = Project.objects.select_related('created_by').prefetch_related('assigned_engineers')
         else:
-            assigned_projects = Project.objects.filter(assigned_engineers=request.user).order_by('-pk')[:5]
-            all_assigned_projects = Project.objects.filter(assigned_engineers=request.user)
+            assigned_projects = Project.objects.filter(assigned_engineers=request.user).select_related('created_by').prefetch_related('assigned_engineers').order_by('-pk')[:5]
+            all_assigned_projects = Project.objects.filter(assigned_engineers=request.user).select_related('created_by').prefetch_related('assigned_engineers')
         print("DEBUG: assigned_projects for user", request.user.username, ":", list(assigned_projects))
         today = timezone.now().date()
         status_counts = {'Planned': 0, 'In Progress': 0, 'Completed': 0, 'Delayed': 0}
         delayed_projects = []
         total_projects = all_assigned_projects.count()
+        # Optimize: Get all progress updates in one query
+        from django.db.models import Prefetch
+        progress_prefetch = Prefetch(
+            'progress_updates',
+            queryset=ProjectProgress.objects.order_by('-date'),
+            to_attr='latest_progress_list'
+        )
+        all_assigned_projects = all_assigned_projects.prefetch_related(progress_prefetch)
         for project in all_assigned_projects:
-            latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date').first()
+            latest_progress = project.latest_progress_list[0] if hasattr(project, 'latest_progress_list') and project.latest_progress_list else None
             progress = int(latest_progress.percentage_complete) if latest_progress else 0
             status = project.status
             if progress >= 99:
@@ -84,8 +92,10 @@ def dashboard(request):
             elif status == 'planned':
                 status_counts['Planned'] += 1
         projects_data = []
+        # Prefetch progress for assigned projects too
+        assigned_projects = assigned_projects.prefetch_related(progress_prefetch)
         for project in assigned_projects:
-            latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date').first()
+            latest_progress = project.latest_progress_list[0] if hasattr(project, 'latest_progress_list') and project.latest_progress_list else None
             progress = int(latest_progress.percentage_complete) if latest_progress else 0
             projects_data.append({
                 'id': project.id,

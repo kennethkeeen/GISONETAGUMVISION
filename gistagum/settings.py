@@ -170,6 +170,86 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Cache Control for Security
 CACHE_CONTROL_SECURE = True
 
+# Caching Configuration
+# Use in-memory cache for development, Redis for production (if available)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
+
+# If Redis is available in production, use it
+REDIS_URL = os.environ.get('REDIS_URL', None)
+if REDIS_URL and not DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'gistagum',
+            'TIMEOUT': 300,  # 5 minutes default timeout
+        }
+    }
+
+
+# WhiteNoise Configuration for Better Performance
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0  # 1 year cache in production
+
+# Static Files Caching Headers
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Add cache headers for static files
+    WHITENOISE_MANIFEST_STRICT = False
+
+# Performance Settings
+# Disable debug toolbar and other dev tools in production
+if not DEBUG:
+    # Remove debug middleware
+    if 'django_browser_reload.middleware.BrowserReloadMiddleware' in MIDDLEWARE:
+        MIDDLEWARE.remove('django_browser_reload.middleware.BrowserReloadMiddleware')
+
+# Database Query Logging (only in DEBUG mode)
+if DEBUG:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'loggers': {
+            'django.db.backends': {
+                'level': 'DEBUG',
+                'handlers': ['console'],
+            },
+        },
+    }
+
+# Database Connection Pooling (applied after DATABASES is set)
+if DATABASE_URL and not DEBUG:
+    # Add connection pooling to existing database config
+    if 'default' in DATABASES:
+        DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes connection pooling
+        if 'OPTIONS' not in DATABASES['default']:
+            DATABASES['default']['OPTIONS'] = {}
+        # Preserve existing options
+        existing_options = DATABASES['default']['OPTIONS'].copy()
+        existing_options.update({
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000',  # 30 second query timeout
+        })
+        DATABASES['default']['OPTIONS'] = existing_options
+
 # Specify the path to the GDAL and GEOS libraries if auto-detection fails
 if os.name == 'nt':  # Check if the operating system is Windows
     GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
