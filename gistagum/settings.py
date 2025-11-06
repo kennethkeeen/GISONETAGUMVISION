@@ -75,23 +75,37 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gistagum.wsgi.application'
 
 # Database
-if dj_database_url:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/gistagum')
-        )
-    }
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+if DATABASE_URL:
+    # Use Postgres when DATABASE_URL is provided (production/staging)
+    if dj_database_url:
+        DATABASES = {
+            'default': dj_database_url.config(default=DATABASE_URL)
+        }
+    else:
+        tmp = urlparse(DATABASE_URL)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': tmp.path.lstrip('/') or 'postgres',
+                'USER': tmp.username or 'postgres',
+                'PASSWORD': tmp.password or '',
+                'HOST': tmp.hostname or 'localhost',
+                'PORT': tmp.port or 5432,
+                'OPTIONS': dict(parse_qsl(tmp.query)) if tmp.query else {},
+            }
+        }
 else:
-    tmp = urlparse(os.environ.get('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/gistagum'))
+    # Use local Postgres for development when no DATABASE_URL is set
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': tmp.path.lstrip('/') or 'postgres',
-            'USER': tmp.username or 'postgres',
-            'PASSWORD': (tmp.password or '0613'),
-            'HOST': tmp.hostname or 'localhost',
-            'PORT': tmp.port or 5432,
-            'OPTIONS': dict(parse_qsl(tmp.query)) if tmp.query else {},
+            'NAME': 'gistagumnew',
+            'USER': 'postgres',
+            'PASSWORD': '0613',  # Your local Postgres password
+            'HOST': 'localhost',
+            'PORT': '5432',
         }
     }
 
@@ -136,7 +150,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Redirect after login
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/dashboard/'
 
 # Redirect to dual login after logout
 LOGOUT_REDIRECT_URL = '/accounts/login/'

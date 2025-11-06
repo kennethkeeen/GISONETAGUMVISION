@@ -1,0 +1,29 @@
+# Copy these environment variables to DigitalOcean App Platform
+
+# Django Settings
+DJANGO_SETTINGS_MODULE=gistagum.settings
+
+# Secret Key (IMPORTANT: Generate a new one for production!)
+# Run: python manage.py shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+DJANGO_SECRET_KEY=<GENERATE_A_NEW_SECRET_KEY_HERE>
+
+# Debug Mode
+DEBUG=false
+
+# Allowed Hosts (update with your actual domain after deployment)
+ALLOWED_HOSTS=*.ondigitalocean.app
+
+# CSRF Trusted Origins (update with your actual domain after deployment)
+CSRF_TRUSTED_ORIGINS=https://*.ondigitalocean.app
+
+# Database URL (paste your Neon connection string here)
+# Format: postgresql://username:password@host.neon.tech/dbname?sslmode=require
+DATABASE_URL=<PASTE_YOUR_NEON_CONNECTION_STRING_HERE>
+
+# Instructions:
+# 1. Copy each line above (except comments)
+# 2. In DigitalOcean App Platform, go to your app → Settings → Environment Variables
+# 3. Add each variable one by one
+# 4. For DATABASE_URL, replace <PASTE_YOUR_NEON_CONNECTION_STRING_HERE> with your actual Neon URL
+# 5. After deployment, update ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS with your actual domain
+

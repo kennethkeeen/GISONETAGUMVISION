@@ -4,6 +4,19 @@ from django.shortcuts import render, redirect
 def dual_login(request):
     print("dual_login view received a request.") # Debug print at the very beginning
     error = None
+    
+    # If already logged in, redirect to appropriate dashboard
+    if request.user.is_authenticated:
+        print(f"User {request.user.username} is already authenticated, redirecting...")
+        if request.user.is_superuser or request.user.groups.filter(name='Head Engineer').exists():
+            return redirect('/dashboard/')
+        elif request.user.groups.filter(name='Finance Manager').exists():
+            return redirect('/dashboard/finance/dashboard/')
+        elif request.user.groups.filter(name='Project Engineer').exists():
+            return redirect('/projeng/dashboard/')
+        else:
+            return redirect('/dashboard/')
+    
     if request.method == 'POST':
         username = request.POST['username'].strip()
         password = request.POST['password']
@@ -11,19 +24,23 @@ def dual_login(request):
         if user is not None:
             # Allow superusers to bypass group checks
             if user.is_superuser:
-                print(f"Authenticated superuser: {user.username}")
+                print(f"Authenticated superuser: {user.username}, redirecting to /dashboard/")
                 login(request, user)
-                return redirect('/dashboard/')
+                response = redirect('/dashboard/')
+                return response
             # Debug: show user groups
             user_groups = list(user.groups.values_list('name', flat=True))
             print(f"Authenticated user: {user.username}, groups={user_groups}")
             if user.groups.filter(name='Finance Manager').exists():
+                print(f"Finance Manager detected, redirecting to finance dashboard")
                 login(request, user)
-                return redirect('/finance/dashboard/')
+                return redirect('/dashboard/finance/dashboard/')
             elif user.groups.filter(name='Head Engineer').exists():
+                print(f"Head Engineer detected, redirecting to /dashboard/")
                 login(request, user)
                 return redirect('/dashboard/')
             elif user.groups.filter(name='Project Engineer').exists():
+                print(f"Project Engineer detected, redirecting to projeng dashboard")
                 login(request, user)
                 return redirect('/projeng/dashboard/')
             else:

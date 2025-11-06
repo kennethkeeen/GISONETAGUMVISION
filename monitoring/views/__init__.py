@@ -21,10 +21,12 @@ def home(request):
 
 @login_required
 def dashboard(request):
+    print(f"Dashboard view accessed by user: {request.user.username}, authenticated: {request.user.is_authenticated}")
     from projeng.models import Project
     from collections import Counter, defaultdict
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
+        print(f"User {request.user.username} is head engineer or finance manager, showing all projects")
         projects = Project.objects.all()
     elif is_project_engineer(request.user):
         projects = Project.objects.filter(assigned_engineers=request.user)
@@ -394,10 +396,10 @@ def export_project_timeline_pdf(request, pk):
     return HttpResponse("export_project_timeline_pdf placeholder")
 
 def is_head_engineer(user):
-    return user.is_authenticated and user.groups.filter(name='Head Engineer').exists()
+    return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Head Engineer').exists())
 
 def is_finance_manager(user):
-    return user.is_authenticated and user.groups.filter(name='Finance Manager').exists()
+    return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Finance Manager').exists())
 
 def is_project_engineer(user):
-    return user.is_authenticated and user.groups.filter(name='Project Engineer').exists()
+    return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Project Engineer').exists())

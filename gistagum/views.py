@@ -45,14 +45,21 @@ def secure_home(request):
 
 def redirect_to_login(request):
     """
-    Redirect all root URL access to login page
-    Always redirect to login, regardless of authentication status
+    Redirect root URL access based on authentication status
     """
-    # Force logout if user is already logged in to ensure fresh login
     if request.user.is_authenticated:
-        from django.contrib.auth import logout
-        logout(request)
-        # Clear session data
-        request.session.flush()
-    
-    return redirect('login')
+        # Redirect authenticated users to their appropriate dashboard
+        from django.contrib.auth.models import User
+        user = request.user
+        
+        if user.is_superuser or user.groups.filter(name='Head Engineer').exists():
+            return redirect('/dashboard/')
+        elif user.groups.filter(name='Finance Manager').exists():
+            return redirect('/dashboard/finance/dashboard/')
+        elif user.groups.filter(name='Project Engineer').exists():
+            return redirect('/projeng/dashboard/')
+        else:
+            return redirect('/dashboard/')
+    else:
+        # Redirect unauthenticated users to login
+        return redirect('login')

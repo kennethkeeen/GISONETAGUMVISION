@@ -27,9 +27,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=gistagum.settings
 
-# Collect static files at build time via Render buildCommand (in render.yaml)
-
-# Run Gunicorn by default (Render will override with $PORT)
+# Cloud platforms (DigitalOcean, Railway, Render, etc.) will provide PORT environment variable
+# Run migrations, collect static files, then start Gunicorn
 CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn gistagum.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
 
 

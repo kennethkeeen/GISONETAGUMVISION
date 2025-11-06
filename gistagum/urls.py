@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
+from django.views.generic import RedirectView
 from accounts.views import dual_login, custom_logout
 from gistagum.views import secure_logout, redirect_to_login
 from monitoring import views as monitoring_views
@@ -21,6 +22,9 @@ urlpatterns = [
     path('projeng/', include(('projeng.urls', 'projeng'), namespace='projeng')),
     path('', redirect_to_login, name='home'),
     path('dashboard/', include('monitoring.urls')),
+    # Redirect /finance/* URLs to /dashboard/finance/* for backward compatibility
+    path('finance/dashboard/', RedirectView.as_view(url='/dashboard/finance/dashboard/', permanent=False), name='finance_dashboard_redirect'),
+    path('finance/', RedirectView.as_view(url='/dashboard/finance/dashboard/', permanent=False)),
 ]
 
 # This is only needed when running in development mode.

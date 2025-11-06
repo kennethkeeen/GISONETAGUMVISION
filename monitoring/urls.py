@@ -3,8 +3,8 @@ from . import views
 from monitoring.views.finance_manager import finance_dashboard, finance_projects, finance_cost_management, finance_notifications, finance_project_detail
 
 urlpatterns = [
-    path('', views.home, name='home'),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', views.dashboard, name='dashboard'),  # Changed: /dashboard/ now goes directly to dashboard
+    path('home/', views.home, name='home'),  # Moved home to /dashboard/home/
     path('projects/', views.project_list, name='project_list'),
     path('map/', views.map_view, name='map_view'),
     path('reports/', views.reports, name='reports'),
