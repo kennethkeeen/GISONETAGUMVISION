@@ -1,12 +1,13 @@
 FROM python:3.12-slim
 
-# Install system dependencies (build tools, Postgres client libs, GDAL)
+# Install system dependencies (build tools, Postgres client libs, GDAL, FreeType for reportlab)
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
        build-essential \
        libpq-dev \
        gdal-bin \
        libgdal-dev \
+       libfreetype6-dev \
        curl \
     && rm -rf /var/lib/apt/lists/*
 
