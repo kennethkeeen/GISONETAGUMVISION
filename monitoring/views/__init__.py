@@ -34,6 +34,12 @@ def dashboard(request):
     print(f"Dashboard view accessed by user: {request.user.username}, authenticated: {request.user.is_authenticated}")
     from projeng.models import Project
     from collections import Counter, defaultdict
+    from django.shortcuts import redirect
+    
+    # Redirect Project Engineers to their own dashboard
+    if is_project_engineer(request.user) and not (is_head_engineer(request.user) or is_finance_manager(request.user)):
+        return redirect('/projeng/dashboard/')
+    
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         print(f"User {request.user.username} is head engineer or finance manager, showing all projects")
@@ -142,6 +148,10 @@ def project_list(request):
 
 @login_required
 def map_view(request):
+    from django.shortcuts import redirect
+    # Redirect Project Engineers to their own map page
+    if is_project_engineer(request.user) and not (is_head_engineer(request.user) or is_finance_manager(request.user)):
+        return redirect('/projeng/map/')
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         projects = Project.objects.all()
     elif is_project_engineer(request.user):
@@ -172,6 +182,11 @@ def map_view(request):
 
 @login_required
 def reports(request):
+    from django.shortcuts import redirect
+    # Redirect Project Engineers to their own reports page
+    if is_project_engineer(request.user) and not (is_head_engineer(request.user) or is_finance_manager(request.user)):
+        return redirect('/projeng/my-reports/')
+    
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         projects = Project.objects.all()
@@ -296,7 +311,16 @@ def delayed_projects(request):
 def project_engineer_analytics(request, pk):
     return HttpResponse("project_engineer_analytics placeholder")
 
+@login_required
 def head_engineer_analytics(request):
+    # Only allow Head Engineers and Admins
+    if not (is_head_engineer(request.user) or request.user.is_superuser):
+        from django.contrib import messages
+        messages.error(request, "You don't have permission to access this page.")
+        # Redirect Project Engineers to their own dashboard
+        if is_project_engineer(request.user):
+            return redirect('/projeng/dashboard/')
+        return redirect('dashboard')
     from projeng.models import Project, ProjectProgress
     from django.contrib.auth.models import User
     import json
