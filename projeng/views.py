@@ -1104,9 +1104,17 @@ def notifications_view(request):
                 return JsonResponse({'success': False, 'error': 'Notification not found'})
 
         elif action == 'mark_all_read':
-            notifications.update(is_read=True)
-            messages.success(request, "All notifications marked as read.")
-            return redirect('projeng:projeng_notifications')
+            try:
+                updated_count = notifications.filter(is_read=False).update(is_read=True)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'{updated_count} notifications marked as read'})
+                messages.success(request, f"All {updated_count} notifications marked as read.")
+                return redirect('projeng:projeng_notifications')
+            except Exception as e:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': str(e)})
+                messages.error(request, f"Error marking notifications as read: {str(e)}")
+                return redirect('projeng:projeng_notifications')
 
         elif action == 'delete' and notification_id:
             try:
@@ -1115,13 +1123,19 @@ def notifications_view(request):
                 return JsonResponse({'success': True})
             except Notification.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Notification not found'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
 
         elif action == 'delete_all':
             try:
                 deleted_count = notifications.delete()[0]
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'{deleted_count} notifications deleted'})
                 messages.success(request, f"All {deleted_count} notifications deleted.")
                 return redirect('projeng:projeng_notifications')
             except Exception as e:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': str(e)})
                 messages.error(request, f"Error deleting notifications: {str(e)}")
                 return redirect('projeng:projeng_notifications')
 
