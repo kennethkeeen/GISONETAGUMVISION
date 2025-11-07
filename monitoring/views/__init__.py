@@ -742,12 +742,15 @@ def head_engineer_notifications(request):
     from django.contrib import messages
     from django.shortcuts import redirect
     from django.http import JsonResponse
+    from django.core.paginator import Paginator
+    from django.db.models import Q
     
     # Only allow Head Engineers and Admins
     if not (is_head_engineer(request.user) or request.user.is_superuser):
         messages.error(request, "You don't have permission to view notifications.")
         return redirect('dashboard')
     
+    # Get all notifications for the user
     notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
 
     if request.method == 'POST':
@@ -759,27 +762,48 @@ def head_engineer_notifications(request):
                 notification = Notification.objects.get(id=notification_id, recipient=request.user)
                 notification.is_read = True
                 notification.save()
-                return JsonResponse({'success': True})
+                return JsonResponse({'success': True, 'message': 'Notification marked as read'})
             except Notification.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Notification not found'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
 
         elif action == 'mark_all_read':
-            notifications.update(is_read=True)
-            messages.success(request, "All notifications marked as read.")
-            return redirect('head_engineer_notifications')
+            try:
+                updated_count = notifications.filter(is_read=False).update(is_read=True)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'{updated_count} notifications marked as read'})
+                messages.success(request, f"All {updated_count} notifications marked as read.")
+                return redirect('head_engineer_notifications')
+            except Exception as e:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': str(e)})
+                messages.error(request, f"Error marking notifications as read: {str(e)}")
+                return redirect('head_engineer_notifications')
 
         elif action == 'delete' and notification_id:
             try:
                 notification = Notification.objects.get(id=notification_id, recipient=request.user)
                 notification.delete()
-                return JsonResponse({'success': True})
+                return JsonResponse({'success': True, 'message': 'Notification deleted'})
             except Notification.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Notification not found'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+
+    # Pagination for large number of notifications
+    paginator = Paginator(notifications, 50)  # Show 50 notifications per page
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.get_page(page_number)
+    except:
+        page_obj = paginator.get_page(1)
 
     unread_count = notifications.filter(is_read=False).count()
 
     context = {
-        'notifications': notifications,
+        'notifications': page_obj,  # Use paginated notifications
         'unread_count': unread_count,
+        'page_obj': page_obj,  # For pagination controls
     }
     return render(request, 'monitoring/notifications.html', context)
