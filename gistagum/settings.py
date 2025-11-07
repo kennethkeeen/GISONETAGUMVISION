@@ -415,17 +415,19 @@ else:
     CELERY_TIMEZONE = 'UTC'
 
 # ============================================================================
-# Django Channels Configuration (Optional - for WebSocket support)
+# Django Channels Configuration (Phase 1: Safe addition - uses existing Redis)
 # ============================================================================
-# Uncomment and install 'channels' and 'channels-redis' if you want WebSocket support
-# INSTALLED_APPS should include 'channels' if using this
+# Channels is now installed and configured
+# This uses the same Redis/Valkey connection as Celery
 try:
     import channels_redis
+    import ssl
+    
     # Channels is available
     if REDIS_CONFIG:
         # Configure Channel Layers for WebSocket support
         if REDIS_CONFIG.startswith('rediss://'):
-            # Secure Redis connection for Channels
+            # Secure Redis connection for Channels (DigitalOcean Valkey)
             CHANNEL_LAYERS = {
                 "default": {
                     "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -452,9 +454,22 @@ try:
             print("✅ Django Channels configured with Redis connection")
     else:
         print("⚠️  Django Channels not configured (REDIS_URL not set)")
+        # Set a default in-memory channel layer for development (not for production)
+        CHANNEL_LAYERS = {
+            "default": {
+                "BACKEND": "channels.layers.InMemoryChannelLayer"
+            }
+        }
+        print("⚠️  Using in-memory channel layer (development only)")
 except ImportError:
     # Channels not installed - that's okay, it's optional
-    pass
+    # This should not happen in Phase 1, but fail gracefully
+    print("⚠️  channels-redis not installed - Channels will use in-memory layer")
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
 
 # Specify the path to the GDAL and GEOS libraries if auto-detection fails
 if os.name == 'nt':  # Check if the operating system is Windows
