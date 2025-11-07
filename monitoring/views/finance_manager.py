@@ -188,7 +188,47 @@ def finance_cost_management(request):
 
 @user_passes_test(is_finance_or_head_engineer, login_url='/accounts/login/')
 def finance_notifications(request):
-    return render(request, 'finance_manager/finance_notifications.html')
+    """View for Finance Managers and Head Engineers to manage their notifications"""
+    from projeng.models import Notification
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from django.http import JsonResponse
+    
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        notification_id = request.POST.get('notification_id')
+
+        if action == 'mark_read' and notification_id:
+            try:
+                notification = Notification.objects.get(id=notification_id, recipient=request.user)
+                notification.is_read = True
+                notification.save()
+                return JsonResponse({'success': True})
+            except Notification.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Notification not found'})
+
+        elif action == 'mark_all_read':
+            notifications.update(is_read=True)
+            messages.success(request, "All notifications marked as read.")
+            return redirect('finance_notifications')
+
+        elif action == 'delete' and notification_id:
+            try:
+                notification = Notification.objects.get(id=notification_id, recipient=request.user)
+                notification.delete()
+                return JsonResponse({'success': True})
+            except Notification.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Notification not found'})
+
+    unread_count = notifications.filter(is_read=False).count()
+
+    context = {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    }
+    return render(request, 'finance_manager/finance_notifications.html', context)
 
 @user_passes_test(is_finance_or_head_engineer, login_url='/accounts/login/')
 def finance_project_detail(request, project_id):
