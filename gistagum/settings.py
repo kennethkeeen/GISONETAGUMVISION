@@ -161,7 +161,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# Timezone: Set to Philippine Standard Time (PST/Asia/Manila) for accurate real-time timestamps
+# Tagum City, Philippines is in UTC+8 timezone
+TIME_ZONE = 'Asia/Manila'
 USE_I18N = True
 USE_TZ = True
 
