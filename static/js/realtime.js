@@ -189,6 +189,36 @@ window.realtimeManager = new RealtimeManager();
  */
 let lastNotificationId = null;
 
+// Track shown notifications across page navigations using sessionStorage
+function getShownNotificationIds() {
+    try {
+        const stored = sessionStorage.getItem('shownNotificationIds');
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function addShownNotificationId(id) {
+    try {
+        const shown = getShownNotificationIds();
+        if (!shown.includes(id)) {
+            shown.push(id);
+            // Keep only last 50 IDs to prevent storage bloat
+            if (shown.length > 50) {
+                shown.shift();
+            }
+            sessionStorage.setItem('shownNotificationIds', JSON.stringify(shown));
+        }
+    } catch (e) {
+        console.error('Error storing shown notification ID:', e);
+    }
+}
+
+function hasNotificationBeenShown(id) {
+    return getShownNotificationIds().includes(id);
+}
+
 function setupRealtimeNotifications() {
     const notificationBell = document.getElementById('notification-bell');
     const notificationCount = document.getElementById('notification-count');
@@ -197,8 +227,11 @@ function setupRealtimeNotifications() {
 
     window.realtimeManager.connectNotifications((data) => {
         if (data.type === 'notification') {
-            // Only show notifications for NEW notifications (not on every page load)
-            const isNewNotification = data.notification && data.notification.id !== lastNotificationId;
+            // Check if this notification has already been shown (across page navigations)
+            const notificationId = data.notification ? data.notification.id : null;
+            const isNewNotification = notificationId && 
+                                     notificationId !== lastNotificationId && 
+                                     !hasNotificationBeenShown(notificationId);
             
             // Update notification count silently
             if (notificationCount) {
@@ -222,19 +255,22 @@ function setupRealtimeNotifications() {
                 }
             }
 
-            // Only show browser notification for NEW notifications (not on page load)
+            // Only show browser notification for NEW notifications (not on page load or already shown)
             if (isNewNotification && 'Notification' in window && Notification.permission === 'granted') {
                 new Notification('OneTagumVision', {
                     body: data.notification.message,
                     icon: '/static/img/tagum.jpg',
-                    tag: `notification-${data.notification.id}`, // Prevent duplicate notifications
+                    tag: `notification-${notificationId}`, // Prevent duplicate notifications
                     requireInteraction: false
                 });
+                
+                // Mark as shown
+                addShownNotificationId(notificationId);
             }
 
             // Update last notification ID
-            if (data.notification && data.notification.id) {
-                lastNotificationId = data.notification.id;
+            if (notificationId) {
+                lastNotificationId = notificationId;
             }
         }
     });
@@ -313,32 +349,13 @@ function updateDashboardCards(statusCounts, totalProjects) {
 }
 
 /**
- * Helper: Show recent updates
+ * Helper: Show recent updates (DISABLED - too intrusive, use notification badge instead)
  */
 function showRecentUpdates(updates) {
-    // Create or update recent updates section
-    let updatesContainer = document.getElementById('recent-updates');
-    if (!updatesContainer) {
-        updatesContainer = document.createElement('div');
-        updatesContainer.id = 'recent-updates';
-        updatesContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
-        document.body.appendChild(updatesContainer);
-    }
-
-    updates.forEach(update => {
-        const updateEl = document.createElement('div');
-        updateEl.className = 'bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in';
-        updateEl.innerHTML = `
-            <div class="font-semibold">${update.name}</div>
-            <div class="text-sm">Status: ${update.status}</div>
-        `;
-        updatesContainer.appendChild(updateEl);
-
-        // Remove after 5 seconds
-        setTimeout(() => {
-            updateEl.remove();
-        }, 5000);
-    });
+    // DISABLED: This function was creating persistent banners
+    // Notifications are now handled via the notification badge only
+    // Users can check the notifications page for details
+    return;
 }
 
 /**
