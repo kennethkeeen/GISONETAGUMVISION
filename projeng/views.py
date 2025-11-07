@@ -618,8 +618,8 @@ def add_progress_update(request, pk):
                 except Exception as e:
                     print(f"ERROR: Failed to sync MonitoringProject progress for {project.prn}: {e}")
 
-            notify_head_engineers(f"Progress for project '{project.name}' updated to {percentage_complete}% by {request.user.username}")
-            notify_admins(f"Progress for project '{project.name}' updated to {percentage_complete}% by {request.user.username}")
+            # Notifications are now handled by the signal in projeng/signals.py
+            # This prevents duplicate notifications
 
             return JsonResponse({
                 'success': True,
