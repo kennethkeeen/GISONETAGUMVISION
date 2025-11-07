@@ -16,4 +16,7 @@ whitenoise==6.7.0
 dj-database-url==2.2.0
 django-redis==5.4.0  # For Redis caching (optional - only needed if you add Redis)
 celery==5.3.4  # For background task processing
+channels==4.0.0  # For WebSocket support (Django Channels)
+channels-redis==4.1.0  # Redis backend for Channels
+daphne==4.0.0  # ASGI server for WebSocket support
 # GDAL==3.10.*  # Commented out - not needed (django.contrib.gis is disabled in settings.py)

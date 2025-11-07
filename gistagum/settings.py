@@ -51,7 +51,13 @@ INSTALLED_APPS = [
     # 'django.contrib.gis',  # Temporarily disabled due to GDAL issues
     'projeng',
     'django_extensions',
+    'channels',  # Django Channels for WebSocket support (Phase 1: Safe addition)
 ]
+
+# ASGI Application for WebSocket support (Phase 1: Safe addition)
+# This allows Django to handle WebSocket connections via Daphne
+# Gunicorn (WSGI) will still work for HTTP requests
+ASGI_APPLICATION = 'gistagum.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
