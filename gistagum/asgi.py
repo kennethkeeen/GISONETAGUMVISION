@@ -16,24 +16,22 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gistagum.settings')
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
-# Phase 1: Basic ASGI setup - only HTTP for now
-# WebSocket routing will be added in Phase 2
-# This ensures the system still works with Gunicorn (WSGI) for HTTP requests
-# and can optionally use Daphne (ASGI) for WebSocket support
+# Phase 2: Add WebSocket routing (parallel to SSE - safe addition)
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from channels.security.websocket import AllowedHostsOriginValidator
+from projeng import routing
 
-application = django_asgi_app
-
-# Phase 2 will add:
-# from channels.routing import ProtocolTypeRouter, URLRouter
-# from channels.auth import AuthMiddlewareStack
-# from channels.security.websocket import AllowedHostsOriginValidator
-# 
-# application = ProtocolTypeRouter({
-#     "http": django_asgi_app,
-#     "websocket": AllowedHostsOriginValidator(
-#         AuthMiddlewareStack(
-#             URLRouter(...)
-#         )
-#     ),
-# })
+application = ProtocolTypeRouter({
+    # HTTP requests still handled by Django (works with Gunicorn)
+    "http": django_asgi_app,
+    
+    # WebSocket connections handled by Channels (works with Daphne)
+    # This runs parallel to SSE - both systems work together
+    "websocket": AllowedHostsOriginValidator(
+        AuthMiddlewareStack(
+            URLRouter(routing.websocket_urlpatterns)
+        )
+    ),
+})
 
