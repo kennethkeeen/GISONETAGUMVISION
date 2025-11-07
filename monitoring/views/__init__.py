@@ -733,4 +733,53 @@ def is_finance_manager(user):
     return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Finance Manager').exists())
 
 def is_project_engineer(user):
-    return user.is_authenticated and (user.is_superuser or user.groups.filter(name='Project Engineer').exists())
+    return user.is_authenticated and user.groups.filter(name='Project Engineer').exists()
+
+@login_required
+def head_engineer_notifications(request):
+    """View for Head Engineers to manage their notifications"""
+    from projeng.models import Notification
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from django.http import JsonResponse
+    
+    # Only allow Head Engineers and Admins
+    if not (is_head_engineer(request.user) or request.user.is_superuser):
+        messages.error(request, "You don't have permission to view notifications.")
+        return redirect('dashboard')
+    
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        notification_id = request.POST.get('notification_id')
+
+        if action == 'mark_read' and notification_id:
+            try:
+                notification = Notification.objects.get(id=notification_id, recipient=request.user)
+                notification.is_read = True
+                notification.save()
+                return JsonResponse({'success': True})
+            except Notification.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Notification not found'})
+
+        elif action == 'mark_all_read':
+            notifications.update(is_read=True)
+            messages.success(request, "All notifications marked as read.")
+            return redirect('head_engineer_notifications')
+
+        elif action == 'delete' and notification_id:
+            try:
+                notification = Notification.objects.get(id=notification_id, recipient=request.user)
+                notification.delete()
+                return JsonResponse({'success': True})
+            except Notification.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Notification not found'})
+
+    unread_count = notifications.filter(is_read=False).count()
+
+    context = {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    }
+    return render(request, 'monitoring/notifications.html', context)
