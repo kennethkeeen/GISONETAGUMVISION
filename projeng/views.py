@@ -331,6 +331,8 @@ def update_project_status(request, pk):
                  return JsonResponse({'success': False, 'error': 'Invalid status provided.'}, status=400)
 
             project.status = new_status
+            # Store who made the update for notification purposes
+            project._updated_by_username = request.user.get_full_name() or request.user.username
             project.save()
 
             # You could also update the last_update field here if needed

@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from .models import Project, ProjectProgress, ProjectCost, ProjectDocument, Notification
@@ -49,27 +49,84 @@ def sync_projeng_to_monitoring(sender, instance, **kwargs):
     except Exception as e:
         print(f"SIGNAL ERROR: sync_projeng_to_monitoring failed for Project id={instance.id}, prn={instance.prn}: {e}")
 
+# Store old instance state before save
+_old_project_state = {}
+
+@receiver(pre_save, sender=Project)
+def store_old_project_state(sender, instance, **kwargs):
+    """Store the old state of the project before save to detect changes"""
+    if instance.pk:
+        try:
+            old_instance = Project.objects.get(pk=instance.pk)
+            _old_project_state[instance.pk] = {
+                'status': old_instance.status,
+                'project_cost': old_instance.project_cost,
+            }
+        except Project.DoesNotExist:
+            pass
+
 @receiver(post_save, sender=Project)
 def notify_project_updates(sender, instance, created, **kwargs):
     """Notify Head Engineers, Finance Managers, and Admins about project updates"""
+    from django.contrib.auth.models import User
+    
     if created:
-        message = f"New project created: {instance.name} (PRN: {instance.prn or 'N/A'}) by {instance.created_by.get_full_name() or instance.created_by.username}"
-        notify_head_engineers_and_finance(message)
+        # New project created
+        creator_name = instance.created_by.get_full_name() or instance.created_by.username if instance.created_by else 'Unknown'
+        message = f"New project created: {instance.name} (PRN: {instance.prn or 'N/A'}) by {creator_name}"
+        notify_head_engineers(message)
         notify_admins(message)
     else:
-        # Only notify on significant updates (status change, cost change, etc.)
-        # Skip notifications for routine saves to reduce noise
-        if hasattr(instance, '_notify_update'):
-            message = f"Project updated: {instance.name} (PRN: {instance.prn or 'N/A'}) by {instance.created_by.get_full_name() or instance.created_by.username}"
-            notify_head_engineers_and_finance(message)
+        # Project updated - check if it's a significant update
+        old_state = _old_project_state.pop(instance.pk, None) if instance.pk else None
+        
+        if old_state:
+            # Check if status changed
+            if old_state.get('status') != instance.status:
+                # Get the user who made the update (try to get from request if available)
+                updater_name = getattr(instance, '_updated_by_username', None)
+                if not updater_name and instance.created_by:
+                    updater_name = instance.created_by.get_full_name() or instance.created_by.username
+                if not updater_name:
+                    updater_name = 'Unknown'
+                
+                old_status_display = dict(Project.STATUS_CHOICES).get(old_state.get('status'), old_state.get('status', 'Unknown'))
+                new_status_display = instance.get_status_display()
+                message = f"Project status updated: {instance.name} (PRN: {instance.prn or 'N/A'}) changed from '{old_status_display}' to '{new_status_display}' by {updater_name}"
+                notify_head_engineers(message)
+                notify_admins(message)
+            # Check if cost changed significantly
+            elif old_state.get('project_cost') != instance.project_cost and instance.project_cost:
+                updater_name = getattr(instance, '_updated_by_username', None)
+                if not updater_name and instance.created_by:
+                    updater_name = instance.created_by.get_full_name() or instance.created_by.username
+                if not updater_name:
+                    updater_name = 'Unknown'
+                
+                old_cost = old_state.get('project_cost') or 0
+                new_cost = instance.project_cost or 0
+                message = f"Project budget updated: {instance.name} (PRN: {instance.prn or 'N/A'}) changed from ₱{old_cost:,.2f} to ₱{new_cost:,.2f} by {updater_name}"
+                notify_head_engineers(message)
+                notify_admins(message)
+        # If explicit notification flag is set, notify
+        elif hasattr(instance, '_notify_update') and instance._notify_update:
+            updater_name = getattr(instance, '_updated_by_username', None)
+            if not updater_name and instance.created_by:
+                updater_name = instance.created_by.get_full_name() or instance.created_by.username
+            if not updater_name:
+                updater_name = 'Unknown'
+            message = f"Project updated: {instance.name} (PRN: {instance.prn or 'N/A'}) by {updater_name}"
+            notify_head_engineers(message)
             notify_admins(message)
 
 @receiver(post_save, sender=ProjectProgress)
 def notify_progress_updates(sender, instance, created, **kwargs):
-    """Notify Head Engineers and Finance Managers about progress updates"""
+    """Notify Head Engineers about progress updates from project engineers"""
     if created:
-        message = f"Progress update: {instance.project.name} - {instance.percentage_complete}% complete on {instance.date.strftime('%B %d, %Y')} by {instance.created_by.get_full_name() or instance.created_by.username}"
-        notify_head_engineers_and_finance(message)
+        creator_name = instance.created_by.get_full_name() or instance.created_by.username if instance.created_by else 'Unknown'
+        message = f"Progress for project '{instance.project.name}' updated to {instance.percentage_complete}% by {creator_name}"
+        # Only notify head engineers (not finance managers for every progress update to reduce noise)
+        notify_head_engineers(message)
         notify_admins(message)
     # Skip notifications for progress modifications to reduce noise
 
@@ -77,8 +134,10 @@ def notify_progress_updates(sender, instance, created, **kwargs):
 def notify_cost_updates(sender, instance, created, **kwargs):
     """Notify Head Engineers and Finance Managers about cost updates"""
     if created:
-        message = f"Cost entry: {instance.project.name} - {instance.get_cost_type_display()} ₱{instance.amount:,.2f} on {instance.date.strftime('%B %d, %Y')} by {instance.created_by.get_full_name() or instance.created_by.username}"
-        notify_head_engineers_and_finance(message)
+        creator_name = instance.created_by.get_full_name() or instance.created_by.username if instance.created_by else 'Unknown'
+        message = f"Cost entry added: {instance.project.name} - {instance.get_cost_type_display()} ₱{instance.amount:,.2f} on {instance.date.strftime('%B %d, %Y')} by {creator_name}"
+        # Notify head engineers when finance managers or project engineers add costs
+        notify_head_engineers(message)
         notify_admins(message)
     # Skip notifications for cost modifications to reduce noise
 
