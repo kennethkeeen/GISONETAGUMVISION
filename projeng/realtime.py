@@ -53,7 +53,7 @@ def sse_notifications(request):
                             'notification': {
                                 'id': latest.id,
                                 'message': latest.message,
-                                'created_at': latest.created_at.isoformat()
+                                'created_at': timezone.localtime(latest.created_at).isoformat()  # Convert to local timezone
                             }
                         }
                         yield f"data: {json.dumps(data)}\n\n"
@@ -243,6 +243,6 @@ def realtime_api_status(request):
     return JsonResponse({
         'status': 'connected',
         'user': request.user.username,
-        'timestamp': timezone.now().isoformat()
+        'timestamp': timezone.localtime(timezone.now()).isoformat()  # Convert to local timezone
     })
 

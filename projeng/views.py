@@ -1153,7 +1153,7 @@ def notifications_api(request):
             {
                 'id': n.id,
                 'message': n.message,
-                'created_at': n.created_at.isoformat(),
+                'created_at': timezone.localtime(n.created_at).isoformat(),  # Convert to local timezone
                 'is_read': n.is_read
             }
             for n in notifications
