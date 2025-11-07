@@ -400,7 +400,7 @@ if REDIS_CONFIG:
     CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_RESULT_SERIALIZER = 'json'
-           CELERY_TIMEZONE = 'Asia/Manila'  # Match Django timezone for accurate timestamps
+    CELERY_TIMEZONE = 'Asia/Manila'  # Match Django timezone for accurate timestamps
     CELERY_TASK_TRACK_STARTED = True
     CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
     CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes soft limit
@@ -414,7 +414,7 @@ else:
     CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_RESULT_SERIALIZER = 'json'
-           CELERY_TIMEZONE = 'Asia/Manila'  # Match Django timezone for accurate timestamps
+    CELERY_TIMEZONE = 'Asia/Manila'  # Match Django timezone for accurate timestamps
 
 # ============================================================================
 # Django Channels Configuration (Phase 1: Safe addition - uses existing Redis)
