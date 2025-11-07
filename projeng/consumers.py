@@ -129,8 +129,9 @@ class ProjectUpdateConsumer(AsyncWebsocketConsumer):
                 "message": "Invalid JSON"
             }))
 
-    async def send_update(self, event):
+    async def send_project_update(self, event):
         """Send project update to WebSocket client"""
         # This method is called when a project update is broadcast
+        # The method name must match the "type" in group_send
         await self.send(text_data=json.dumps(event["data"]))
 

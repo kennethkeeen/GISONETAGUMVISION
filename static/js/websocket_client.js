@@ -241,10 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.wsManager.connectNotifications((data) => {
             // Handle notification updates (same as SSE handler)
             if (data.type === 'notification') {
-                // This will be handled by the existing notification handlers
-                // The realtime.js will handle the UI updates
+                // Pass to existing SSE handler for UI updates
+                // This ensures WebSocket messages use the same UI update logic as SSE
                 if (window.realtimeManager && window.realtimeManager._handleMessage) {
-                    // Pass to existing SSE handler for UI updates
                     window.realtimeManager._handleMessage('notifications', data);
                 }
             }
@@ -253,9 +252,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Connect to project updates WebSocket
         window.wsManager.connectProjects((data) => {
             // Handle project updates (same as SSE handler)
+            // Pass to existing SSE handler for UI updates
             if (window.realtimeManager && window.realtimeManager._handleMessage) {
-                // Pass to existing SSE handler for UI updates
-                window.realtimeManager._handleMessage('projects', data);
+                // Route based on data type
+                if (data.type === 'project_created' || data.type === 'project_updated' || 
+                    data.type === 'project_deleted' || data.type === 'project_status_changed' ||
+                    data.type === 'cost_updated' || data.type === 'progress_updated') {
+                    window.realtimeManager._handleMessage('projects', data);
+                    // Also trigger dashboard update
+                    window.realtimeManager._handleMessage('dashboard', {
+                        type: 'dashboard_update',
+                        project_update: data,
+                        source: 'websocket'
+                    });
+                } else {
+                    window.realtimeManager._handleMessage('projects', data);
+                }
             }
         });
     } else {

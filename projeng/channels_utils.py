@@ -64,7 +64,7 @@ def broadcast_project_update(update_data):
             async_to_sync(channel_layer.group_send)(
                 "project_updates",
                 {
-                    "type": "send_update",
+                    "type": "send_project_update",  # Must match consumer method name
                     "data": update_data
                 }
             )
