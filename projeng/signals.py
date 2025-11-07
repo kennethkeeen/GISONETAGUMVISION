@@ -166,6 +166,17 @@ def notify_progress_updates(sender, instance, created, **kwargs):
         # Only notify head engineers (not finance managers for every progress update to reduce noise)
         notify_head_engineers(message)
         notify_admins(message)
+        
+        # Phase 3: Also broadcast via WebSocket (parallel to SSE)
+        if WEBSOCKET_AVAILABLE:
+            try:
+                broadcast_progress_update(instance.project, {
+                    'percentage_complete': instance.percentage_complete,
+                    'date': instance.date.isoformat() if instance.date else None,
+                    'created_by': creator_name,
+                })
+            except Exception as e:
+                print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
     # Skip notifications for progress modifications to reduce noise
 
 @receiver(post_save, sender=ProjectCost)
@@ -187,6 +198,19 @@ def notify_cost_updates(sender, instance, created, **kwargs):
         # Notify head engineers when finance managers or project engineers add costs
         notify_head_engineers(message)
         notify_admins(message)
+        
+        # Phase 3: Also broadcast via WebSocket (parallel to SSE)
+        if WEBSOCKET_AVAILABLE:
+            try:
+                broadcast_cost_update(instance.project, {
+                    'amount': float(instance.amount),
+                    'formatted_amount': formatted_amount,
+                    'cost_type': instance.get_cost_type_display(),
+                    'date': instance.date.isoformat() if instance.date else None,
+                    'created_by': creator_name,
+                })
+            except Exception as e:
+                print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
     # Skip notifications for cost modifications to reduce noise
 
 @receiver(post_save, sender=ProjectDocument)
