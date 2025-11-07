@@ -315,13 +315,13 @@ if REDIS_URL and REDIS_URL.strip() and not REDIS_URL.startswith('redis://default
     # Also configure SSL options directly (backup method)
     if REDIS_URL.startswith('rediss://'):
         CELERY_BROKER_CONNECTION_OPTIONS = {
-            'ssl_cert_reqs': ssl.CERT_NONE,  # DigitalOcean Valkey doesn't require cert verification
+            'ssl_cert_reqs': ssl.CERT_REQUIRED,  # DigitalOcean Valkey doesn't require cert verification
             'ssl_ca_certs': None,
             'ssl_certfile': None,
             'ssl_keyfile': None,
         }
         CELERY_RESULT_BACKEND_CONNECTION_OPTIONS = {
-            'ssl_cert_reqs': ssl.CERT_NONE,
+            'ssl_cert_reqs': ssl.CERT_REQUIRED,
             'ssl_ca_certs': None,
             'ssl_certfile': None,
             'ssl_keyfile': None,
