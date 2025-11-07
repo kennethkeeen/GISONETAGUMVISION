@@ -309,6 +309,23 @@ if REDIS_URL:
     CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes soft limit
     CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Prevents worker from hoarding tasks
     CELERY_TASK_ACKS_LATE = True  # Tasks acknowledged after completion
+    
+    # SSL Configuration for Redis/Valkey (rediss://)
+    # DigitalOcean Valkey uses SSL, so we need to configure SSL options
+    if REDIS_URL.startswith('rediss://'):
+        import ssl
+        CELERY_BROKER_USE_SSL = {
+            'ssl_cert_reqs': ssl.CERT_NONE,  # DigitalOcean Valkey doesn't require cert verification
+            'ssl_ca_certs': None,
+            'ssl_certfile': None,
+            'ssl_keyfile': None,
+        }
+        CELERY_REDIS_BACKEND_USE_SSL = {
+            'ssl_cert_reqs': ssl.CERT_NONE,
+            'ssl_ca_certs': None,
+            'ssl_certfile': None,
+            'ssl_keyfile': None,
+        }
 else:
     # Fallback: Use database as broker (not recommended for production, but works)
     CELERY_BROKER_URL = 'db+postgresql://'  # Will use DATABASE_URL
