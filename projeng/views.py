@@ -1190,7 +1190,7 @@ def projects_updates_api(request):
                 'id': p.id,
                 'name': p.name,
                 'status': p.status,
-                'updated_at': p.updated_at.isoformat(),
+                'updated_at': timezone.localtime(p.updated_at).isoformat(),  # Convert to local timezone
                 'barangay': p.barangay or '',
             }
             for p in recent_projects
