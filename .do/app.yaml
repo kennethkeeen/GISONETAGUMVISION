@@ -65,3 +65,33 @@ services:
   - mount_path: /app/media
     name: media-storage
     size_gigabytes: 2
+
+# Worker component for background tasks (Celery)
+- name: gisonetagumvision-worker
+  github:
+    repo: kennethkeeen/GISONETAGUMVISION
+    branch: main
+    deploy_on_push: true
+  dockerfile_path: Dockerfile
+  source_dir: /
+  instance_count: 1
+  instance_size_slug: apps-s-1vcpu-1gb
+  run_command: celery -A gistagum worker --loglevel=info --concurrency=2
+  envs:
+  - key: DJANGO_SETTINGS_MODULE
+    scope: RUN_AND_BUILD_TIME
+    value: gistagum.settings
+  - key: DJANGO_SECRET_KEY
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+  - key: DEBUG
+    scope: RUN_AND_BUILD_TIME
+    value: "false"
+  - key: DATABASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${gistagum-db.DATABASE_URL}
+    type: SECRET
+  - key: REDIS_URL
+    scope: RUN_AND_BUILD_TIME
+    value: redis://default:YOUR_PASSWORD@YOUR_HOST:YOUR_PORT
+    type: SECRET

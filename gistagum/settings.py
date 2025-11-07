@@ -281,6 +281,30 @@ if DATABASE_URL and not DEBUG:
         })
         DATABASES['default']['OPTIONS'] = existing_options
 
+# Celery Configuration for Background Tasks
+REDIS_URL = os.environ.get('REDIS_URL', None)
+if REDIS_URL:
+    # Use Redis/Valkey as Celery broker and result backend
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'UTC'
+    CELERY_TASK_TRACK_STARTED = True
+    CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
+    CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes soft limit
+    CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Prevents worker from hoarding tasks
+    CELERY_TASK_ACKS_LATE = True  # Tasks acknowledged after completion
+else:
+    # Fallback: Use database as broker (not recommended for production, but works)
+    CELERY_BROKER_URL = 'db+postgresql://'  # Will use DATABASE_URL
+    CELERY_RESULT_BACKEND = 'db+postgresql://'  # Will use DATABASE_URL
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'UTC'
+
 # Specify the path to the GDAL and GEOS libraries if auto-detection fails
 if os.name == 'nt':  # Check if the operating system is Windows
     GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
