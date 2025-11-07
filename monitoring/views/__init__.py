@@ -891,6 +891,19 @@ def head_engineer_notifications(request):
             except Exception as e:
                 return JsonResponse({'success': False, 'error': str(e)})
 
+        elif action == 'delete_all':
+            try:
+                deleted_count = notifications.delete()[0]
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'{deleted_count} notifications deleted'})
+                messages.success(request, f"All {deleted_count} notifications deleted.")
+                return redirect('head_engineer_notifications')
+            except Exception as e:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': str(e)})
+                messages.error(request, f"Error deleting notifications: {str(e)}")
+                return redirect('head_engineer_notifications')
+
     # Pagination for large number of notifications
     paginator = Paginator(notifications, 50)  # Show 50 notifications per page
     page_number = request.GET.get('page', 1)

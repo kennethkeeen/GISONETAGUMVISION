@@ -1092,6 +1092,15 @@ def notifications_view(request):
             except Notification.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Notification not found'})
 
+        elif action == 'delete_all':
+            try:
+                deleted_count = notifications.delete()[0]
+                messages.success(request, f"All {deleted_count} notifications deleted.")
+                return redirect('projeng:projeng_notifications')
+            except Exception as e:
+                messages.error(request, f"Error deleting notifications: {str(e)}")
+                return redirect('projeng:projeng_notifications')
+
     unread_count = notifications.filter(is_read=False).count()
 
     context = {

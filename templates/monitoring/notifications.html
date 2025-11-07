@@ -7,6 +7,9 @@
             <button id="markAllReadBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
                 Mark All as Read
             </button>
+            <button id="deleteAllBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                Delete All
+            </button>
             <span class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-medium" id="unreadCount">
                 {{ unread_count }} unread
             </span>
@@ -130,6 +133,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Failed to mark all notifications as read. Please try again.');
                 this.disabled = false;
                 this.textContent = 'Mark All as Read';
+            });
+        });
+    }
+
+    // Delete all notifications
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', function() {
+            if (!confirm('Are you sure you want to delete ALL notifications? This action cannot be undone.')) {
+                return;
+            }
+            
+            // Disable button to prevent double-click
+            this.disabled = true;
+            this.textContent = 'Deleting...';
+            
+            const formData = new FormData();
+            formData.append('action', 'delete_all');
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch('{% url "head_engineer_notifications" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Reload page to show empty state
+                    window.location.reload();
+                } else {
+                    throw new Error(data.error || 'Failed to delete all notifications');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete all notifications. Please try again.');
+                this.disabled = false;
+                this.textContent = 'Delete All';
             });
         });
     }
