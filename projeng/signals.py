@@ -169,7 +169,17 @@ def notify_progress_deletion(sender, instance, **kwargs):
 @receiver(post_delete, sender=ProjectCost)
 def notify_cost_deletion(sender, instance, **kwargs):
     """Notify Head Engineers and Admins about cost deletion"""
-    message = f"Cost entry deleted: {instance.project.name} - {instance.get_cost_type_display()} cost of {instance.amount} on {instance.date} by {instance.created_by.get_full_name() or instance.created_by.username}"
+    # Safely format amount
+    try:
+        if isinstance(instance.amount, str):
+            amount_value = float(instance.amount)
+        else:
+            amount_value = float(instance.amount)
+        formatted_amount = f"₱{amount_value:,.2f}"
+    except (ValueError, TypeError):
+        formatted_amount = f"₱{instance.amount}"
+    
+    message = f"Cost entry deleted: {instance.project.name} - {instance.get_cost_type_display()} cost of {formatted_amount} on {instance.date} by {instance.created_by.get_full_name() or instance.created_by.username}"
     notify_head_engineers(message)
     notify_admins(message)
 
