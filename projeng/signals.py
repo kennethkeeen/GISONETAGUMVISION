@@ -5,6 +5,23 @@ from .models import Project, ProjectProgress, ProjectCost, ProjectDocument, Noti
 from monitoring.models import Project as MonitoringProject
 from .utils import notify_head_engineers, notify_admins, notify_finance_managers, notify_head_engineers_and_finance
 
+# Phase 3: Import WebSocket broadcasting utilities (parallel to SSE)
+try:
+    from .channels_utils import (
+        broadcast_notification_to_user,
+        broadcast_project_created,
+        broadcast_project_updated,
+        broadcast_project_deleted,
+        broadcast_project_status_change,
+        broadcast_cost_update,
+        broadcast_progress_update,
+    )
+    WEBSOCKET_AVAILABLE = True
+except ImportError:
+    # WebSocket not available - fail gracefully, SSE still works
+    WEBSOCKET_AVAILABLE = False
+    print("⚠️  WebSocket broadcasting not available (SSE still works)")
+
 @receiver(post_save, sender=Project)
 def sync_projeng_to_monitoring(sender, instance, **kwargs):
     print(f"SIGNAL: sync_projeng_to_monitoring called for Project id={instance.id}, prn={instance.prn}")
@@ -76,6 +93,13 @@ def notify_project_updates(sender, instance, created, **kwargs):
         message = f"New project created: {instance.name} (PRN: {instance.prn or 'N/A'}) by {creator_name}"
         notify_head_engineers(message)
         notify_admins(message)
+        
+        # Phase 3: Also broadcast via WebSocket (parallel to SSE)
+        if WEBSOCKET_AVAILABLE:
+            try:
+                broadcast_project_created(instance)
+            except Exception as e:
+                print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
     else:
         # Project updated - check if it's a significant update
         old_state = _old_project_state.pop(instance.pk, None) if instance.pk else None
@@ -95,6 +119,13 @@ def notify_project_updates(sender, instance, created, **kwargs):
                 message = f"Project status updated: {instance.name} (PRN: {instance.prn or 'N/A'}) changed from '{old_status_display}' to '{new_status_display}' by {updater_name}"
                 notify_head_engineers(message)
                 notify_admins(message)
+                
+                # Phase 3: Also broadcast via WebSocket (parallel to SSE)
+                if WEBSOCKET_AVAILABLE:
+                    try:
+                        broadcast_project_status_change(instance, old_state.get('status'), instance.status)
+                    except Exception as e:
+                        print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
             # Check if cost changed significantly
             elif old_state.get('project_cost') != instance.project_cost and instance.project_cost:
                 updater_name = getattr(instance, '_updated_by_username', None)
@@ -108,6 +139,13 @@ def notify_project_updates(sender, instance, created, **kwargs):
                 message = f"Project budget updated: {instance.name} (PRN: {instance.prn or 'N/A'}) changed from ₱{old_cost:,.2f} to ₱{new_cost:,.2f} by {updater_name}"
                 notify_head_engineers(message)
                 notify_admins(message)
+                
+                # Phase 3: Also broadcast via WebSocket (parallel to SSE)
+                if WEBSOCKET_AVAILABLE:
+                    try:
+                        broadcast_project_updated(instance, changes={'project_cost': {'old': old_cost, 'new': new_cost}})
+                    except Exception as e:
+                        print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
         # If explicit notification flag is set, notify
         elif hasattr(instance, '_notify_update') and instance._notify_update:
             updater_name = getattr(instance, '_updated_by_username', None)

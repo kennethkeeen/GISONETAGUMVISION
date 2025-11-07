@@ -383,6 +383,13 @@ def project_delete_api(request, pk):
                     message=f"Project '{project_display}' that you were assigned to has been deleted by {deleter_name}"
                 )
             
+            # Phase 3: Also broadcast via WebSocket (parallel to SSE)
+            try:
+                from projeng.channels_utils import broadcast_project_deleted
+                broadcast_project_deleted(project_name, project_prn)
+            except Exception as e:
+                print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
+            
             return JsonResponse({
                 'success': True,
                 'message': f'Project "{project_name}" deleted successfully'
