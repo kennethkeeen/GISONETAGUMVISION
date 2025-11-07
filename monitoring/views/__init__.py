@@ -321,8 +321,8 @@ def project_delete_api(request, pk):
     if request.method != 'POST' and request.method != 'DELETE':
         return HttpResponseNotAllowed(['POST', 'DELETE'])
     
-    with transaction.atomic():
-        try:
+    try:
+        with transaction.atomic():
             project_name = None
             project_prn = None
             assigned_engineers = []
@@ -388,13 +388,13 @@ def project_delete_api(request, pk):
                 'message': f'Project "{project_name}" deleted successfully'
             })
             
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({
-                'success': False,
-                'error': f'An error occurred while deleting the project: {str(e)}'
-            }, status=500)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': f'An error occurred while deleting the project: {str(e)}'
+        }, status=500)
 
 def delayed_projects(request):
     return HttpResponse("delayed_projects placeholder")
