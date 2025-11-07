@@ -230,8 +230,10 @@ CACHES = {
 
 # If Redis/Valkey is available in production, use it
 # Note: Valkey is Redis-compatible, so REDIS_URL works for both
-REDIS_URL = os.environ.get('REDIS_URL', None)
-if REDIS_URL and not DEBUG:
+# REDIS_URL is now configured in the Celery section below for better organization
+# This section uses the same REDIS_URL for caching
+REDIS_URL_FOR_CACHE = os.environ.get('REDIS_URL', '').strip()
+if REDIS_URL_FOR_CACHE and not REDIS_URL_FOR_CACHE.startswith('redis://default:YOUR_PASSWORD') and not DEBUG:
     # Use Redis/Valkey for caching
     # Connection errors will be handled gracefully by Django's cache framework
     # If connection fails, Django will raise an exception that can be caught
@@ -239,7 +241,7 @@ if REDIS_URL and not DEBUG:
         CACHES = {
             'default': {
                 'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-                'LOCATION': REDIS_URL,
+                'LOCATION': REDIS_URL_FOR_CACHE,
                 'OPTIONS': {
                     'CLIENT_CLASS': 'django_redis.client.DefaultClient',
                     'SSL_CERT_REQS': None,  # For DigitalOcean SSL connections (rediss://)
@@ -320,52 +322,73 @@ if DATABASE_URL and not DEBUG:
         })
         DATABASES['default']['OPTIONS'] = existing_options
 
-# Celery Configuration for Background Tasks
-REDIS_URL = os.environ.get('REDIS_URL', None)
-if REDIS_URL and REDIS_URL.strip() and not REDIS_URL.startswith('redis://default:YOUR_PASSWORD'):
-    # SSL Configuration for Redis/Valkey (rediss://)
-    # DigitalOcean Valkey uses SSL, so we need to configure SSL options
-    import ssl
+# ============================================================================
+# Redis/Valkey Configuration - Handles both secure (rediss://) and plain (redis://) connections
+# ============================================================================
+import ssl
+from urllib.parse import urlparse
+
+REDIS_URL = os.environ.get('REDIS_URL', '').strip()
+
+# Initialize Redis configuration
+REDIS_CONFIG = None
+REDIS_SSL_CONFIG = None
+
+if REDIS_URL and REDIS_URL and not REDIS_URL.startswith('redis://default:YOUR_PASSWORD'):
+    # Determine if this is a secure (SSL) or plain connection
+    is_secure = REDIS_URL.startswith('rediss://')
     
-    # CRITICAL FIX: Append ssl_cert_reqs to URL if it's rediss:// and not already present
-    # This must be done BEFORE setting CELERY_BROKER_URL and CELERY_RESULT_BACKEND
-    # Celery REQUIRES this parameter in the URL itself, not just in connection options
-    if REDIS_URL.startswith('rediss://'):
+    if is_secure:
+        # Secure Redis connection (SSL) - DigitalOcean Valkey uses this
+        # CRITICAL: Celery requires ssl_cert_reqs parameter in the URL
         if 'ssl_cert_reqs' not in REDIS_URL:
             separator = '&' if '?' in REDIS_URL else '?'
-            # Use 'none' to match CERT_NONE (or 'required' for CERT_REQUIRED)
-            # Using 'none' is safer for DigitalOcean Valkey
+            # Use 'none' for CERT_NONE (safer for DigitalOcean Valkey)
+            # Change to 'required' if you have proper SSL certificates
             REDIS_URL = f"{REDIS_URL}{separator}ssl_cert_reqs=none"
-        # Also ensure the URL is properly formatted
-        print(f"DEBUG: REDIS_URL after modification: {REDIS_URL[:50]}...")  # Log first 50 chars for debugging
-    
-    # Use Redis/Valkey as Celery broker and result backend
-    # The URL now includes ssl_cert_reqs=none which Celery requires
-    CELERY_BROKER_URL = REDIS_URL
-    CELERY_RESULT_BACKEND = REDIS_URL
-    
-    # Also configure SSL options directly (backup method)
-    # IMPORTANT: These should match what's in the URL parameter
-    # If URL has ssl_cert_reqs=none, use CERT_NONE here
-    if REDIS_URL.startswith('rediss://'):
-        # Match the URL parameter - if URL says 'none', use CERT_NONE
+        
+        # Parse URL to extract connection details
+        parsed = urlparse(REDIS_URL)
+        
+        # SSL Configuration for Celery
         cert_reqs = ssl.CERT_NONE if 'ssl_cert_reqs=none' in REDIS_URL else ssl.CERT_REQUIRED
-        CELERY_BROKER_CONNECTION_OPTIONS = {
+        
+        REDIS_SSL_CONFIG = {
             'ssl_cert_reqs': cert_reqs,
             'ssl_ca_certs': None,
             'ssl_certfile': None,
             'ssl_keyfile': None,
         }
-        CELERY_RESULT_BACKEND_CONNECTION_OPTIONS = {
-            'ssl_cert_reqs': cert_reqs,
-            'ssl_ca_certs': None,
-            'ssl_certfile': None,
-            'ssl_keyfile': None,
-        }
+        
+        # Log successful SSL configuration (without exposing password)
+        safe_url = REDIS_URL.split('@')[-1] if '@' in REDIS_URL else REDIS_URL
+        print(f"✅ Connected to Redis server {safe_url} using SSL")
+    else:
+        # Normal Redis connection (no SSL)
+        print(f"✅ Connected to Redis server (non-SSL)")
+    
+    # Store the configured URL
+    REDIS_CONFIG = REDIS_URL
+else:
+    print("⚠️  REDIS_URL not configured. Using database fallback for Celery.")
+
+# ============================================================================
+# Celery Configuration for Background Tasks
+# ============================================================================
+if REDIS_CONFIG:
+    # Use Redis/Valkey as Celery broker and result backend
+    CELERY_BROKER_URL = REDIS_CONFIG
+    CELERY_RESULT_BACKEND = REDIS_CONFIG
+    
+    # Configure SSL options if using secure connection
+    if REDIS_SSL_CONFIG:
+        CELERY_BROKER_CONNECTION_OPTIONS = REDIS_SSL_CONFIG.copy()
+        CELERY_RESULT_BACKEND_CONNECTION_OPTIONS = REDIS_SSL_CONFIG.copy()
     else:
         # For non-SSL Redis connections
         CELERY_BROKER_CONNECTION_OPTIONS = {}
         CELERY_RESULT_BACKEND_CONNECTION_OPTIONS = {}
+    
     CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_RESULT_SERIALIZER = 'json'
@@ -377,12 +400,55 @@ if REDIS_URL and REDIS_URL.strip() and not REDIS_URL.startswith('redis://default
     CELERY_TASK_ACKS_LATE = True  # Tasks acknowledged after completion
 else:
     # Fallback: Use database as broker (not recommended for production, but works)
+    print("⚠️  Using database as Celery broker (fallback mode)")
     CELERY_BROKER_URL = 'db+postgresql://'  # Will use DATABASE_URL
     CELERY_RESULT_BACKEND = 'db+postgresql://'  # Will use DATABASE_URL
     CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_RESULT_SERIALIZER = 'json'
     CELERY_TIMEZONE = 'UTC'
+
+# ============================================================================
+# Django Channels Configuration (Optional - for WebSocket support)
+# ============================================================================
+# Uncomment and install 'channels' and 'channels-redis' if you want WebSocket support
+# INSTALLED_APPS should include 'channels' if using this
+try:
+    import channels_redis
+    # Channels is available
+    if REDIS_CONFIG:
+        # Configure Channel Layers for WebSocket support
+        if REDIS_CONFIG.startswith('rediss://'):
+            # Secure Redis connection for Channels
+            CHANNEL_LAYERS = {
+                "default": {
+                    "BACKEND": "channels_redis.core.RedisChannelLayer",
+                    "CONFIG": {
+                        "hosts": [{
+                            "address": REDIS_CONFIG,
+                            "ssl": True,
+                            "ssl_cert_reqs": ssl.CERT_NONE,  # Match Celery config
+                        }],
+                    },
+                },
+            }
+            print("✅ Django Channels configured with SSL Redis connection")
+        else:
+            # Plain Redis connection for Channels
+            CHANNEL_LAYERS = {
+                "default": {
+                    "BACKEND": "channels_redis.core.RedisChannelLayer",
+                    "CONFIG": {
+                        "hosts": [REDIS_CONFIG],
+                    },
+                },
+            }
+            print("✅ Django Channels configured with Redis connection")
+    else:
+        print("⚠️  Django Channels not configured (REDIS_URL not set)")
+except ImportError:
+    # Channels not installed - that's okay, it's optional
+    pass
 
 # Specify the path to the GDAL and GEOS libraries if auto-detection fails
 if os.name == 'nt':  # Check if the operating system is Windows
