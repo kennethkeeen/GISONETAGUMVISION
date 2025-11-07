@@ -309,7 +309,6 @@ def project_update_api(request, pk):
 
 @login_required
 @head_engineer_required
-@transaction.atomic
 def project_delete_api(request, pk):
     """Delete a project and notify all relevant users"""
     from django.db import transaction
@@ -322,7 +321,8 @@ def project_delete_api(request, pk):
     if request.method != 'POST' and request.method != 'DELETE':
         return HttpResponseNotAllowed(['POST', 'DELETE'])
     
-    try:
+    with transaction.atomic():
+        try:
         project_name = None
         project_prn = None
         assigned_engineers = []
@@ -383,19 +383,18 @@ def project_delete_api(request, pk):
                 message=f"Project '{project_display}' that you were assigned to has been deleted by {deleter_name}"
             )
         
-        return JsonResponse({
-            'success': True,
-            'message': f'Project "{project_name}" deleted successfully'
-        })
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        transaction.set_rollback(True)
-        return JsonResponse({
-            'success': False,
-            'error': f'An error occurred while deleting the project: {str(e)}'
-        }, status=500)
+            return JsonResponse({
+                'success': True,
+                'message': f'Project "{project_name}" deleted successfully'
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'An error occurred while deleting the project: {str(e)}'
+            }, status=500)
 
 def delayed_projects(request):
     return HttpResponse("delayed_projects placeholder")
