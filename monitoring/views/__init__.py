@@ -88,6 +88,11 @@ def dashboard(request):
 
 @login_required
 def project_list(request):
+    from django.shortcuts import redirect
+    # Redirect Project Engineers to their own projects page
+    if is_project_engineer(request.user) and not (is_head_engineer(request.user) or is_finance_manager(request.user)):
+        return redirect('/projeng/my-projects/')
+    
     if request.method == 'POST':
         form = ProjectForm(request.POST, request.FILES)
         if form.is_valid():
@@ -382,7 +387,18 @@ def head_engineer_analytics(request):
 def project_detail(request, pk):
     return HttpResponse("project_detail placeholder")
 
+@login_required
 def head_engineer_project_detail(request, pk):
+    # Only allow Head Engineers and Admins
+    if not (is_head_engineer(request.user) or request.user.is_superuser):
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.error(request, "You don't have permission to access this page.")
+        # Redirect Project Engineers to their own dashboard
+        if is_project_engineer(request.user):
+            return redirect('/projeng/dashboard/')
+        return redirect('dashboard')
+    
     from projeng.models import Project, ProjectProgress, ProjectCost
     from django.contrib.auth.models import User
     import json
@@ -417,7 +433,12 @@ def head_engineer_project_detail(request, pk):
     }
     return render(request, 'monitoring/head_engineer_project_detail.html', context)
 
+@login_required
 def head_dashboard_card_data_api(request):
+    # Only allow Head Engineers and Admins
+    if not (is_head_engineer(request.user) or request.user.is_superuser):
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'Permission denied'}, status=403)
     return HttpResponse("head_dashboard_card_data_api placeholder")
 
 def barangay_geojson_view(request):
