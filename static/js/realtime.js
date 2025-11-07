@@ -287,10 +287,11 @@ function setupRealtimeDashboard() {
                 updateDashboardCards(data.status_counts, data.total_projects);
             }
 
-            // Show recent updates
-            if (data.recent_updates && data.recent_updates.length > 0) {
-                showRecentUpdates(data.recent_updates);
-            }
+            // Recent updates banner is disabled - too intrusive
+            // Users can check notifications page for details
+            // if (data.recent_updates && data.recent_updates.length > 0) {
+            //     showRecentUpdates(data.recent_updates);
+            // }
         }
     });
 }
