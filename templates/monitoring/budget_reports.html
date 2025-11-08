@@ -1,7 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .bg-white { background: white !important; }
+  .shadow { box-shadow: none !important; }
+  .rounded-xl { border-radius: 0 !important; }
+  h1, h2 { page-break-after: avoid; }
+  .section { page-break-inside: avoid; }
+}
+</style>
 <div class="container mx-auto px-4 py-8 bg-gray-100 min-h-screen">
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex items-center justify-between mb-6 no-print">
     <h1 class="text-3xl font-bold text-gray-800">Budget Reports</h1>
     <div class="flex justify-end mb-6">
       <div class="relative inline-block text-left">
@@ -13,14 +24,69 @@
         </button>
         <div id="export-dropdown-menu" class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-50" role="menu" aria-orientation="vertical" aria-labelledby="export-dropdown-btn">
           <div class="py-1" role="none">
-            <a href="{% url 'export_budget_reports_csv' %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Export CSV</a>
-            <a href="{% url 'export_budget_reports_excel' %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Export Excel</a>
-            <a href="{% url 'export_budget_reports_pdf' %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">Export PDF</a>
+            <a href="{% url 'export_budget_reports_pdf' %}" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📄 Export to PDF</a>
+            <a href="{% url 'export_budget_reports_excel' %}" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📊 Export to Excel</a>
+            <a href="{% url 'export_budget_reports_csv' %}" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📋 Export to CSV</a>
+            <button onclick="window.print()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">🖨️ Print Report</button>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow p-6">
+      <div class="text-sm text-gray-600 font-semibold mb-2">Total Budget</div>
+      <div class="text-3xl font-bold text-blue-700">₱{{ total_budget_sum|floatformat:2 }}</div>
+      <div class="text-xs text-gray-500 mt-1">{{ project_data|length }} project{{ project_data|length|pluralize }}</div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow p-6">
+      <div class="text-sm text-gray-600 font-semibold mb-2">Total Spent</div>
+      <div class="text-3xl font-bold text-orange-600">₱{{ total_spent_sum|floatformat:2 }}</div>
+      <div class="text-xs text-gray-500 mt-1">Remaining: ₱{{ total_remaining_sum|floatformat:2 }}</div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow p-6">
+      <div class="text-sm text-gray-600 font-semibold mb-2">Over Budget Projects</div>
+      <div class="text-3xl font-bold text-red-600">{{ over_count }}</div>
+      {% if over_count > 0 %}
+      <div class="mt-2 text-xs text-red-600 font-semibold">⚠️ Requires Attention</div>
+      {% else %}
+      <div class="mt-2 text-xs text-green-600 font-semibold">✓ All within budget</div>
+      {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-xl shadow p-6">
+      <div class="text-sm text-gray-600 font-semibold mb-2">At Risk Projects</div>
+      <div class="text-3xl font-bold text-yellow-600">{{ at_risk_count }}</div>
+      {% if at_risk_count > 0 %}
+      <div class="mt-2 text-xs text-yellow-600 font-semibold">⚠️ 90%+ utilization</div>
+      {% else %}
+      <div class="mt-2 text-xs text-green-600 font-semibold">✓ All safe</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Budget Alerts -->
+  {% if over_count > 0 %}
+  <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-red-800">Critical: {{ over_count }} Project{{ over_count|pluralize }} Over Budget</h3>
+        <div class="mt-2 text-sm text-red-700">
+          <p>Immediate review required for projects exceeding allocated budget. Consider reallocating funds or requesting additional budget approval.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="bg-white rounded-xl shadow p-6 mb-8 overflow-x-auto">
     <table class="w-full min-w-[900px] divide-y divide-gray-200 text-sm">

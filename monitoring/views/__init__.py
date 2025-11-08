@@ -315,6 +315,9 @@ def budget_reports(request):
     utilizations = []
     over_count = 0
     under_count = 0
+    total_budget_sum = 0
+    total_spent_sum = 0
+    at_risk_count = 0
     for p in projects:
         # Calculate spent and utilization
         costs = ProjectCost.objects.filter(project=p)
@@ -327,6 +330,11 @@ def budget_reports(request):
             over_count += 1
         else:
             under_count += 1
+        # Calculate summary totals
+        total_budget_sum += budget
+        total_spent_sum += spent
+        if utilization > 90 and utilization <= 100:
+            at_risk_count += 1
         # Cost breakdown by type
         cost_breakdown_map = defaultdict(float)
         for c in costs:
@@ -357,6 +365,10 @@ def budget_reports(request):
         'utilizations': json.dumps(utilizations),
         'over_count': over_count,
         'under_count': under_count,
+        'total_budget_sum': total_budget_sum,
+        'total_spent_sum': total_spent_sum,
+        'total_remaining_sum': total_budget_sum - total_spent_sum,
+        'at_risk_count': at_risk_count,
     }
     return render(request, 'monitoring/budget_reports.html', context)
 
@@ -1107,3 +1119,275 @@ def head_engineer_notifications(request):
         'page_obj': page_obj,  # For pagination controls
     }
     return render(request, 'monitoring/notifications.html', context)
+
+@login_required
+@head_engineer_required
+def export_project_comprehensive_pdf(request, pk):
+    """Export comprehensive project report (Progress + Budget) as PDF"""
+    from projeng.models import Project, ProjectProgress, ProjectCost
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    try:
+        project = Project.objects.get(pk=pk)
+    except Project.DoesNotExist:
+        return HttpResponse('Project not found.', status=404)
+    
+    # Get all progress updates
+    progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
+    
+    # Get all cost entries
+    costs = ProjectCost.objects.filter(project=project).order_by('date')
+    
+    # Calculate analytics
+    latest_progress = progress_updates.last() if progress_updates else None
+    total_progress = latest_progress.percentage_complete if latest_progress else 0
+    total_cost = sum([float(c.amount) for c in costs]) if costs else 0
+    budget = float(project.project_cost) if project.project_cost else 0
+    remaining_budget = budget - total_cost
+    budget_utilization = (total_cost / budget * 100) if budget > 0 else 0
+    
+    # Calculate timeline
+    today = timezone.now().date()
+    days_elapsed = (today - project.start_date).days if project.start_date else 0
+    total_days = (project.end_date - project.start_date).days if project.start_date and project.end_date else 0
+    days_remaining = total_days - days_elapsed if total_days > 0 else 0
+    
+    # Cost breakdown by category
+    from collections import defaultdict
+    cost_breakdown = defaultdict(float)
+    for cost in costs:
+        cost_breakdown[cost.get_cost_type_display()] += float(cost.amount)
+    
+    # Assigned engineers
+    assigned_engineers = project.assigned_engineers.all()
+    
+    # If xhtml2pdf is unavailable, return a friendly message
+    if pisa is None:
+        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
+    
+    # Render the HTML template for the PDF
+    template_path = 'monitoring/project_comprehensive_report_pdf.html'
+    template = get_template(template_path)
+    context = {
+        'project': project,
+        'progress_updates': progress_updates,
+        'costs': costs,
+        'latest_progress': latest_progress,
+        'total_progress': total_progress,
+        'total_cost': total_cost,
+        'budget': budget,
+        'remaining_budget': remaining_budget,
+        'budget_utilization': budget_utilization,
+        'days_elapsed': days_elapsed,
+        'total_days': total_days,
+        'days_remaining': days_remaining,
+        'cost_breakdown': dict(cost_breakdown),
+        'assigned_engineers': assigned_engineers,
+        'generated_by': request.user.get_full_name() or request.user.username,
+        'generated_at': timezone.now(),
+    }
+    html = template.render(context)
+    
+    # Create PDF
+    result = io.BytesIO()
+    pdf = pisa.CreatePDF(io.BytesIO(html.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        filename = f"project_report_{project.prn or project.id}_{timezone.now().strftime('%Y%m%d')}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    return HttpResponse('Error generating PDF', content_type='text/plain')
+
+@login_required
+@head_engineer_required
+def export_project_comprehensive_excel(request, pk):
+    """Export comprehensive project report (Progress + Budget) as Excel"""
+    from projeng.models import Project, ProjectProgress, ProjectCost
+    from django.utils import timezone
+    from collections import defaultdict
+    
+    try:
+        project = Project.objects.get(pk=pk)
+    except Project.DoesNotExist:
+        return HttpResponse('Project not found.', status=404)
+    
+    # Get all progress updates
+    progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
+    
+    # Get all cost entries
+    costs = ProjectCost.objects.filter(project=project).order_by('date')
+    
+    # Calculate analytics
+    latest_progress = progress_updates.last() if progress_updates else None
+    total_progress = latest_progress.percentage_complete if latest_progress else 0
+    total_cost = sum([float(c.amount) for c in costs]) if costs else 0
+    budget = float(project.project_cost) if project.project_cost else 0
+    remaining_budget = budget - total_cost
+    budget_utilization = (total_cost / budget * 100) if budget > 0 else 0
+    
+    # Create Excel workbook
+    wb = openpyxl.Workbook()
+    
+    # Sheet 1: Project Overview
+    ws1 = wb.active
+    ws1.title = "Project Overview"
+    ws1.append(['PROJECT COMPREHENSIVE REPORT'])
+    ws1.append(['Project Name', project.name])
+    ws1.append(['PRN Number', project.prn or 'N/A'])
+    ws1.append(['Location', project.barangay or 'N/A'])
+    ws1.append(['Status', project.get_status_display()])
+    ws1.append(['Start Date', str(project.start_date) if project.start_date else 'N/A'])
+    ws1.append(['End Date', str(project.end_date) if project.end_date else 'N/A'])
+    ws1.append(['Assigned Engineers', ', '.join([e.get_full_name() or e.username for e in project.assigned_engineers.all()])])
+    ws1.append([])
+    ws1.append(['PROGRESS SUMMARY'])
+    ws1.append(['Overall Progress', f'{total_progress}%'])
+    ws1.append(['BUDGET SUMMARY'])
+    ws1.append(['Total Budget', f'₱{budget:,.2f}'])
+    ws1.append(['Total Spent', f'₱{total_cost:,.2f}'])
+    ws1.append(['Remaining', f'₱{remaining_budget:,.2f}'])
+    ws1.append(['Utilization', f'{budget_utilization:.2f}%'])
+    
+    # Sheet 2: Progress Details
+    ws2 = wb.create_sheet("Progress Details")
+    ws2.append(['Date', 'Progress %', 'Description', 'Engineer'])
+    for update in progress_updates:
+        engineer_name = update.created_by.get_full_name() or update.created_by.username if update.created_by else 'N/A'
+        ws2.append([
+            str(update.date),
+            update.percentage_complete,
+            update.description or '',
+            engineer_name
+        ])
+    
+    # Sheet 3: Budget Details
+    ws3 = wb.create_sheet("Budget Details")
+    ws3.append(['Date', 'Category', 'Description', 'Amount'])
+    for cost in costs:
+        ws3.append([
+            str(cost.date),
+            cost.get_cost_type_display(),
+            cost.description or '',
+            float(cost.amount)
+        ])
+    ws3.append([])
+    ws3.append(['TOTAL', '', '', f'₱{total_cost:,.2f}'])
+    
+    # Sheet 4: Cost Breakdown
+    ws4 = wb.create_sheet("Cost Breakdown")
+    cost_breakdown = defaultdict(float)
+    for cost in costs:
+        cost_breakdown[cost.get_cost_type_display()] += float(cost.amount)
+    ws4.append(['Category', 'Amount'])
+    for category, amount in cost_breakdown.items():
+        ws4.append([category, f'₱{amount:,.2f}'])
+    ws4.append(['TOTAL', f'₱{total_cost:,.2f}'])
+    
+    # Sheet 5: Progress vs Budget
+    ws5 = wb.create_sheet("Progress vs Budget")
+    ws5.append(['Date', 'Progress %', 'Budget Used %', 'Efficiency Ratio'])
+    for update in progress_updates:
+        # Calculate budget used up to this date
+        costs_up_to_date = ProjectCost.objects.filter(project=project, date__lte=update.date)
+        budget_used = sum([float(c.amount) for c in costs_up_to_date]) if costs_up_to_date else 0
+        budget_used_pct = (budget_used / budget * 100) if budget > 0 else 0
+        efficiency = (update.percentage_complete / budget_used_pct) if budget_used_pct > 0 else 0
+        ws5.append([
+            str(update.date),
+            update.percentage_complete,
+            f'{budget_used_pct:.2f}%',
+            f'{efficiency:.2f}'
+        ])
+    
+    # Save to response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"project_report_{project.prn or project.id}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+@login_required
+@head_engineer_required
+def export_project_comprehensive_csv(request, pk):
+    """Export comprehensive project report (Progress + Budget) as CSV"""
+    from projeng.models import Project, ProjectProgress, ProjectCost
+    from django.utils import timezone
+    
+    try:
+        project = Project.objects.get(pk=pk)
+    except Project.DoesNotExist:
+        return HttpResponse('Project not found.', status=404)
+    
+    # Get all progress updates
+    progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
+    
+    # Get all cost entries
+    costs = ProjectCost.objects.filter(project=project).order_by('date')
+    
+    # Calculate analytics
+    latest_progress = progress_updates.last() if progress_updates else None
+    total_progress = latest_progress.percentage_complete if latest_progress else 0
+    total_cost = sum([float(c.amount) for c in costs]) if costs else 0
+    budget = float(project.project_cost) if project.project_cost else 0
+    remaining_budget = budget - total_cost
+    budget_utilization = (total_cost / budget * 100) if budget > 0 else 0
+    
+    # Create CSV response
+    response = HttpResponse(content_type='text/csv')
+    filename = f"project_report_{project.prn or project.id}_{timezone.now().strftime('%Y%m%d')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    writer = csv.writer(response)
+    
+    # Project Information
+    writer.writerow(['PROJECT COMPREHENSIVE REPORT'])
+    writer.writerow(['Project Name', project.name])
+    writer.writerow(['PRN Number', project.prn or 'N/A'])
+    writer.writerow(['Location', project.barangay or 'N/A'])
+    writer.writerow(['Status', project.get_status_display()])
+    writer.writerow(['Start Date', str(project.start_date) if project.start_date else 'N/A'])
+    writer.writerow(['End Date', str(project.end_date) if project.end_date else 'N/A'])
+    writer.writerow([])
+    
+    # Progress Summary
+    writer.writerow(['PROGRESS SUMMARY'])
+    writer.writerow(['Overall Progress', f'{total_progress}%'])
+    writer.writerow([])
+    
+    # Budget Summary
+    writer.writerow(['BUDGET SUMMARY'])
+    writer.writerow(['Total Budget', f'₱{budget:,.2f}'])
+    writer.writerow(['Total Spent', f'₱{total_cost:,.2f}'])
+    writer.writerow(['Remaining', f'₱{remaining_budget:,.2f}'])
+    writer.writerow(['Utilization', f'{budget_utilization:.2f}%'])
+    writer.writerow([])
+    
+    # Progress Details
+    writer.writerow(['PROGRESS DETAILS'])
+    writer.writerow(['Date', 'Progress %', 'Description', 'Engineer'])
+    for update in progress_updates:
+        engineer_name = update.created_by.get_full_name() or update.created_by.username if update.created_by else 'N/A'
+        writer.writerow([
+            str(update.date),
+            update.percentage_complete,
+            update.description or '',
+            engineer_name
+        ])
+    writer.writerow([])
+    
+    # Budget Details
+    writer.writerow(['BUDGET DETAILS'])
+    writer.writerow(['Date', 'Category', 'Description', 'Amount'])
+    for cost in costs:
+        writer.writerow([
+            str(cost.date),
+            cost.get_cost_type_display(),
+            cost.description or '',
+            float(cost.amount)
+        ])
+    writer.writerow([])
+    writer.writerow(['TOTAL', '', '', f'₱{total_cost:,.2f}'])
+    
+    return response

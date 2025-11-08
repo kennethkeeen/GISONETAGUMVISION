@@ -6,7 +6,7 @@
     <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Project Reports</h1>
   </div>
   <!-- Filters Row with Print Button on Right -->
-  <div class="flex flex-row gap-4 items-center mb-8">
+  <div class="flex flex-row gap-4 items-center mb-8 no-print">
     <input id="filter-start-date" type="date" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm" placeholder="Start Date">
     <input id="filter-end-date" type="date" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm" placeholder="End Date">
     <select id="filter-barangay" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm">
@@ -43,8 +43,27 @@
       <option>Delayed</option>
     </select>
     <input id="filter-search" type="text" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-base shadow-sm w-56" placeholder="Search projects...">
-    <div class="ml-auto">
-      <button id="export-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-base font-semibold shadow-sm hover:bg-blue-700 transition">Print</button>
+    <div class="ml-auto relative">
+      <button id="export-btn" class="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-base font-semibold shadow-sm hover:bg-blue-700 transition">
+        Export
+        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+      <div id="export-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-50 border border-gray-200">
+        <a href="{% url 'export_reports_pdf' %}" target="_blank" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg">
+          📄 Export to PDF
+        </a>
+        <a href="{% url 'export_reports_excel' %}" target="_blank" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+          📊 Export to Excel
+        </a>
+        <a href="{% url 'export_reports_csv' %}" target="_blank" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+          📋 Export to CSV
+        </a>
+        <button onclick="window.print()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg">
+          🖨️ Print Report
+        </button>
+      </div>
     </div>
   </div>
 
@@ -286,18 +305,21 @@ const modalExportDropdown = document.getElementById('modal-export-dropdown');
 const MODAL_PAGE_SIZE = 10;
 let modalCurrentPage = 1;
 
-// Open modal on Print button click
+// Export dropdown toggle
 const exportBtn = document.getElementById('export-btn');
+const exportDropdown = document.getElementById('export-dropdown');
 if (exportBtn) {
   exportBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    filterAndRender(); // Ensure filteredProjects is up to date
-    projectListModal.classList.remove('hidden');
-    modalCurrentPage = 1;
-    renderModalTablePage(modalCurrentPage);
-    renderModalPagination();
+    e.stopPropagation();
+    exportDropdown.classList.toggle('hidden');
   });
 }
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (!exportDropdown.contains(e.target) && !exportBtn.contains(e.target)) {
+    exportDropdown.classList.add('hidden');
+  }
+});
 
 // Close modal on close button click
 closeModalBtn.addEventListener('click', function() {
