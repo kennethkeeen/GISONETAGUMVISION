@@ -238,7 +238,8 @@ function setupRealtimeNotifications() {
     const notificationBell = document.getElementById('notification-bell');
     const notificationCount = document.getElementById('notification-count');
     
-    if (!notificationBell) return;
+    // Don't return early - we need to setup notifications even if bell doesn't exist
+    // The toast notification works independently of the bell
 
     window.realtimeManager.connectNotifications((data) => {
         if (data.type === 'notification') {
@@ -306,18 +307,24 @@ function setupRealtimeNotifications() {
                 }
             }
 
-            // Show toast notification when:
-            // 1. Count increased AND we have a message (most reliable indicator)
-            // 2. OR it's a new notification by ID check
-            // 3. OR we have a notification message that hasn't been shown
-            const shouldShowToast = notificationMessage && (
-                (countIncreased && !messageShown) || 
-                isNewNotification || 
-                (!messageShown && notificationId && notificationId !== lastNotificationId)
+            // Show toast notification when we have a new notification message
+            // Always show if we have a message and it hasn't been shown before
+            // This ensures the toast appears for every new notification
+            const shouldShowToast = notificationMessage && !messageShown && (
+                countIncreased ||  // Count increased = definitely new
+                isNewNotification ||  // New notification by ID
+                notificationId  // Has an ID (means it's a real notification)
             );
             
             if (shouldShowToast) {
-                console.log('Showing toast notification:', notificationMessage);
+                console.log('🔔 Showing toast notification:', notificationMessage, {
+                    countIncreased,
+                    isNewNotification,
+                    messageShown,
+                    notificationId,
+                    currentCount,
+                    newCount
+                });
                 showToastNotification(notificationMessage);
                 
                 // Mark as shown immediately to prevent re-showing
