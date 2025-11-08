@@ -8,40 +8,44 @@
     </div>
 
     <!-- Filters -->
-    <div class="mb-6 flex flex-wrap gap-4">
-        <select id="filter-barangay" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
-            <option value="">All Barangays</option>
-            <option value="Apokon">Apokon</option>
-            <option value="Bincungan">Bincungan</option>
-            <option value="Busaon">Busaon</option>
-            <option value="Canocotan">Canocotan</option>
-            <option value="Cuambogan">Cuambogan</option>
-            <option value="La Filipina">La Filipina</option>
-            <option value="Liboganon">Liboganon</option>
-            <option value="Madaum">Madaum</option>
-            <option value="Magdum">Magdum</option>
-            <option value="Magugpo East">Magugpo East</option>
-            <option value="Magugpo North">Magugpo North</option>
-            <option value="Magugpo Poblacion">Magugpo Poblacion</option>
-            <option value="Magugpo South">Magugpo South</option>
-            <option value="Magugpo West">Magugpo West</option>
-            <option value="Mankilam">Mankilam</option>
-            <option value="New Balamban">New Balamban</option>
-            <option value="Nueva Fuerza">Nueva Fuerza</option>
-            <option value="Pagsabangan">Pagsabangan</option>
-            <option value="Pandapan">Pandapan</option>
-            <option value="San Agustin">San Agustin</option>
-            <option value="San Isidro">San Isidro</option>
-            <option value="San Miguel">San Miguel</option>
-            <option value="Visayan Village">Visayan Village</option>
+    <form method="get" class="mb-6 flex flex-wrap gap-4">
+        <select name="barangay" id="filter-barangay" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+            <option value="" {% if not request.GET.barangay %}selected{% endif %}>All Barangays</option>
+            <option value="Apokon" {% if request.GET.barangay == 'Apokon' %}selected{% endif %}>Apokon</option>
+            <option value="Bincungan" {% if request.GET.barangay == 'Bincungan' %}selected{% endif %}>Bincungan</option>
+            <option value="Busaon" {% if request.GET.barangay == 'Busaon' %}selected{% endif %}>Busaon</option>
+            <option value="Canocotan" {% if request.GET.barangay == 'Canocotan' %}selected{% endif %}>Canocotan</option>
+            <option value="Cuambogan" {% if request.GET.barangay == 'Cuambogan' %}selected{% endif %}>Cuambogan</option>
+            <option value="La Filipina" {% if request.GET.barangay == 'La Filipina' %}selected{% endif %}>La Filipina</option>
+            <option value="Liboganon" {% if request.GET.barangay == 'Liboganon' %}selected{% endif %}>Liboganon</option>
+            <option value="Madaum" {% if request.GET.barangay == 'Madaum' %}selected{% endif %}>Madaum</option>
+            <option value="Magdum" {% if request.GET.barangay == 'Magdum' %}selected{% endif %}>Magdum</option>
+            <option value="Magugpo East" {% if request.GET.barangay == 'Magugpo East' %}selected{% endif %}>Magugpo East</option>
+            <option value="Magugpo North" {% if request.GET.barangay == 'Magugpo North' %}selected{% endif %}>Magugpo North</option>
+            <option value="Magugpo Poblacion" {% if request.GET.barangay == 'Magugpo Poblacion' %}selected{% endif %}>Magugpo Poblacion</option>
+            <option value="Magugpo South" {% if request.GET.barangay == 'Magugpo South' %}selected{% endif %}>Magugpo South</option>
+            <option value="Magugpo West" {% if request.GET.barangay == 'Magugpo West' %}selected{% endif %}>Magugpo West</option>
+            <option value="Mankilam" {% if request.GET.barangay == 'Mankilam' %}selected{% endif %}>Mankilam</option>
+            <option value="New Balamban" {% if request.GET.barangay == 'New Balamban' %}selected{% endif %}>New Balamban</option>
+            <option value="Nueva Fuerza" {% if request.GET.barangay == 'Nueva Fuerza' %}selected{% endif %}>Nueva Fuerza</option>
+            <option value="Pagsabangan" {% if request.GET.barangay == 'Pagsabangan' %}selected{% endif %}>Pagsabangan</option>
+            <option value="Pandapan" {% if request.GET.barangay == 'Pandapan' %}selected{% endif %}>Pandapan</option>
+            <option value="San Agustin" {% if request.GET.barangay == 'San Agustin' %}selected{% endif %}>San Agustin</option>
+            <option value="San Isidro" {% if request.GET.barangay == 'San Isidro' %}selected{% endif %}>San Isidro</option>
+            <option value="San Miguel" {% if request.GET.barangay == 'San Miguel' %}selected{% endif %}>San Miguel</option>
+            <option value="Visayan Village" {% if request.GET.barangay == 'Visayan Village' %}selected{% endif %}>Visayan Village</option>
         </select>
-        <input type="text" id="search-input" placeholder="Search projects..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
-        <select id="sort-by" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
-            <option value="created_at">Sort by Date</option>
-            <option value="name">Sort by Name</option>
-            <option value="barangay">Sort by Barangay</option>
+        <input type="text" name="search" id="search-input" value="{{ request.GET.search }}" placeholder="Search projects..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+        <select name="sort" id="sort-by" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+            <option value="created_at" {% if request.GET.sort == 'created_at' or not request.GET.sort %}selected{% endif %}>Sort by Date</option>
+            <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Sort by Name</option>
+            <option value="barangay" {% if request.GET.sort == 'barangay' %}selected{% endif %}>Sort by Barangay</option>
         </select>
-    </div>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Apply Filters</button>
+        {% if request.GET.barangay or request.GET.search or request.GET.sort %}
+        <a href="{% url 'delayed_projects' %}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">Clear Filters</a>
+        {% endif %}
+    </form>
 
     <!-- Projects Table -->
     <div class="bg-white rounded-xl shadow overflow-hidden">

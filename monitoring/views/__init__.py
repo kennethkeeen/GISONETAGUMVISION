@@ -121,18 +121,78 @@ def project_list(request):
             return render(request, 'monitoring/project_list.html', {'page_obj': page_obj, 'form': form})
     # GET logic
     if is_head_engineer(request.user) or is_finance_manager(request.user):
-        projects = Project.objects.all().order_by('-created_at')
+        projects = Project.objects.all()
     elif is_project_engineer(request.user):
-        projects = Project.objects.filter(assigned_engineers=request.user).order_by('-created_at')
+        projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters
+    barangay_filter = request.GET.get('barangay')
+    duration_filter = request.GET.get('duration')
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('search', '').strip()
+    
+    # Barangay filter
+    if barangay_filter:
+        projects = projects.filter(barangay=barangay_filter)
+    
+    # Status filter
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+    
+    # Search filter (search in name, PRN, description)
+    if search_query:
+        from django.db.models import Q
+        projects = projects.filter(
+            Q(name__icontains=search_query) |
+            Q(prn__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+    
+    # Duration filter (based on project duration calculated from start_date and end_date)
+    if duration_filter:
+        from datetime import timedelta
+        from django.db.models import F, ExpressionWrapper, IntegerField
+        
+        # Filter projects that have both start and end dates
+        projects_with_dates = projects.filter(
+            start_date__isnull=False,
+            end_date__isnull=False
+        )
+        
+        # Calculate duration in days using Django ORM
+        duration_days = ExpressionWrapper(
+            F('end_date') - F('start_date'),
+            output_field=IntegerField()
+        )
+        
+        if duration_filter == 'lt6':
+            # Less than 6 months: duration < 180 days
+            projects = projects_with_dates.annotate(
+                duration=duration_days
+            ).filter(duration__lt=180)
+        elif duration_filter == '6to12':
+            # 6-12 months: 180 <= duration <= 365 days
+            projects = projects_with_dates.annotate(
+                duration=duration_days
+            ).filter(duration__gte=180, duration__lte=365)
+        elif duration_filter == 'gt12':
+            # Greater than 1 year: duration > 365 days
+            projects = projects_with_dates.annotate(
+                duration=duration_days
+            ).filter(duration__gt=365)
+    
+    # Order by created_at descending
+    projects = projects.order_by('-created_at')
+    
     paginator = Paginator(projects, 10)  # Show 10 projects per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     form = ProjectForm()
-    # Build projects_data for modal and JS
+    # Build projects_data for modal and JS (use filtered projects)
     projects_data = []
-    for p in projects:
+    for p in page_obj.object_list:
         projects_data.append({
             'id': p.id,
             'name': p.name,
@@ -419,8 +479,59 @@ def project_delete_api(request, pk):
             'error': f'An error occurred while deleting the project: {str(e)}'
         }, status=500)
 
+@login_required
+@prevent_project_engineer_access
 def delayed_projects(request):
-    return HttpResponse("delayed_projects placeholder")
+    """View for displaying delayed projects with filters"""
+    from projeng.models import Project
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+    
+    # Get delayed projects
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.filter(status='delayed')
+    elif is_project_engineer(request.user):
+        projects = Project.objects.filter(status='delayed', assigned_engineers=request.user)
+    else:
+        projects = Project.objects.none()
+    
+    # Apply filters
+    barangay_filter = request.GET.get('barangay')
+    search_query = request.GET.get('search', '').strip()
+    sort_by = request.GET.get('sort', 'created_at')
+    
+    # Barangay filter
+    if barangay_filter:
+        projects = projects.filter(barangay=barangay_filter)
+    
+    # Search filter
+    if search_query:
+        projects = projects.filter(
+            Q(name__icontains=search_query) |
+            Q(prn__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(barangay__icontains=search_query)
+        )
+    
+    # Sort
+    if sort_by == 'name':
+        projects = projects.order_by('name')
+    elif sort_by == 'barangay':
+        projects = projects.order_by('barangay')
+    else:  # default to created_at
+        projects = projects.order_by('-created_at')
+    
+    total_delayed = projects.count()
+    
+    # Pagination
+    paginator = Paginator(projects, 20)  # Show 20 projects per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'monitoring/delayed_projects.html', {
+        'page_obj': page_obj,
+        'total_delayed': total_delayed,
+    })
 
 def project_engineer_analytics(request, pk):
     return HttpResponse("project_engineer_analytics placeholder")
