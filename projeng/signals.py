@@ -514,6 +514,7 @@ def notify_engineer_assignment(sender, instance, action, pk_set, **kwargs):
     """
     Notify engineers when they are assigned to a project.
     This handles ManyToMany field changes which occur after the main object is saved.
+    Also updates head engineer notifications if project was just created.
     """
     if action == 'post_add' and pk_set:
         from django.utils import timezone
@@ -548,3 +549,43 @@ def notify_engineer_assignment(sender, instance, action, pk_set, **kwargs):
                     recipient=engineer,
                     message=engineer_message
                 )
+        
+        # If project was just created (within last 30 seconds), update head engineer notifications
+        # to show assigned engineers
+        project_created_recently = instance.created_at and (timezone.now() - instance.created_at).total_seconds() < 30
+        
+        if project_created_recently:
+            # Get all currently assigned engineers
+            all_assigned_engineers = instance.assigned_engineers.all()
+            engineer_names = []
+            for engineer in all_assigned_engineers:
+                engineer_name = engineer.get_full_name() or engineer.username
+                engineer_names.append(engineer_name)
+            
+            # Build updated message
+            creator_name = instance.created_by.get_full_name() or instance.created_by.username if instance.created_by else 'Unknown'
+            
+            if engineer_names:
+                if len(engineer_names) == 1:
+                    engineers_text = engineer_names[0]
+                    updated_message = f"New project created: {project_display} by {creator_name} - Assigned engineer: {engineers_text}"
+                else:
+                    engineers_text = ", ".join(engineer_names)
+                    updated_message = f"New project created: {project_display} by {creator_name} - Assigned engineers: {engineers_text}"
+            else:
+                updated_message = f"New project created: {project_display} by {creator_name} - No engineers assigned"
+            
+            # Update or create notifications for head engineers and admins
+            # Find recent notifications about this project creation and update them
+            from .utils import notify_head_engineers, notify_admins
+            
+            # Delete old "No engineers assigned" notifications for this project
+            old_message_pattern = f"New project created: {project_display} by {creator_name} - No engineers assigned"
+            Notification.objects.filter(
+                message=old_message_pattern,
+                created_at__gte=instance.created_at - timedelta(seconds=5)
+            ).delete()
+            
+            # Create updated notification with engineer names
+            notify_head_engineers(updated_message, check_duplicates=False)
+            notify_admins(updated_message, check_duplicates=False)
