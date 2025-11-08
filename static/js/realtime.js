@@ -237,13 +237,20 @@ function hasNotificationBeenShown(id) {
 }
 
 function setupRealtimeNotifications() {
+    console.log('🔔 Setting up real-time notifications...');
     const notificationBell = document.getElementById('notification-bell');
     const notificationCount = document.getElementById('notification-count');
     
     // Don't return early - we need to setup notifications even if bell doesn't exist
     // The toast notification works independently of the bell
+    
+    if (!window.realtimeManager) {
+        console.error('❌ RealtimeManager not initialized!');
+        return;
+    }
 
     window.realtimeManager.connectNotifications((data) => {
+        console.log('📨 Received notification data:', data);
         if (data.type === 'notification') {
             // Get current count BEFORE updating
             const currentCount = notificationCount ? (parseInt(notificationCount.textContent) || 0) : 0;
