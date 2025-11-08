@@ -36,8 +36,9 @@ class WebSocketManager {
         if (window.ENABLE_WEBSOCKET === true) {
             return true;
         }
-        // Default: Enable WebSocket if browser supports it
-        return 'WebSocket' in window;
+        // Default: Disable WebSocket by default - SSE is primary and more reliable
+        // WebSocket can be enabled via window.ENABLE_WEBSOCKET = true if needed
+        return false;
     }
 
     /**
@@ -102,7 +103,8 @@ class WebSocketManager {
             const socket = new WebSocket(url);
 
             socket.onopen = () => {
-                console.log(`✅ WebSocket connected: ${key}`);
+                // Only log successful connection - SSE is primary, WebSocket is bonus
+                console.log(`✅ WebSocket connected: ${key} (bonus feature)`);
                 this.reconnectAttempts[key] = 0;
                 this._notifyCallbacks(key, {
                     type: 'connection',
@@ -114,15 +116,20 @@ class WebSocketManager {
             socket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log(`📨 WebSocket message (${key}):`, data);
+                    // Silently handle messages - no console spam
                     this._handleMessage(key, data);
                 } catch (e) {
+                    // Only log parsing errors, not connection errors
                     console.error(`Error parsing WebSocket data for ${key}:`, e);
                 }
             };
 
             socket.onerror = (error) => {
-                console.error(`❌ WebSocket error (${key}):`, error);
+                // Silently handle WebSocket errors - SSE is the primary system
+                // Only log on first attempt to avoid console spam
+                if (this.reconnectAttempts[key] === 0) {
+                    console.log(`ℹ️  WebSocket not available for ${key}, using SSE only`);
+                }
                 this._notifyCallbacks(key, {
                     type: 'error',
                     source: 'websocket',
@@ -131,19 +138,22 @@ class WebSocketManager {
             };
 
             socket.onclose = (event) => {
-                console.log(`🔌 WebSocket disconnected (${key}):`, event.code, event.reason);
+                // Silently handle disconnections - SSE is the primary system
                 this.sockets[key] = null;
 
-                // Attempt to reconnect if not a normal closure
+                // Attempt to reconnect if not a normal closure and haven't exceeded max attempts
                 if (event.code !== 1000 && this.reconnectAttempts[key] < this.maxReconnectAttempts) {
                     this.reconnectAttempts[key]++;
                     const delay = this.reconnectDelay * this.reconnectAttempts[key];
-                    console.log(`🔄 Reconnecting ${key} in ${delay}ms (attempt ${this.reconnectAttempts[key]}/${this.maxReconnectAttempts})...`);
+                    // Only log first reconnection attempt
+                    if (this.reconnectAttempts[key] === 1) {
+                        console.log(`ℹ️  WebSocket unavailable, using SSE for ${key}`);
+                    }
                     setTimeout(() => {
                         this._connectWebSocket(key, url);
                     }, delay);
                 } else if (this.reconnectAttempts[key] >= this.maxReconnectAttempts) {
-                    console.warn(`⚠️  Max reconnection attempts reached for ${key}. Falling back to SSE.`);
+                    // Silently fall back to SSE - no console spam
                     this._notifyCallbacks(key, {
                         type: 'connection',
                         status: 'failed',
@@ -235,8 +245,7 @@ window.wsManager = new WebSocketManager();
 document.addEventListener('DOMContentLoaded', function() {
     // Only connect if WebSocket is enabled
     if (window.wsManager.isWebSocketEnabled()) {
-        console.log('🚀 Initializing WebSocket connections...');
-        
+        // Silently attempt WebSocket connection - SSE is primary system
         // Connect to notifications WebSocket
         window.wsManager.connectNotifications((data) => {
             // Handle notification updates (same as SSE handler)
@@ -270,9 +279,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-    } else {
-        console.log('ℹ️  WebSocket disabled, using SSE only');
     }
+    // Silently use SSE only if WebSocket is disabled - no console log needed
 });
 
 // Cleanup on page unload

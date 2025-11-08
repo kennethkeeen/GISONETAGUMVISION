@@ -75,10 +75,17 @@ class RealtimeManager {
         
         eventSource.onmessage = (event) => {
             try {
+                // Skip heartbeat messages
+                if (!event.data || event.data.trim() === '' || event.data.startsWith(':')) {
+                    return;
+                }
                 const data = JSON.parse(event.data);
                 this._handleMessage(key, data);
             } catch (e) {
-                console.error('Error parsing SSE data:', e);
+                // Silently ignore parsing errors for heartbeat or empty messages
+                if (event.data && !event.data.startsWith(':')) {
+                    console.error('Error parsing SSE data:', e, event.data);
+                }
             }
         };
 
@@ -100,8 +107,16 @@ class RealtimeManager {
      * Handle incoming messages
      */
     _handleMessage(key, data) {
+        // Skip invalid or empty data
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+        
         if (data.type === 'error') {
-            console.error('SSE error:', data.message);
+            // Only log if there's an actual error message
+            if (data.message) {
+                console.error('SSE error:', data.message);
+            }
             return;
         }
 
