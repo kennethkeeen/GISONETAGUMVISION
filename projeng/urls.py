@@ -47,4 +47,7 @@ urlpatterns = [
     path('api/realtime/projects/', realtime.sse_project_status, name='realtime_projects'),
     path('api/realtime/projects/<int:project_id>/', realtime.sse_project_status, name='realtime_project_detail'),
     path('api/realtime/status/', realtime.realtime_api_status, name='realtime_status'),
+    
+    # API endpoints
+    path('api/get-project-from-notification/', views.get_project_from_notification_api, name='get_project_from_notification_api'),
 ] 

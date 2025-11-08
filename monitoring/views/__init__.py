@@ -493,13 +493,28 @@ def project_detail(request, pk):
 @head_engineer_required
 def head_engineer_project_detail(request, pk):
     
-    from projeng.models import Project, ProjectProgress, ProjectCost
+    from projeng.models import Project, ProjectProgress, ProjectCost, Notification
     from django.contrib.auth.models import User
+    from projeng.utils import get_project_from_notification
     import json
     try:
         project = Project.objects.get(pk=pk)
     except Project.DoesNotExist:
         return HttpResponse('Project not found.', status=404)
+    
+    # Auto-mark notifications as read for this project
+    # Get all unread notifications for the user
+    unread_notifications = Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    )
+    
+    # Mark notifications related to this project as read
+    for notification in unread_notifications:
+        project_id = get_project_from_notification(notification.message)
+        if project_id == project.id:
+            notification.is_read = True
+            notification.save()
     # Get all progress updates - order by date and id to avoid duplicates and ensure consistent ordering
     progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
     assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
@@ -959,9 +974,20 @@ def head_engineer_notifications(request):
         page_obj = paginator.get_page(1)
 
     unread_count = notifications.filter(is_read=False).count()
+    
+    # Add project IDs to notifications for clickable links
+    from projeng.utils import get_project_from_notification
+    notifications_with_projects = []
+    for notification in page_obj:
+        project_id = get_project_from_notification(notification.message)
+        notifications_with_projects.append({
+            'notification': notification,
+            'project_id': project_id
+        })
 
     context = {
         'notifications': page_obj,  # Use paginated notifications
+        'notifications_with_projects': notifications_with_projects,  # Notifications with project IDs
         'unread_count': unread_count,
         'page_obj': page_obj,  # For pagination controls
     }

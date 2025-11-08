@@ -48,20 +48,22 @@
     {% if notifications %}
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="divide-y divide-gray-200" id="notifications-list">
-                {% for notification in notifications %}
+                {% for item in notifications_with_projects %}
+                {% with notification=item.notification project_id=item.project_id %}
                 <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %}" 
                      data-notification-id="{{ notification.id }}">
                     <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %}">
+                        <div class="flex-1 {% if project_id %}cursor-pointer{% endif %}" 
+                             {% if project_id %}onclick="window.location.href='{% url 'monitoring_project_detail' project_id %}';"{% endif %}>
+                            <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %} {% if project_id %}hover:text-blue-600{% endif %}">
                                 {{ notification.message }}
                             </p>
                             <p class="text-sm text-gray-500 mt-1">
                                 {{ notification.created_at|date:"M d, Y g:i A" }}
                             </p>
                         </div>
-                        <div class="flex space-x-2 ml-4">
-                            {% if not notification.is_read %}
+                        <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
+                            {% if not notification.is_read and not project_id %}
                             <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" 
                                     data-notification-id="{{ notification.id }}">
                                 Mark Read
@@ -74,6 +76,7 @@
                         </div>
                     </div>
                 </div>
+                {% endwith %}
                 {% endfor %}
             </div>
             
@@ -439,6 +442,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Extract project ID from notification message (we'll need to call backend or extract from message)
+        // For now, we'll make it clickable if it contains project-related keywords
+        const hasProjectLink = notificationData.message && (
+            notificationData.message.includes('Cost entry') || 
+            notificationData.message.includes('Progress for project') ||
+            notificationData.message.includes('project')
+        );
+        
         // Format date
         const date = new Date(notificationData.created_at);
         const formattedDate = date.toLocaleDateString('en-US', { 
@@ -458,24 +469,29 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationDiv.style.transform = 'translateY(-10px)';
         
         const isRead = false; // New notifications are always unread
-        const markReadButton = isRead ? '' : `
+        // Don't show "Mark Read" button if it has a project link (will be auto-read when clicked)
+        const markReadButton = (isRead || hasProjectLink) ? '' : `
             <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" 
                     data-notification-id="${notificationData.id}">
                 Mark Read
             </button>
         `;
         
+        const clickableClass = hasProjectLink ? 'cursor-pointer' : '';
+        const hoverClass = hasProjectLink ? 'hover:text-blue-600' : '';
+        const onClick = hasProjectLink ? `onclick="fetchProjectIdAndRedirect('${escapeHtml(notificationData.message)}', ${notificationData.id})"` : '';
+        
         notificationDiv.innerHTML = `
             <div class="flex justify-between items-start">
-                <div class="flex-1">
-                    <p class="text-gray-800 font-semibold">
+                <div class="flex-1 ${clickableClass}" ${onClick}>
+                    <p class="text-gray-800 font-semibold ${hoverClass}">
                         ${escapeHtml(notificationData.message)}
                     </p>
                     <p class="text-sm text-gray-500 mt-1">
                         ${formattedDate}
                     </p>
                 </div>
-                <div class="flex space-x-2 ml-4">
+                <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
                     ${markReadButton}
                     <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors" 
                             data-notification-id="${notificationData.id}">
@@ -642,6 +658,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    // Function to fetch project ID from notification message and redirect
+    async function fetchProjectIdAndRedirect(notificationMessage, notificationId) {
+        try {
+            const response = await fetch(`/projeng/api/get-project-from-notification/?message=${encodeURIComponent(notificationMessage)}`);
+            const data = await response.json();
+            if (data.project_id) {
+                window.location.href = `/dashboard/monitoring/projects/${data.project_id}/detail/`;
+            }
+        } catch (error) {
+            console.error('Error fetching project ID:', error);
+        }
     }
     
     // Hook into realtime notifications to update the list

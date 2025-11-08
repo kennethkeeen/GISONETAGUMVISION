@@ -64,4 +64,92 @@ def notify_finance_managers(message, check_duplicates=True):
 def notify_head_engineers_and_finance(message, check_duplicates=True):
     """Notify both Head Engineers and Finance Managers"""
     notify_head_engineers(message, check_duplicates=check_duplicates)
-    notify_finance_managers(message, check_duplicates=check_duplicates) 
+    notify_finance_managers(message, check_duplicates=check_duplicates)
+
+def get_project_from_notification(notification_message):
+    """
+    Extract project information from notification message to find the related project.
+    Returns project ID if found, None otherwise.
+    """
+    from .models import Project
+    import re
+    
+    # Pattern 1: "Progress for project 'ProjectName' updated..."
+    match = re.search(r"Progress for project '([^']+)'", notification_message)
+    if match:
+        project_name = match.group(1)
+        try:
+            project = Project.objects.get(name=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+    
+    # Pattern 2: "Cost entry added: ProjectName - ..."
+    match = re.search(r"Cost entry added: ([^-]+) -", notification_message)
+    if match:
+        project_name = match.group(1).strip()
+        try:
+            project = Project.objects.get(name=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+    
+    # Pattern 3: "New project created: ProjectName (PRN: PRN123) ..."
+    match = re.search(r"New project created: ([^(]+)", notification_message)
+    if match:
+        project_name = match.group(1).strip()
+        # Try to extract PRN if available
+        prn_match = re.search(r"\(PRN: ([^)]+)\)", notification_message)
+        if prn_match:
+            prn = prn_match.group(1).strip()
+            try:
+                project = Project.objects.get(prn=prn)
+                return project.id
+            except Project.DoesNotExist:
+                pass
+        # Fallback to name
+        try:
+            project = Project.objects.get(name=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+    
+    # Pattern 4: "Project status updated: ProjectName (PRN: PRN123) ..."
+    match = re.search(r"Project (?:status|budget|description|dates|information) updated: ([^(]+)", notification_message)
+    if match:
+        project_name = match.group(1).strip()
+        prn_match = re.search(r"\(PRN: ([^)]+)\)", notification_message)
+        if prn_match:
+            prn = prn_match.group(1).strip()
+            try:
+                project = Project.objects.get(prn=prn)
+                return project.id
+            except Project.DoesNotExist:
+                pass
+        try:
+            project = Project.objects.get(name=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+    
+    # Pattern 5: "Cost entry deleted: ProjectName - ..."
+    match = re.search(r"Cost entry deleted: ([^-]+) -", notification_message)
+    if match:
+        project_name = match.group(1).strip()
+        try:
+            project = Project.objects.get(name=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+    
+    # Pattern 6: "Progress update deleted: ProjectName - ..."
+    match = re.search(r"Progress update deleted: ([^-]+) -", notification_message)
+    if match:
+        project_name = match.group(1).strip()
+        try:
+            project = Project.objects.get(name=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+    
+    return None 

@@ -1178,6 +1178,19 @@ def notifications_api(request):
 
 @login_required
 @require_GET
+def get_project_from_notification_api(request):
+    """API endpoint to get project ID from notification message"""
+    from .utils import get_project_from_notification
+    
+    message = request.GET.get('message', '')
+    if not message:
+        return JsonResponse({'error': 'Message parameter required'}, status=400)
+    
+    project_id = get_project_from_notification(message)
+    return JsonResponse({'project_id': project_id})
+
+@login_required
+@require_GET
 def projects_updates_api(request):
     """API endpoint for real-time project updates"""
     from django.utils import timezone
