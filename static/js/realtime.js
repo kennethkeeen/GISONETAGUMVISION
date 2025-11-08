@@ -227,11 +227,13 @@ function setupRealtimeNotifications() {
 
     window.realtimeManager.connectNotifications((data) => {
         if (data.type === 'notification') {
+            // Get current count BEFORE updating
+            const currentCount = notificationCount ? (parseInt(notificationCount.textContent) || 0) : 0;
+            const newCount = data.unread_count || 0;
+            const countIncreased = newCount > currentCount;
+            
             // Update notification count silently (always update count)
             if (notificationCount) {
-                const currentCount = parseInt(notificationCount.textContent) || 0;
-                const newCount = data.unread_count || 0;
-                
                 notificationCount.textContent = newCount;
                 
                 if (newCount === 0) {
@@ -277,11 +279,11 @@ function setupRealtimeNotifications() {
                                      notificationId !== lastNotificationId && 
                                      !hasBeenShown && !messageShown;
             
+            // countIncreased is already calculated above
+            
             // Only animate badge if count increased and it's a new notification
             if (notificationCount && isNewNotification) {
-                const currentCount = parseInt(notificationCount.textContent) || 0;
-                const newCount = data.unread_count || 0;
-                if (newCount > currentCount) {
+                if (countIncreased) {
                     notificationCount.classList.add('animate-pulse');
                     setTimeout(() => {
                         notificationCount.classList.remove('animate-pulse');
@@ -289,13 +291,36 @@ function setupRealtimeNotifications() {
                 }
             }
 
-            // Show toast notification for NEW notifications
-            if (isNewNotification && notificationMessage) {
+            // Show toast notification when:
+            // 1. Count increased AND we have a message (most reliable indicator)
+            // 2. OR it's a new notification by ID check
+            // 3. OR we have a notification message that hasn't been shown
+            const shouldShowToast = notificationMessage && (
+                (countIncreased && !messageShown) || 
+                isNewNotification || 
+                (!messageShown && notificationId && notificationId !== lastNotificationId)
+            );
+            
+            if (shouldShowToast) {
+                console.log('Showing toast notification:', notificationMessage);
                 showToastNotification(notificationMessage);
                 
-                // Mark as shown immediately to prevent re-showing on page navigation
+                // Mark as shown immediately to prevent re-showing
                 if (notificationId) {
                     addShownNotificationId(notificationId);
+                }
+                // Also mark message as shown
+                try {
+                    const shownMessages = JSON.parse(sessionStorage.getItem('shownNotificationMessages') || '[]');
+                    if (!shownMessages.includes(notificationMessage)) {
+                        shownMessages.push(notificationMessage);
+                        if (shownMessages.length > 20) {
+                            shownMessages.shift();
+                        }
+                        sessionStorage.setItem('shownNotificationMessages', JSON.stringify(shownMessages));
+                    }
+                } catch (e) {
+                    console.error('Error marking message as shown:', e);
                 }
             }
 
@@ -440,11 +465,18 @@ function showToastNotification(message) {
     const toastClose = document.getElementById('toast-close');
     
     if (!toastContainer || !toastMessage) {
+        console.warn('Toast notification elements not found. Make sure toast-notification and toast-message IDs exist in the template.');
         return; // Toast elements not found
     }
     
     // Set message
-    toastMessage.textContent = message;
+    toastMessage.textContent = message || 'New notification';
+    
+    // Hide any existing toast first
+    toastContainer.classList.add('hidden');
+    
+    // Force reflow to reset animation
+    void toastContainer.offsetWidth;
     
     // Show toast
     toastContainer.classList.remove('hidden');
@@ -454,10 +486,21 @@ function showToastNotification(message) {
         hideToastNotification();
     }, 5000);
     
+    // Store timeout ID for cleanup
+    if (toastContainer) {
+        toastContainer._autoHideTimeout = autoHide;
+    }
+    
     // Close button handler
     if (toastClose) {
-        toastClose.onclick = () => {
-            clearTimeout(autoHide);
+        // Remove old handlers
+        const newCloseBtn = toastClose.cloneNode(true);
+        toastClose.parentNode.replaceChild(newCloseBtn, toastClose);
+        
+        newCloseBtn.onclick = () => {
+            if (toastContainer._autoHideTimeout) {
+                clearTimeout(toastContainer._autoHideTimeout);
+            }
             hideToastNotification();
         };
     }
@@ -505,6 +548,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Setup notifications on all pages
         setupRealtimeNotifications();
     }
+    
+    // Test toast notification on page load (for debugging)
+    // Uncomment the line below to test the toast notification
+    // setTimeout(() => showToastNotification('Test notification - Toast system is working!'), 2000);
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
