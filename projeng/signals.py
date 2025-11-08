@@ -118,8 +118,12 @@ def notify_project_updates(sender, instance, created, **kwargs):
         
         # Build notification message with assigned engineers
         if engineer_names:
-            engineers_text = ", ".join(engineer_names)
-            message = f"New project created: {project_display} by {creator_name} - Assigned to: {engineers_text}"
+            if len(engineer_names) == 1:
+                engineers_text = engineer_names[0]
+                message = f"New project created: {project_display} by {creator_name} - Assigned engineer: {engineers_text}"
+            else:
+                engineers_text = ", ".join(engineer_names)
+                message = f"New project created: {project_display} by {creator_name} - Assigned engineers: {engineers_text}"
         else:
             message = f"New project created: {project_display} by {creator_name} - No engineers assigned"
         
