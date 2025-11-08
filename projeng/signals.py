@@ -1,4 +1,4 @@
-from django.db.models.signals import pre_save, post_save, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete, m2m_changed
 from django.db.models import Q
 from django.dispatch import receiver
 from django.contrib.auth.models import User
@@ -79,6 +79,7 @@ def store_old_project_state(sender, instance, **kwargs):
             _old_project_state[instance.pk] = {
                 'status': old_instance.status,
                 'project_cost': old_instance.project_cost,
+                'assigned_engineers': set(old_instance.assigned_engineers.values_list('id', flat=True)),
             }
         except Project.DoesNotExist:
             pass
@@ -87,13 +88,25 @@ def store_old_project_state(sender, instance, **kwargs):
 def notify_project_updates(sender, instance, created, **kwargs):
     """Notify Head Engineers, Finance Managers, and Admins about project updates"""
     from django.contrib.auth.models import User
+    from .models import Notification
     
     if created:
         # New project created
         creator_name = instance.created_by.get_full_name() or instance.created_by.username if instance.created_by else 'Unknown'
-        message = f"New project created: {instance.name} (PRN: {instance.prn or 'N/A'}) by {creator_name}"
+        project_display = f"{instance.name}" + (f" (PRN: {instance.prn})" if instance.prn else "")
+        
+        # Notify Head Engineers and Admins about project creation
+        message = f"New project created: {project_display} by {creator_name}"
         notify_head_engineers(message)
         notify_admins(message)
+        
+        # Notify assigned engineers that they have been assigned to this project
+        for engineer in instance.assigned_engineers.all():
+            engineer_message = f"You have been assigned to project '{project_display}' by {creator_name}"
+            Notification.objects.create(
+                recipient=engineer,
+                message=engineer_message
+            )
         
         # Phase 3: Also broadcast via WebSocket (parallel to SSE)
         if WEBSOCKET_AVAILABLE:
@@ -104,6 +117,33 @@ def notify_project_updates(sender, instance, created, **kwargs):
     else:
         # Project updated - check if it's a significant update
         old_state = _old_project_state.pop(instance.pk, None) if instance.pk else None
+        
+        # Check if assigned engineers changed
+        if old_state:
+            old_assigned_ids = old_state.get('assigned_engineers', set())
+            new_assigned_ids = set(instance.assigned_engineers.values_list('id', flat=True))
+            
+            # Find newly assigned engineers
+            newly_assigned_ids = new_assigned_ids - old_assigned_ids
+            if newly_assigned_ids:
+                # Get the user who made the assignment (try to get from request if available)
+                assigner_name = getattr(instance, '_updated_by_username', None)
+                if not assigner_name and instance.created_by:
+                    assigner_name = instance.created_by.get_full_name() or instance.created_by.username
+                if not assigner_name:
+                    assigner_name = 'Unknown'
+                
+                project_display = f"{instance.name}" + (f" (PRN: {instance.prn})" if instance.prn else "")
+                
+                # Notify newly assigned engineers (only them, not head engineers)
+                from django.contrib.auth.models import User
+                newly_assigned_engineers = User.objects.filter(id__in=newly_assigned_ids)
+                for engineer in newly_assigned_engineers:
+                    engineer_message = f"You have been assigned to project '{project_display}' by {assigner_name}"
+                    Notification.objects.create(
+                        recipient=engineer,
+                        message=engineer_message
+                    )
         
         if old_state:
             # Check if status changed
@@ -415,3 +455,43 @@ def notify_project_deletion(sender, instance, **kwargs):
             broadcast_project_deleted(instance.name, instance.prn)
         except Exception as e:
             print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
+
+@receiver(m2m_changed, sender=Project.assigned_engineers.through)
+def notify_engineer_assignment(sender, instance, action, pk_set, **kwargs):
+    """
+    Notify engineers when they are assigned to a project.
+    This handles ManyToMany field changes which occur after the main object is saved.
+    """
+    if action == 'post_add' and pk_set:
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Get the user who made the assignment (try to get from request if available)
+        assigner_name = getattr(instance, '_updated_by_username', None)
+        if not assigner_name and instance.created_by:
+            assigner_name = instance.created_by.get_full_name() or instance.created_by.username
+        if not assigner_name:
+            assigner_name = 'Unknown'
+        
+        project_display = f"{instance.name}" + (f" (PRN: {instance.prn})" if instance.prn else "")
+        
+        # Notify newly assigned engineers (only them, not head engineers)
+        # Check for duplicates to avoid double notifications
+        recent_time = timezone.now() - timedelta(seconds=10)
+        newly_assigned_engineers = User.objects.filter(id__in=pk_set)
+        
+        for engineer in newly_assigned_engineers:
+            # Check for duplicates
+            duplicate_exists = Notification.objects.filter(
+                Q(recipient=engineer) &
+                Q(message__icontains="You have been assigned to project") &
+                Q(message__icontains=project_display) &
+                Q(created_at__gte=recent_time)
+            ).exists()
+            
+            if not duplicate_exists:
+                engineer_message = f"You have been assigned to project '{project_display}' by {assigner_name}"
+                Notification.objects.create(
+                    recipient=engineer,
+                    message=engineer_message
+                )
