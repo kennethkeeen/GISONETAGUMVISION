@@ -50,13 +50,9 @@
             <div class="divide-y divide-gray-200">
                 {% for notification in notifications %}
                 {% with project_id=None %}
+                    {% comment %} Notifications will be made clickable via JavaScript using the API {% endcomment %}
                     {% if "cost entry" in notification.message|lower or "progress for project" in notification.message|lower or "new project created" in notification.message|lower %}
-                        {% comment %} Extract project ID from notification message {% endcomment %}
-                        {% for project in projects %}
-                            {% if project.name in notification.message or project.prn in notification.message %}
-                                {% with project_id=project.id %}{% endwith %}
-                            {% endif %}
-                        {% endfor %}
+                        {% with project_id=1 %}{% endwith %}
                     {% endif %}
                 {% endwith %}
                 <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %}" 
