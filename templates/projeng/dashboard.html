@@ -74,45 +74,51 @@
       </div>
     </div>
 
-    <!-- Analytics Graphs (Right Column - Stacked Vertically) -->
+    <!-- Analytics Graphs (Right Column - 2x3 Grid Layout) -->
     <div class="space-y-6">
-      <!-- Graph 1: Project Status Overview -->
-      <div class="bg-white rounded-xl shadow p-5">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Project Status Overview</h3>
-        <div class="chart-container" style="height: 280px;">
-            <canvas id="projectOverviewChart"></canvas>
+      <!-- Top Row: 3 Graphs -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Graph 1: Project Status Overview -->
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="text-base font-bold text-gray-800 mb-3">Project Status Overview</h3>
+          <div class="chart-container" style="height: 250px;">
+              <canvas id="projectOverviewChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Graph 2: Placeholder for new graph -->
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="text-base font-bold text-gray-800 mb-3">Graph 2</h3>
+          <div class="chart-container flex items-center justify-center" style="height: 250px;">
+              <canvas id="chart2"></canvas>
+          </div>
+        </div>
+
+        <!-- Graph 3: Placeholder for new graph -->
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="text-base font-bold text-gray-800 mb-3">Graph 3</h3>
+          <div class="chart-container flex items-center justify-center" style="height: 250px;">
+              <canvas id="chart3"></canvas>
+          </div>
         </div>
       </div>
 
-      <!-- Graph 2: Placeholder for new graph -->
-      <div class="bg-white rounded-xl shadow p-5">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 2</h3>
-        <div class="chart-container flex items-center justify-center" style="height: 280px;">
-            <canvas id="chart2"></canvas>
+      <!-- Bottom Row: 2 Graphs -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Graph 4: Placeholder for new graph -->
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="text-base font-bold text-gray-800 mb-3">Graph 4</h3>
+          <div class="chart-container flex items-center justify-center" style="height: 250px;">
+              <canvas id="chart4"></canvas>
+          </div>
         </div>
-      </div>
 
-      <!-- Graph 3: Placeholder for new graph -->
-      <div class="bg-white rounded-xl shadow p-5">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 3</h3>
-        <div class="chart-container flex items-center justify-center" style="height: 280px;">
-            <canvas id="chart3"></canvas>
-        </div>
-      </div>
-
-      <!-- Graph 4: Placeholder for new graph -->
-      <div class="bg-white rounded-xl shadow p-5">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 4</h3>
-        <div class="chart-container flex items-center justify-center" style="height: 280px;">
-            <canvas id="chart4"></canvas>
-        </div>
-      </div>
-
-      <!-- Graph 5: Placeholder for new graph -->
-      <div class="bg-white rounded-xl shadow p-5">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 5</h3>
-        <div class="chart-container flex items-center justify-center" style="height: 280px;">
-            <canvas id="chart5"></canvas>
+        <!-- Graph 5: Placeholder for new graph -->
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="text-base font-bold text-gray-800 mb-3">Graph 5</h3>
+          <div class="chart-container flex items-center justify-center" style="height: 250px;">
+              <canvas id="chart5"></canvas>
+          </div>
         </div>
       </div>
     </div>
