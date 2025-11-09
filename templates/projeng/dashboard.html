@@ -9,14 +9,14 @@
   </div>
 
   <!-- Overview Cards Section -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-xl shadow-md p-5 flex items-center justify-between border-l-4 border-indigo-500">
-          <div>
-              <div class="text-sm font-medium text-gray-500 mb-1">Total Projects</div>
-              <div class="text-3xl font-bold text-indigo-600" id="card-total-projects">{{ total_projects }}</div>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      <div class="bg-white rounded-xl shadow-md p-4 flex items-center justify-between border-l-4 border-indigo-500">
+          <div class="flex-1 min-w-0">
+              <div class="text-xs font-medium text-gray-500 mb-1 truncate">Total Projects</div>
+              <div class="text-2xl font-bold text-indigo-600" id="card-total-projects">{{ total_projects }}</div>
           </div>
-          <div class="p-3 bg-indigo-100 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="p-2 bg-indigo-100 rounded-lg flex-shrink-0 ml-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H7a2 2 0 00-2 2v2m7-7V3m0 2.882a2 2 0 01-.876 1.553L9 10m4-5.565l2.876 1.553A2 2 0 0119 9v2M5 9h14" />
               </svg>
           </div>
@@ -24,28 +24,28 @@
       {# Iterate over status counts to display individual KPIs #}
       {% for status, count in status_counts.items %}
           {% if status != 'Cancelled' %}
-              <div class="bg-white rounded-xl shadow-md p-5 flex items-center justify-between border-l-4 
+              <div class="bg-white rounded-xl shadow-md p-4 flex items-center justify-between border-l-4 
                   {% if status == 'Planned' %}border-yellow-500
                   {% elif status == 'In Progress' %}border-blue-500
                   {% elif status == 'Completed' %}border-green-500
                   {% elif status == 'Delayed' %}border-red-500
                   {% else %}border-gray-500{% endif %}">
-                  <div>
-                      <div class="text-sm font-medium text-gray-500 mb-1">{{ status }}</div>
-                      <div class="text-3xl font-bold 
+                  <div class="flex-1 min-w-0">
+                      <div class="text-xs font-medium text-gray-500 mb-1 truncate">{{ status }}</div>
+                      <div class="text-2xl font-bold 
                           {% if status == 'Planned' %}text-yellow-600
                           {% elif status == 'In Progress' %}text-blue-600
                           {% elif status == 'Completed' %}text-green-600
                           {% elif status == 'Delayed' %}text-red-600
                           {% else %}text-gray-800{% endif %}" id="card-{{ status|slugify }}">{{ count }}</div>
                   </div>
-                  <div class="p-3 rounded-lg
+                  <div class="p-2 rounded-lg flex-shrink-0 ml-2
                       {% if status == 'Planned' %}bg-yellow-100
                       {% elif status == 'In Progress' %}bg-blue-100
                       {% elif status == 'Completed' %}bg-green-100
                       {% elif status == 'Delayed' %}bg-red-100
                       {% else %}bg-gray-100{% endif %}">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 
                           {% if status == 'Planned' %}text-yellow-500
                           {% elif status == 'In Progress' %}text-blue-500
                           {% elif status == 'Completed' %}text-green-500
