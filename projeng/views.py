@@ -52,13 +52,54 @@ def is_staff_or_superuser(user):
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def dashboard(request):
     try:
-        from .models import Project, ProjectProgress
+        from .models import Project, ProjectProgress, ProjectCost, ProjectDocument
+        from django.db.models import Max, Case, When, Q, F
+        from django.utils import timezone as django_timezone
+        
+        # Base queryset for all assigned projects
         if is_head_engineer(request.user):
-            assigned_projects = Project.objects.select_related('created_by').prefetch_related('assigned_engineers').order_by('-pk')[:5]
-            all_assigned_projects = Project.objects.select_related('created_by').prefetch_related('assigned_engineers')
+            base_queryset = Project.objects.select_related('created_by').prefetch_related('assigned_engineers')
+            all_assigned_projects = base_queryset
         else:
-            assigned_projects = Project.objects.filter(assigned_engineers=request.user).select_related('created_by').prefetch_related('assigned_engineers').order_by('-pk')[:5]
-            all_assigned_projects = Project.objects.filter(assigned_engineers=request.user).select_related('created_by').prefetch_related('assigned_engineers')
+            base_queryset = Project.objects.filter(assigned_engineers=request.user).select_related('created_by').prefetch_related('assigned_engineers')
+            all_assigned_projects = base_queryset
+        
+        # Get the 6 most recently active projects (FIFO: when a 7th project gets activity, the oldest is excluded)
+        # Calculate the most recent activity by finding the max of:
+        # - Latest progress update time
+        # - Latest cost entry time  
+        # - Latest document upload time
+        # - Project's updated_at
+        # Then order by this calculated value (most recent first) and limit to 6
+        
+        # Annotate with latest activity times from related models
+        projects_with_activity = base_queryset.annotate(
+            latest_progress_time=Max('progress_updates__created_at'),
+            latest_cost_time=Max('costs__created_at'),
+            latest_document_time=Max('documents__uploaded_at'),
+        )
+        
+        # Convert to list and calculate most_recent_activity for sorting
+        projects_list = []
+        for project in projects_with_activity:
+            # Find the most recent activity time from all sources
+            activity_times = []
+            if project.latest_progress_time:
+                activity_times.append(project.latest_progress_time)
+            if project.latest_cost_time:
+                activity_times.append(project.latest_cost_time)
+            if project.latest_document_time:
+                activity_times.append(project.latest_document_time)
+            if project.updated_at:
+                activity_times.append(project.updated_at)
+            
+            # Set most_recent_activity to the latest time, or created_at if no activity
+            project.most_recent_activity = max(activity_times) if activity_times else (project.created_at or django_timezone.now())
+            projects_list.append(project)
+        
+        # Sort by most_recent_activity (descending - most recent first) and take top 6
+        projects_list.sort(key=lambda p: p.most_recent_activity, reverse=True)
+        assigned_projects = projects_list[:6]
         print("DEBUG: assigned_projects for user", request.user.username, ":", list(assigned_projects))
         today = timezone.now().date()
         status_counts = {'Planned': 0, 'In Progress': 0, 'Completed': 0, 'Delayed': 0}
@@ -94,9 +135,8 @@ def dashboard(request):
             elif status == 'planned':
                 status_counts['Planned'] += 1
         projects_data = []
-        # Get project IDs before prefetching (for last update calculation)
-        from django.db.models import Max
-        project_ids = list(assigned_projects.values_list('id', flat=True))
+        # Get project IDs from the list (for last update calculation)
+        project_ids = [p.id for p in assigned_projects]
         
         # Get latest update times from all sources
         progress_times = {}
@@ -112,7 +152,6 @@ def dashboard(request):
             ).values_list('project_id', 'max_time')
             
             # Get latest cost times
-            from .models import ProjectCost
             latest_costs = ProjectCost.objects.filter(
                 project_id__in=project_ids
             ).values('project_id').annotate(
@@ -120,7 +159,6 @@ def dashboard(request):
             ).values_list('project_id', 'max_time')
             
             # Get latest document times
-            from .models import ProjectDocument
             latest_documents = ProjectDocument.objects.filter(
                 project_id__in=project_ids
             ).values('project_id').annotate(
@@ -131,8 +169,24 @@ def dashboard(request):
             cost_times = dict(latest_costs)
             document_times = dict(latest_documents)
         
-        # Prefetch progress for assigned projects
-        assigned_projects = assigned_projects.prefetch_related(progress_prefetch)
+        # Prefetch progress updates for the assigned projects
+        # Since assigned_projects is now a list, we need to fetch them as a queryset for prefetching
+        if assigned_projects:
+            project_ids = [p.id for p in assigned_projects]
+            # Fetch projects with prefetch, maintaining order
+            prefetched_queryset = Project.objects.filter(id__in=project_ids).prefetch_related(progress_prefetch)
+            # Create a dict for quick lookup
+            prefetched_dict = {p.id: p for p in prefetched_queryset}
+            # Reconstruct list in original order with prefetched data
+            assigned_projects_ordered = []
+            for project in assigned_projects:
+                if project.id in prefetched_dict:
+                    prefetched_project = prefetched_dict[project.id]
+                    # Copy prefetched attributes
+                    if hasattr(prefetched_project, 'latest_progress_list'):
+                        project.latest_progress_list = prefetched_project.latest_progress_list
+                assigned_projects_ordered.append(project)
+            assigned_projects = assigned_projects_ordered
         
         # Calculate last update for each project and prepare projects_data
         assigned_projects_with_updates = []
