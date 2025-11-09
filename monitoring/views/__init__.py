@@ -611,94 +611,103 @@ def project_detail(request, pk):
 @login_required
 @head_engineer_required
 def head_engineer_project_detail(request, pk):
-    
+    import logging
+    import json
     from projeng.models import Project, ProjectProgress, ProjectCost, Notification
     from django.contrib.auth.models import User
     from projeng.utils import get_project_from_notification
-    import json
+    from django.http import HttpResponse
+    
+    logger = logging.getLogger(__name__)
+    
     try:
         project = Project.objects.get(pk=pk)
     except Project.DoesNotExist:
         return HttpResponse('Project not found.', status=404)
-    
-    # Auto-mark notifications as read for this project
-    # Get all unread notifications for the user
-    unread_notifications = Notification.objects.filter(
-        recipient=request.user,
-        is_read=False
-    )
-    
-    # Mark notifications related to this project as read
-    for notification in unread_notifications:
-        try:
-            if notification.message:
-                project_id = get_project_from_notification(notification.message)
-                if project_id == project.id:
-                    notification.is_read = True
-                    notification.save()
-        except Exception as e:
-            # Log error but continue processing
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Error processing notification {notification.id}: {e}")
-            continue
-    
-    # Get all progress updates - order by date and id to avoid duplicates and ensure consistent ordering
-    progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
-    assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
-    # Get all cost entries
-    costs = ProjectCost.objects.filter(project=project).order_by('date')
-    # Analytics & summary
-    latest_progress = progress_updates.last() if progress_updates else None
-    
-    # Calculate total cost safely
-    total_cost = 0
-    try:
-        if costs:
-            for c in costs:
-                try:
-                    total_cost += float(c.amount) if c.amount else 0
-                except (ValueError, TypeError):
-                    continue
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Error calculating total cost: {e}")
-        total_cost = 0
+        logger.error(f"Error fetching project {pk}: {e}")
+        return HttpResponse(f'Error loading project: {str(e)}', status=500)
     
-    # Calculate budget utilization safely
     try:
-        if project.project_cost:
-            project_cost_float = float(project.project_cost)
-            if project_cost_float > 0:
-                budget_utilization = (total_cost / project_cost_float) * 100
+        # Auto-mark notifications as read for this project
+        # Get all unread notifications for the user
+        unread_notifications = Notification.objects.filter(
+            recipient=request.user,
+            is_read=False
+        )
+        
+        # Mark notifications related to this project as read
+        for notification in unread_notifications:
+            try:
+                if notification.message:
+                    project_id = get_project_from_notification(notification.message)
+                    if project_id == project.id:
+                        notification.is_read = True
+                        notification.save()
+            except Exception as e:
+                # Log error but continue processing
+                logger.warning(f"Error processing notification {notification.id}: {e}")
+                continue
+        
+        # Get all progress updates - order by date and id to avoid duplicates and ensure consistent ordering
+        progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
+        assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
+        # Get all cost entries
+        costs = ProjectCost.objects.filter(project=project).order_by('date')
+        # Analytics & summary
+        latest_progress = progress_updates.last() if progress_updates else None
+        
+        # Calculate total cost safely
+        total_cost = 0
+        try:
+            if costs:
+                for c in costs:
+                    try:
+                        total_cost += float(c.amount) if c.amount else 0
+                    except (ValueError, TypeError):
+                        continue
+        except Exception as e:
+            logger.warning(f"Error calculating total cost: {e}")
+            total_cost = 0
+        
+        # Calculate budget utilization safely
+        try:
+            if project.project_cost:
+                project_cost_float = float(project.project_cost)
+                if project_cost_float > 0:
+                    budget_utilization = (total_cost / project_cost_float) * 100
+                else:
+                    budget_utilization = 0
             else:
                 budget_utilization = 0
-        else:
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Error calculating budget utilization: {e}")
             budget_utilization = 0
-    except (ValueError, TypeError) as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Error calculating budget utilization: {e}")
-        budget_utilization = 0
-    timeline_data = {
-        'start_date': project.start_date,
-        'end_date': project.end_date,
-        'days_elapsed': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
-        'total_days': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
-    }
-    context = {
-        'project': project,
-        'projeng_project': project,  # Pass project as projeng_project for template compatibility
-        'progress_updates': progress_updates,
-        'assigned_to': assigned_to,
-        'costs': costs,
-        'latest_progress': latest_progress,
-        'total_cost': total_cost,
-        'budget_utilization': budget_utilization,
-        'timeline_data': timeline_data,
-    }
-    return render(request, 'monitoring/head_engineer_project_detail.html', context)
+        
+        timeline_data = {
+            'start_date': project.start_date,
+            'end_date': project.end_date,
+            'days_elapsed': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
+            'total_days': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
+        }
+        
+        context = {
+            'project': project,
+            'projeng_project': project,  # Pass project as projeng_project for template compatibility
+            'progress_updates': progress_updates,
+            'assigned_to': assigned_to,
+            'costs': costs,
+            'latest_progress': latest_progress,
+            'total_cost': total_cost,
+            'budget_utilization': budget_utilization,
+            'timeline_data': timeline_data,
+        }
+        
+        return render(request, 'monitoring/head_engineer_project_detail.html', context)
+    
+    except Exception as e:
+        logger.error(f"Error in head_engineer_project_detail for project {pk}: {e}", exc_info=True)
+        return HttpResponse(f'Server error: {str(e)}', status=500)
 
 @login_required
 @head_engineer_required
