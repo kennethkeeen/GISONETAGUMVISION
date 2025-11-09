@@ -173,15 +173,29 @@ def get_project_from_notification(notification_message):
     except Exception as e:
         logger.warning(f"Error searching in monitoring Project model: {e}")
     
-    # Pattern 1: "Progress for project 'ProjectName' updated..."
+    # If not found in either model, return None
+    logger.warning(f"Could not find project in either projeng or monitoring models")
+    return None
+    
+    # Pattern 1: "Progress for project 'ProjectName' updated..." (for other notification types)
+    # Note: This is handled by the helper function above, but keeping for other patterns
     match = re.search(r"Progress for project '([^']+)'", notification_message)
     if match:
         project_name = match.group(1)
-        try:
-            project = Project.objects.get(name=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
+        # Try both models
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
+            try:
+                project = ProjectModel.objects.get(name__iexact=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 1): {project.id} - {project.name}")
+                return project.id
+            except ProjectModel.DoesNotExist:
+                pass
     
     # Pattern 2: "Cost entry added: ProjectName - ..."
     match = re.search(r"Cost entry added: ([^-]+) -", notification_message)
