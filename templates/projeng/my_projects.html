@@ -8,24 +8,25 @@
     <div class="mb-4">
         <input type="text" id="search-projects" placeholder="Search projects..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-1/2">
     </div>
-    <div class="space-y-4">
+    <div class="space-y-4" id="projects-list">
         {% for project in projects %}
-            <div class="bg-white rounded-xl shadow flex flex-col md:flex-row md:items-center justify-between px-6 py-4 gap-4">
+            <div class="project-card bg-white rounded-xl shadow flex flex-col md:flex-row md:items-center justify-between px-6 py-4 gap-4" data-project-id="{{ project.id }}">
                 <div>
                     <div class="text-lg font-semibold text-gray-800">{{ project.name }}</div>
-                    <div class="text-sm text-gray-500">{{ project.status }} • Last Update: {{ project.last_update }}</div>
-                    <div class="text-sm text-gray-600 mt-1">{{ project.description }}</div>
-                    <div class="text-sm text-gray-500">Dates: {{ project.start_date }} to {{ project.end_date }}</div>
+                    <div class="text-sm text-gray-500">{{ project.status }} • Last Update: {{ project.last_update|default:"None" }}</div>
+                    <div class="text-sm text-gray-600 mt-1">{{ project.description|default:"No description" }}</div>
+                    <div class="text-sm text-gray-500">Dates: {{ project.start_date|date:"M. d, Y"|default:"N/A" }} to {{ project.end_date|date:"M. d, Y"|default:"N/A" }}</div>
                 </div>
                 <a href="{% url 'projeng:projeng_project_detail' project.pk %}" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition inline-block" title="View project details">View Details</a>
             </div>
         {% empty %}
-            <p>No projects assigned yet.</p>
+            <p id="no-projects-message">No projects assigned yet.</p>
         {% endfor %}
     </div>
 </div>
 {% endblock %}
 <script>
+// Search functionality
 document.getElementById('search-projects').addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
     document.querySelectorAll('.project-card').forEach(card => {
@@ -33,4 +34,159 @@ document.getElementById('search-projects').addEventListener('input', function() 
         card.style.display = name.includes(searchTerm) ? '' : 'none';
     });
 });
-</script> 
+
+// Real-time project list updates
+function setupRealtimeProjectList() {
+    console.log('📋 Setting up real-time project list updates...');
+    
+    // Connect to project status SSE stream
+    if (window.realtimeManager) {
+        window.realtimeManager.connectProjects((data) => {
+            console.log('📦 Received project update:', data);
+            
+            if (data.type === 'project_status' && data.projects) {
+                // Handle multiple project updates
+                data.projects.forEach(projectData => {
+                    addOrUpdateProjectInList(projectData);
+                });
+            } else if (data.type === 'project_status' && data.project_id) {
+                // Handle single project update
+                addOrUpdateProjectInList(data);
+            }
+        }, null); // null = monitor all projects
+    } else {
+        console.error('❌ RealtimeManager not available!');
+    }
+}
+
+// Add or update a project in the list
+function addOrUpdateProjectInList(projectData) {
+    const projectsList = document.getElementById('projects-list');
+    if (!projectsList) return;
+    
+    const existingCard = document.querySelector(`[data-project-id="${projectData.id}"]`);
+    
+    if (existingCard) {
+        // Update existing project
+        updateProjectCard(existingCard, projectData);
+        // Highlight the updated project
+        existingCard.classList.add('bg-yellow-50');
+        setTimeout(() => {
+            existingCard.classList.remove('bg-yellow-50');
+        }, 2000);
+    } else {
+        // Add new project
+        addProjectToList(projectData);
+    }
+}
+
+// Update existing project card
+function updateProjectCard(card, projectData) {
+    const nameEl = card.querySelector('.text-lg');
+    const statusEl = card.querySelector('.text-sm.text-gray-500');
+    
+    if (nameEl) nameEl.textContent = projectData.name || 'Unnamed Project';
+    if (statusEl) {
+        statusEl.textContent = `${projectData.status || 'unknown'} • Last Update: ${new Date(projectData.updated_at).toLocaleString()}`;
+    }
+}
+
+// Add new project to the list
+function addProjectToList(projectData) {
+    console.log('➕ Adding new project to list:', projectData);
+    const projectsList = document.getElementById('projects-list');
+    if (!projectsList) return;
+    
+    // Hide "no projects" message
+    const noProjectsMsg = document.getElementById('no-projects-message');
+    if (noProjectsMsg) {
+        noProjectsMsg.style.display = 'none';
+    }
+    
+    // Create new project card
+    const projectCard = document.createElement('div');
+    projectCard.className = 'project-card bg-white rounded-xl shadow flex flex-col md:flex-row md:items-center justify-between px-6 py-4 gap-4 animate-fade-in';
+    projectCard.setAttribute('data-project-id', projectData.id);
+    projectCard.style.opacity = '0';
+    projectCard.style.transform = 'translateY(-10px)';
+    
+    const formattedDate = projectData.updated_at ? new Date(projectData.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    const startDate = projectData.start_date ? new Date(projectData.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    const endDate = projectData.end_date ? new Date(projectData.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    
+    projectCard.innerHTML = `
+        <div>
+            <div class="text-lg font-semibold text-gray-800">${escapeHtml(projectData.name || 'Unnamed Project')}</div>
+            <div class="text-sm text-gray-500">${projectData.status || 'unknown'} • Last Update: ${formattedDate}</div>
+            <div class="text-sm text-gray-600 mt-1">${escapeHtml(projectData.description || 'No description')}</div>
+            <div class="text-sm text-gray-500">Dates: ${startDate} to ${endDate}</div>
+        </div>
+        <a href="/projeng/projects/${projectData.id}/detail/" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition inline-block" title="View project details">View Details</a>
+    `;
+    
+    // Add to top of list
+    projectsList.insertBefore(projectCard, projectsList.firstChild);
+    
+    // Animate in
+    setTimeout(() => {
+        projectCard.style.transition = 'all 0.3s ease';
+        projectCard.style.opacity = '1';
+        projectCard.style.transform = 'translateY(0)';
+        projectCard.classList.add('bg-green-50');
+        setTimeout(() => {
+            projectCard.classList.remove('bg-green-50');
+        }, 2000);
+    }, 10);
+}
+
+// Update project in list (for status changes)
+function updateProjectInList(projectData) {
+    const card = document.querySelector(`[data-project-id="${projectData.id}"]`);
+    if (card) {
+        updateProjectCard(card, projectData);
+        // Highlight update
+        card.classList.add('bg-blue-50');
+        setTimeout(() => {
+            card.classList.remove('bg-blue-50');
+        }, 2000);
+    } else {
+        // Project doesn't exist in list, add it
+        addProjectToList(projectData);
+    }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for realtimeManager to be initialized
+    setTimeout(() => {
+        setupRealtimeProjectList();
+        
+        // Also setup notifications to show toast
+        if (typeof setupRealtimeNotifications === 'function') {
+            setupRealtimeNotifications();
+        }
+    }, 500);
+});
+</script>
+<style>
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+.animate-fade-in {
+    animation: fade-in 0.3s ease;
+}
+</style> 

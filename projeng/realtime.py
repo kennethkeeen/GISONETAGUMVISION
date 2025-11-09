@@ -239,6 +239,10 @@ def sse_project_status(request, project_id=None):
                                     'id': p.id,
                                     'name': p.name,
                                     'status': p.status,
+                                    'description': p.description or '',
+                                    'barangay': p.barangay or '',
+                                    'start_date': p.start_date.isoformat() if p.start_date else None,
+                                    'end_date': p.end_date.isoformat() if p.end_date else None,
                                     'updated_at': timezone.localtime(p.updated_at if hasattr(p, 'updated_at') else p.created_at).isoformat()  # Convert to local timezone
                                 }
                                 for p in changed_projects[:10]
