@@ -182,12 +182,16 @@ def my_projects_view(request):
     # Calculate the most recent update time for each project
     projects_with_updates = []
     for project in projects:
+        # If project status is "planned", always show "None" for last update
+        # Last update should only be shown when status is not "planned"
+        if project.status == 'planned':
+            project.calculated_last_update = None
+            projects_with_updates.append(project)
+            continue
+        
+        # For non-planned projects, calculate the most recent update
         # Collect all possible update timestamps
         last_updates = []
-        
-        # Project's own updated_at (always available)
-        if project.updated_at:
-            last_updates.append(project.updated_at)
         
         # Add latest progress update time if it exists
         progress_time = progress_times.get(project.id)
@@ -203,6 +207,9 @@ def my_projects_view(request):
         doc_time = document_times.get(project.id)
         if doc_time:
             last_updates.append(doc_time)
+        
+        # Note: We don't include project.updated_at for field changes
+        # Only count actual activity: progress updates, cost entries, or document uploads
         
         # Get the most recent update (max of all timestamps)
         last_update = max(last_updates) if last_updates else None
