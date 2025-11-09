@@ -141,9 +141,11 @@ def get_project_from_notification(notification_message):
         # Fallback to project name (remove PRN part if present)
         project_name = re.sub(r'\s*\(PRN:[^)]+\)', '', project_text).strip()
         logger.info(f"Trying project name: '{project_name}'")
+        
+        # Try exact name match
         try:
             project = Project.objects.get(name=project_name)
-            logger.info(f"Found project by name: {project.id} - {project.name}")
+            logger.info(f"Found project by exact name: {project.id} - {project.name}")
             return project.id
         except Project.DoesNotExist:
             pass
@@ -153,6 +155,29 @@ def get_project_from_notification(notification_message):
             if project:
                 logger.info(f"Found project by name (multiple found, using most recent): {project.id} - {project.name}")
                 return project.id
+        
+        # Try case-insensitive name match
+        try:
+            project = Project.objects.get(name__iexact=project_name)
+            logger.info(f"Found project by case-insensitive name: {project.id} - {project.name}")
+            return project.id
+        except Project.DoesNotExist:
+            pass
+        except Project.MultipleObjectsReturned:
+            project = Project.objects.filter(name__iexact=project_name).order_by('-created_at').first()
+            if project:
+                logger.info(f"Found project by case-insensitive name (multiple found): {project.id} - {project.name}")
+                return project.id
+        
+        # Try partial name match (contains)
+        try:
+            projects = Project.objects.filter(name__icontains=project_name)
+            if projects.exists():
+                project = projects.order_by('-created_at').first()
+                logger.info(f"Found project by partial name match: {project.id} - {project.name}")
+                return project.id
+        except Exception as e:
+            logger.warning(f"Error in partial name match: {e}")
         
         logger.warning(f"Could not find project for text: '{project_text}'")
     
