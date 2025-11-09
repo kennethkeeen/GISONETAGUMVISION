@@ -534,30 +534,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Make the entire notification item clickable
                 item.style.cursor = 'pointer';
-                item.classList.add('hover:bg-blue-100');
+                item.style.position = 'relative';
                 
-                // Remove any existing click handlers first
-                const newItem = item.cloneNode(true);
-                item.parentNode.replaceChild(newItem, item);
-                
-                // Get the content div from the new item
-                const contentDiv = newItem.querySelector('.notification-content');
+                // Get the content div
+                const contentDiv = item.querySelector('.notification-content');
                 if (contentDiv) {
                     contentDiv.style.cursor = 'pointer';
-                    contentDiv.classList.add('hover:text-blue-600');
+                    // Add hover effect
+                    contentDiv.addEventListener('mouseenter', function() {
+                        this.style.color = '#2563eb'; // blue-600
+                    });
+                    contentDiv.addEventListener('mouseleave', function() {
+                        this.style.color = '';
+                    });
                 }
                 
                 // Add click handler to the entire notification item
-                newItem.addEventListener('click', function(e) {
-                    // Don't trigger if clicking on buttons
-                    if (e.target.closest('button') || e.target.closest('.flex.space-x-2')) {
+                // Use a more direct approach - attach to the item itself
+                item.onclick = function(e) {
+                    // Don't trigger if clicking on buttons or their container
+                    if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.flex.space-x-2')) {
                         return;
                     }
                     e.stopPropagation();
                     e.preventDefault();
                     console.log('🖱️ Notification clicked:', notificationMessage);
+                    console.log('🖱️ Notification ID:', notificationId);
                     fetchProjectIdAndRedirect(notificationMessage, notificationId);
-                });
+                };
                 
                 // Hide "Mark Read" button for clickable notifications (will be auto-read when clicked)
                 const markReadBtn = newItem.querySelector('.mark-read-btn');
