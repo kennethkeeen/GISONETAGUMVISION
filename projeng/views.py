@@ -982,6 +982,192 @@ def analytics_overview_data(request):
     }
     return JsonResponse(chart_data)
 
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
+def dashboard_progress_over_time_data(request):
+    """API endpoint for Project Progress Over Time chart"""
+    from .models import Project, ProjectProgress
+    from django.db.models import Avg
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+    
+    if is_head_engineer(request.user):
+        projects = Project.objects.all()
+    else:
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    
+    # Get progress updates for the last 6 months
+    six_months_ago = timezone.now().date() - timedelta(days=180)
+    progress_updates = ProjectProgress.objects.filter(
+        project__in=projects,
+        date__gte=six_months_ago
+    ).order_by('date')
+    
+    # Group by month
+    monthly_progress = defaultdict(list)
+    for update in progress_updates:
+        month_key = update.date.strftime('%Y-%m')
+        monthly_progress[month_key].append(update.percentage_complete)
+    
+    # Calculate average progress per month
+    months = sorted(monthly_progress.keys())
+    avg_progress = [sum(monthly_progress[m]) / len(monthly_progress[m]) for m in months] if months else []
+    
+    # Format month labels
+    month_labels = []
+    for m in months:
+        try:
+            dt = datetime.strptime(m, '%Y-%m')
+            month_labels.append(dt.strftime('%b %Y'))
+        except ValueError:
+            month_labels.append(m)
+    
+    # If no data, return empty chart
+    if not month_labels:
+        month_labels = ['No Data']
+        avg_progress = [0]
+    
+    return JsonResponse({
+        'labels': month_labels,
+        'datasets': [{
+            'label': 'Average Progress (%)',
+            'data': avg_progress,
+            'borderColor': 'rgba(54, 162, 235, 1)',
+            'backgroundColor': 'rgba(54, 162, 235, 0.1)',
+            'tension': 0.4,
+            'fill': True
+        }]
+    })
+
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
+def dashboard_budget_utilization_data(request):
+    """API endpoint for Budget Utilization chart"""
+    from .models import Project, ProjectCost
+    from django.db.models import Sum
+    
+    if is_head_engineer(request.user):
+        projects = Project.objects.filter(project_cost__isnull=False)
+    else:
+        projects = Project.objects.filter(
+            assigned_engineers=request.user,
+            project_cost__isnull=False
+        )
+    
+    # Calculate budget utilization for each project
+    project_data = []
+    for project in projects:
+        total_cost = ProjectCost.objects.filter(project=project).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        if project.project_cost and float(project.project_cost) > 0:
+            utilization = (float(total_cost) / float(project.project_cost)) * 100
+            project_data.append({
+                'name': project.name[:20] + '...' if len(project.name) > 20 else project.name,
+                'utilization': round(utilization, 1)
+            })
+    
+    # Sort by utilization and take top 10
+    project_data.sort(key=lambda x: x['utilization'], reverse=True)
+    project_data = project_data[:10]
+    
+    labels = [p['name'] for p in project_data]
+    data = [p['utilization'] for p in project_data]
+    
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [{
+            'label': 'Budget Utilization (%)',
+            'data': data,
+            'backgroundColor': [
+                'rgba(255, 99, 132, 0.6)' if d > 100 else
+                'rgba(255, 206, 86, 0.6)' if d > 80 else
+                'rgba(75, 192, 192, 0.6)'
+                for d in data
+            ],
+            'borderColor': [
+                'rgba(255, 99, 132, 1)' if d > 100 else
+                'rgba(255, 206, 86, 1)' if d > 80 else
+                'rgba(75, 192, 192, 1)'
+                for d in data
+            ],
+            'borderWidth': 1
+        }]
+    })
+
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
+def dashboard_cost_breakdown_data(request):
+    """API endpoint for Cost Breakdown by Type chart"""
+    from .models import Project, ProjectCost
+    from django.db.models import Sum
+    
+    if is_head_engineer(request.user):
+        projects = Project.objects.all()
+    else:
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    
+    # Get cost breakdown by type
+    cost_by_type = ProjectCost.objects.filter(
+        project__in=projects
+    ).values('cost_type').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    
+    labels = [item['cost_type'].title() for item in cost_by_type]
+    data = [float(item['total']) for item in cost_by_type]
+    
+    colors = {
+        'Material': 'rgba(54, 162, 235, 0.6)',
+        'Labor': 'rgba(255, 206, 86, 0.6)',
+        'Equipment': 'rgba(75, 192, 192, 0.6)',
+        'Other': 'rgba(153, 102, 255, 0.6)'
+    }
+    
+    background_colors = [colors.get(label, 'rgba(201, 203, 207, 0.6)') for label in labels]
+    border_colors = [bg.replace('0.6', '1') for bg in background_colors]
+    
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [{
+            'label': 'Total Cost (₱)',
+            'data': data,
+            'backgroundColor': background_colors,
+            'borderColor': border_colors,
+            'borderWidth': 2
+        }]
+    })
+
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
+def dashboard_projects_by_barangay_data(request):
+    """API endpoint for Projects by Barangay chart"""
+    from .models import Project
+    from django.db.models import Count
+    
+    if is_head_engineer(request.user):
+        projects = Project.objects.all()
+    else:
+        projects = Project.objects.filter(assigned_engineers=request.user)
+    
+    # Count projects by barangay
+    barangay_counts = projects.filter(
+        barangay__isnull=False
+    ).values('barangay').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]  # Top 10 barangays
+    
+    labels = [item['barangay'] for item in barangay_counts]
+    data = [item['count'] for item in barangay_counts]
+    
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [{
+            'label': 'Number of Projects',
+            'data': data,
+            'backgroundColor': 'rgba(54, 162, 235, 0.6)',
+            'borderColor': 'rgba(54, 162, 235, 1)',
+            'borderWidth': 1
+        }]
+    })
+
 @csrf_exempt
 @login_required
 def engineer_projects_api(request, engineer_id):

@@ -69,38 +69,38 @@
       </div>
     </div>
 
-    <!-- Chart 2: Placeholder for new graph -->
+    <!-- Chart 2: Project Progress Over Time -->
     <div class="bg-white rounded-xl shadow-md p-6">
-      <h3 class="text-xl font-bold text-gray-800 mb-4">Graph 2</h3>
-      <div class="chart-container flex items-center justify-center" style="height: 320px;">
-          <canvas id="chart2"></canvas>
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Project Progress Over Time</h3>
+      <div class="chart-container" style="height: 320px;">
+          <canvas id="progressOverTimeChart"></canvas>
       </div>
     </div>
   </div>
 
   <!-- Charts Section: Second Row - 3 Charts -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-    <!-- Chart 3: Placeholder for new graph -->
+    <!-- Chart 3: Budget Utilization -->
     <div class="bg-white rounded-xl shadow-md p-6">
-      <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 3</h3>
-      <div class="chart-container flex items-center justify-center" style="height: 280px;">
-          <canvas id="chart3"></canvas>
+      <h3 class="text-lg font-bold text-gray-800 mb-4">Budget Utilization</h3>
+      <div class="chart-container" style="height: 280px;">
+          <canvas id="budgetUtilizationChart"></canvas>
       </div>
     </div>
 
-    <!-- Chart 4: Placeholder for new graph -->
+    <!-- Chart 4: Cost Breakdown by Type -->
     <div class="bg-white rounded-xl shadow-md p-6">
-      <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 4</h3>
-      <div class="chart-container flex items-center justify-center" style="height: 280px;">
-          <canvas id="chart4"></canvas>
+      <h3 class="text-lg font-bold text-gray-800 mb-4">Cost Breakdown by Type</h3>
+      <div class="chart-container" style="height: 280px;">
+          <canvas id="costBreakdownChart"></canvas>
       </div>
     </div>
 
-    <!-- Chart 5: Placeholder for new graph -->
+    <!-- Chart 5: Projects by Barangay -->
     <div class="bg-white rounded-xl shadow-md p-6">
-      <h3 class="text-lg font-bold text-gray-800 mb-4">Graph 5</h3>
-      <div class="chart-container flex items-center justify-center" style="height: 280px;">
-          <canvas id="chart5"></canvas>
+      <h3 class="text-lg font-bold text-gray-800 mb-4">Projects by Barangay</h3>
+      <div class="chart-container" style="height: 280px;">
+          <canvas id="projectsByBarangayChart"></canvas>
       </div>
     </div>
   </div>
@@ -201,45 +201,134 @@
             });
         }
 
-        // Placeholder functions for additional charts
-        // You can implement these later with actual data
-        function renderChart2() {
-            const ctx = document.getElementById('chart2');
-            if (ctx) {
-                // Chart 2 implementation
-                console.log('Chart 2 placeholder');
-            }
-        }
+        // Chart 2: Project Progress Over Time
+        fetch('{% url "projeng:projeng_dashboard_progress_over_time_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('progressOverTimeChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'line',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         scales: {
+                             y: {
+                                 beginAtZero: true,
+                                 max: 100,
+                                 title: {
+                                     display: true,
+                                     text: 'Progress (%)'
+                                 }
+                             }
+                         },
+                         plugins: {
+                             legend: {
+                                 display: true
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering progress over time chart:', error);
+             }
+         })
+         .catch(error => console.error('Error fetching progress over time data:', error));
 
-        function renderChart3() {
-            const ctx = document.getElementById('chart3');
-            if (ctx) {
-                // Chart 3 implementation
-                console.log('Chart 3 placeholder');
-            }
-        }
+        // Chart 3: Budget Utilization
+        fetch('{% url "projeng:projeng_dashboard_budget_utilization_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'bar',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         indexAxis: 'y',
+                         scales: {
+                             x: {
+                                 beginAtZero: true,
+                                 title: {
+                                     display: true,
+                                     text: 'Utilization (%)'
+                                 }
+                             }
+                         },
+                         plugins: {
+                             legend: {
+                                 display: false
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering budget utilization chart:', error);
+             }
+         })
+         .catch(error => console.error('Error fetching budget utilization data:', error));
 
-        function renderChart4() {
-            const ctx = document.getElementById('chart4');
-            if (ctx) {
-                // Chart 4 implementation
-                console.log('Chart 4 placeholder');
-            }
-        }
+        // Chart 4: Cost Breakdown by Type
+        fetch('{% url "projeng:projeng_dashboard_cost_breakdown_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'doughnut',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         plugins: {
+                             legend: {
+                                 position: 'bottom'
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering cost breakdown chart:', error);
+             }
+         })
+         .catch(error => console.error('Error fetching cost breakdown data:', error));
 
-        function renderChart5() {
-            const ctx = document.getElementById('chart5');
-            if (ctx) {
-                // Chart 5 implementation
-                console.log('Chart 5 placeholder');
-            }
-        }
-
-        // Call placeholder chart functions
-        renderChart2();
-        renderChart3();
-        renderChart4();
-        renderChart5();
+        // Chart 5: Projects by Barangay
+        fetch('{% url "projeng:projeng_dashboard_projects_by_barangay_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('projectsByBarangayChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'bar',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         scales: {
+                             y: {
+                                 beginAtZero: true,
+                                 title: {
+                                     display: true,
+                                     text: 'Number of Projects'
+                                 }
+                             }
+                         },
+                         plugins: {
+                             legend: {
+                                 display: false
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering projects by barangay chart:', error);
+             }
+         })
+         .catch(error => console.error('Error fetching projects by barangay data:', error));
     });
 </script>
 <script>

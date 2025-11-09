@@ -27,6 +27,10 @@ urlpatterns = [
     path('projects/<int:pk>/add-cost/', views.add_cost_entry, name='projeng_add_cost_entry'),
     path('analytics/', views.analytics_overview, name='projeng_analytics_overview'),
     path('analytics/overview-data/', views.analytics_overview_data, name='projeng_analytics_overview_data'),
+    path('dashboard/progress-over-time-data/', views.dashboard_progress_over_time_data, name='projeng_dashboard_progress_over_time_data'),
+    path('dashboard/budget-utilization-data/', views.dashboard_budget_utilization_data, name='projeng_dashboard_budget_utilization_data'),
+    path('dashboard/cost-breakdown-data/', views.dashboard_cost_breakdown_data, name='projeng_dashboard_cost_breakdown_data'),
+    path('dashboard/projects-by-barangay-data/', views.dashboard_projects_by_barangay_data, name='projeng_dashboard_projects_by_barangay_data'),
     path('projects/<int:engineer_id>/', views.engineer_projects_api, name='engineer_projects_api'),
     
     # URL for project photo uploads
