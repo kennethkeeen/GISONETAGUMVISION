@@ -130,35 +130,54 @@ def dashboard(request):
 # Placeholder views for new sidebar links
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def my_projects_view(request):
+    from django.db.models import Max
+    
+    # Build base queryset
     if is_head_engineer(request.user):
-        projects = Project.objects.all()
+        projects_queryset = Project.objects.all()
     else:
-        projects = Project.objects.filter(assigned_engineers=request.user)
+        projects_queryset = Project.objects.filter(assigned_engineers=request.user)
     
-    delayed_count = projects.filter(status='delayed').count()
+    delayed_count = projects_queryset.filter(status='delayed').count()
     
-    # Prefetch related data efficiently to get latest update times
-    from django.db.models import Prefetch
-    projects = projects.select_related('created_by').prefetch_related('assigned_engineers')
+    # Get all project IDs first for efficient querying
+    project_ids = list(projects_queryset.values_list('id', flat=True))
     
-    # Prefetch latest entries from each related model for efficient access
-    projects = projects.prefetch_related(
-        Prefetch(
-            'progress_updates',
-            queryset=ProjectProgress.objects.order_by('-created_at')[:1],
-            to_attr='latest_progress'
-        ),
-        Prefetch(
-            'costs',
-            queryset=ProjectCost.objects.order_by('-created_at')[:1],
-            to_attr='latest_cost'
-        ),
-        Prefetch(
-            'documents',
-            queryset=ProjectDocument.objects.order_by('-uploaded_at')[:1],
-            to_attr='latest_document'
-        )
-    )
+    # Initialize dictionaries for storing latest update times
+    progress_times = {}
+    cost_times = {}
+    document_times = {}
+    
+    # Only query if we have projects
+    if project_ids:
+        # Get latest progress times using aggregation
+        latest_progress = ProjectProgress.objects.filter(
+            project_id__in=project_ids
+        ).values('project_id').annotate(
+            max_time=Max('created_at')
+        ).values_list('project_id', 'max_time')
+        
+        # Get latest cost times
+        latest_costs = ProjectCost.objects.filter(
+            project_id__in=project_ids
+        ).values('project_id').annotate(
+            max_time=Max('created_at')
+        ).values_list('project_id', 'max_time')
+        
+        # Get latest document times
+        latest_documents = ProjectDocument.objects.filter(
+            project_id__in=project_ids
+        ).values('project_id').annotate(
+            max_time=Max('uploaded_at')
+        ).values_list('project_id', 'max_time')
+        
+        # Build dictionaries for quick lookup
+        progress_times = dict(latest_progress)
+        cost_times = dict(latest_costs)
+        document_times = dict(latest_documents)
+    
+    # Get projects with prefetch for efficient access
+    projects = projects_queryset.select_related('created_by').prefetch_related('assigned_engineers')
     
     # Calculate the most recent update time for each project
     projects_with_updates = []
@@ -167,25 +186,23 @@ def my_projects_view(request):
         last_updates = []
         
         # Project's own updated_at (always available)
-        last_updates.append(project.updated_at)
+        if project.updated_at:
+            last_updates.append(project.updated_at)
         
         # Add latest progress update time if it exists
-        if hasattr(project, 'latest_progress') and project.latest_progress:
-            latest_prog = project.latest_progress[0] if project.latest_progress else None
-            if latest_prog and latest_prog.created_at:
-                last_updates.append(latest_prog.created_at)
+        progress_time = progress_times.get(project.id)
+        if progress_time:
+            last_updates.append(progress_time)
         
         # Add latest cost entry time if it exists
-        if hasattr(project, 'latest_cost') and project.latest_cost:
-            latest_cst = project.latest_cost[0] if project.latest_cost else None
-            if latest_cst and latest_cst.created_at:
-                last_updates.append(latest_cst.created_at)
+        cost_time = cost_times.get(project.id)
+        if cost_time:
+            last_updates.append(cost_time)
         
         # Add latest document upload time if it exists
-        if hasattr(project, 'latest_document') and project.latest_document:
-            latest_doc = project.latest_document[0] if project.latest_document else None
-            if latest_doc and latest_doc.uploaded_at:
-                last_updates.append(latest_doc.uploaded_at)
+        doc_time = document_times.get(project.id)
+        if doc_time:
+            last_updates.append(doc_time)
         
         # Get the most recent update (max of all timestamps)
         last_update = max(last_updates) if last_updates else None
