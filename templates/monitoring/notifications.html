@@ -730,6 +730,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`/projeng/api/get-project-from-notification/?message=${encodeURIComponent(notificationMessage)}`);
             const data = await response.json();
             if (data.project_id) {
+                // Mark notification as read when clicked
+                if (notificationId) {
+                    const formData = new FormData();
+                    formData.append('action', 'mark_read');
+                    formData.append('notification_id', notificationId);
+                    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                    fetch('{% url "head_engineer_notifications" %}', {
+                        method: 'POST',
+                        body: formData
+                    }).catch(err => console.error('Error marking notification as read:', err));
+                }
+                // Redirect to project detail page
                 window.location.href = `/dashboard/monitoring/projects/${data.project_id}/detail/`;
             } else {
                 console.log('No project ID found for notification');

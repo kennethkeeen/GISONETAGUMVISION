@@ -200,11 +200,25 @@ def get_project_from_notification(notification_message):
     match = re.search(r"Cost entry added: ([^-]+) -", notification_message)
     if match:
         project_name = match.group(1).strip()
-        try:
-            project = Project.objects.get(name=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
+        # Try both models (same as Pattern 1)
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
+            try:
+                project = ProjectModel.objects.get(name__iexact=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 2 - Cost entry): {project.id} - {project.name}")
+                return project.id
+            except ProjectModel.DoesNotExist:
+                pass
+            except ProjectModel.MultipleObjectsReturned:
+                project = ProjectModel.objects.filter(name__iexact=project_name).order_by('-created_at').first()
+                if project:
+                    logger.info(f"[{model_name}] Found project by name (Pattern 2 - Cost entry, multiple): {project.id} - {project.name}")
+                    return project.id
     
     # Pattern 3: "New project created: ProjectName (PRN: PRN123) ..."
     match = re.search(r"New project created: ([^(]+)", notification_message)
