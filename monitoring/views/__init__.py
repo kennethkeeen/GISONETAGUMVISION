@@ -630,10 +630,19 @@ def head_engineer_project_detail(request, pk):
     
     # Mark notifications related to this project as read
     for notification in unread_notifications:
-        project_id = get_project_from_notification(notification.message)
-        if project_id == project.id:
-            notification.is_read = True
-            notification.save()
+        try:
+            if notification.message:
+                project_id = get_project_from_notification(notification.message)
+                if project_id == project.id:
+                    notification.is_read = True
+                    notification.save()
+        except Exception as e:
+            # Log error but continue processing
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error processing notification {notification.id}: {e}")
+            continue
+    
     # Get all progress updates - order by date and id to avoid duplicates and ensure consistent ordering
     progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
     assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
@@ -641,8 +650,37 @@ def head_engineer_project_detail(request, pk):
     costs = ProjectCost.objects.filter(project=project).order_by('date')
     # Analytics & summary
     latest_progress = progress_updates.last() if progress_updates else None
-    total_cost = sum([float(c.amount) for c in costs]) if costs else 0
-    budget_utilization = (total_cost / float(project.project_cost) * 100) if project.project_cost else 0
+    
+    # Calculate total cost safely
+    total_cost = 0
+    try:
+        if costs:
+            for c in costs:
+                try:
+                    total_cost += float(c.amount) if c.amount else 0
+                except (ValueError, TypeError):
+                    continue
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Error calculating total cost: {e}")
+        total_cost = 0
+    
+    # Calculate budget utilization safely
+    try:
+        if project.project_cost:
+            project_cost_float = float(project.project_cost)
+            if project_cost_float > 0:
+                budget_utilization = (total_cost / project_cost_float) * 100
+            else:
+                budget_utilization = 0
+        else:
+            budget_utilization = 0
+    except (ValueError, TypeError) as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Error calculating budget utilization: {e}")
+        budget_utilization = 0
     timeline_data = {
         'start_date': project.start_date,
         'end_date': project.end_date,
