@@ -1181,12 +1181,18 @@ def notifications_api(request):
 def get_project_from_notification_api(request):
     """API endpoint to get project ID from notification message"""
     from .utils import get_project_from_notification
+    import logging
+    
+    logger = logging.getLogger(__name__)
     
     message = request.GET.get('message', '')
     if not message:
         return JsonResponse({'error': 'Message parameter required'}, status=400)
     
+    logger.info(f"API request to get project from notification: {message[:100]}...")
     project_id = get_project_from_notification(message)
+    logger.info(f"API response: project_id={project_id}")
+    
     return JsonResponse({'project_id': project_id})
 
 @login_required
