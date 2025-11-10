@@ -100,6 +100,155 @@ def dashboard(request):
 
 @login_required
 @prevent_project_engineer_access
+def dashboard_budget_utilization_data(request):
+    """API endpoint for Budget Utilization by Project chart"""
+    from projeng.models import Project, ProjectCost
+    from django.db.models import Sum
+    from django.http import JsonResponse
+    
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        projects = Project.objects.filter(project_cost__isnull=False).exclude(project_cost=0)
+    else:
+        projects = Project.objects.none()
+    
+    # Calculate budget utilization for each project
+    project_data = []
+    for project in projects:
+        total_cost = ProjectCost.objects.filter(project=project).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        if project.project_cost and float(project.project_cost) > 0:
+            utilization = (float(total_cost) / float(project.project_cost)) * 100
+            project_data.append({
+                'name': project.name[:25] + '...' if len(project.name) > 25 else project.name,
+                'utilization': round(utilization, 1),
+                'total_cost': float(total_cost),
+                'budget': float(project.project_cost)
+            })
+    
+    # Sort by utilization (highest first) and take top 10
+    project_data.sort(key=lambda x: x['utilization'], reverse=True)
+    project_data = project_data[:10]
+    
+    labels = [p['name'] for p in project_data]
+    data = [p['utilization'] for p in project_data]
+    
+    # Color coding: Red (>100%), Orange (80-100%), Green (<80%)
+    background_colors = [
+        'rgba(239, 68, 68, 0.7)' if d > 100 else
+        'rgba(251, 146, 60, 0.7)' if d > 80 else
+        'rgba(34, 197, 94, 0.7)'
+        for d in data
+    ]
+    border_colors = [
+        'rgba(239, 68, 68, 1)' if d > 100 else
+        'rgba(251, 146, 60, 1)' if d > 80 else
+        'rgba(34, 197, 94, 1)'
+        for d in data
+    ]
+    
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [{
+            'label': 'Budget Utilization (%)',
+            'data': data,
+            'backgroundColor': background_colors,
+            'borderColor': border_colors,
+            'borderWidth': 1
+        }]
+    })
+
+@login_required
+@prevent_project_engineer_access
+def dashboard_cost_breakdown_data(request):
+    """API endpoint for Cost Breakdown by Type chart"""
+    from projeng.models import ProjectCost
+    from django.db.models import Sum
+    from django.http import JsonResponse
+    
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        # Get cost breakdown by type across all projects
+        cost_by_type = ProjectCost.objects.all().values('cost_type').annotate(
+            total=Sum('amount')
+        ).order_by('-total')
+    else:
+        cost_by_type = []
+    
+    labels = [item['cost_type'].title() for item in cost_by_type]
+    data = [float(item['total']) for item in cost_by_type]
+    
+    # Color scheme for cost types
+    colors = {
+        'Material': 'rgba(59, 130, 246, 0.7)',    # Blue
+        'Labor': 'rgba(251, 191, 36, 0.7)',       # Yellow
+        'Equipment': 'rgba(34, 197, 94, 0.7)',    # Green
+        'Other': 'rgba(139, 92, 246, 0.7)'        # Purple
+    }
+    
+    background_colors = [colors.get(label, 'rgba(156, 163, 175, 0.7)') for label in labels]
+    border_colors = [bg.replace('0.7', '1') for bg in background_colors]
+    
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [{
+            'label': 'Total Cost (₱)',
+            'data': data,
+            'backgroundColor': background_colors,
+            'borderColor': border_colors,
+            'borderWidth': 2
+        }]
+    })
+
+@login_required
+@prevent_project_engineer_access
+def dashboard_monthly_spending_data(request):
+    """API endpoint for Monthly Spending Trend chart"""
+    from projeng.models import ProjectCost
+    from django.db.models import Sum
+    from django.db.models.functions import TruncMonth
+    from django.http import JsonResponse
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    
+    if is_head_engineer(request.user) or is_finance_manager(request.user):
+        # Get spending for the last 12 months
+        twelve_months_ago = timezone.now() - timedelta(days=365)
+        monthly_spending = (
+            ProjectCost.objects
+            .filter(date__gte=twelve_months_ago)
+            .annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(total=Sum('amount'))
+            .order_by('month')
+        )
+    else:
+        monthly_spending = []
+    
+    # Format data
+    months = [item['month'].strftime('%b %Y') for item in monthly_spending]
+    totals = [float(item['total']) for item in monthly_spending]
+    
+    # If no data, return empty chart
+    if not months:
+        months = ['No Data']
+        totals = [0]
+    
+    return JsonResponse({
+        'labels': months,
+        'datasets': [{
+            'label': 'Monthly Spending (₱)',
+            'data': totals,
+            'borderColor': 'rgba(59, 130, 246, 1)',
+            'backgroundColor': 'rgba(59, 130, 246, 0.1)',
+            'tension': 0.4,
+            'fill': True,
+            'borderWidth': 2
+        }]
+    })
+
+@login_required
+@prevent_project_engineer_access
 def project_list(request):
     
     if request.method == 'POST':

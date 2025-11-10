@@ -137,27 +137,27 @@
             </div>
         </div>
 
-        <!-- Chart 4: Placeholder for new chart -->
+        <!-- Chart 4: Budget Utilization by Project -->
         <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Chart 4</h2>
-            <div class="chart-container flex items-center justify-center" style="position: relative; height:300px; width:100%">
-                <canvas id="chart4"></canvas>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Budget Utilization by Project</h2>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="budgetUtilizationChart"></canvas>
             </div>
         </div>
 
-        <!-- Chart 5: Placeholder for new chart -->
+        <!-- Chart 5: Cost Breakdown by Type -->
         <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Chart 5</h2>
-            <div class="chart-container flex items-center justify-center" style="position: relative; height:300px; width:100%">
-                <canvas id="chart5"></canvas>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Cost Breakdown by Type</h2>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="costBreakdownChart"></canvas>
             </div>
         </div>
 
-        <!-- Chart 6: Placeholder for new chart -->
+        <!-- Chart 6: Monthly Spending Trend -->
         <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Chart 6</h2>
-            <div class="chart-container flex items-center justify-center" style="position: relative; height:300px; width:100%">
-                <canvas id="chart6"></canvas>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Monthly Spending Trend</h2>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="monthlySpendingChart"></canvas>
             </div>
         </div>
     </div>
@@ -290,6 +290,148 @@
             document.getElementById('collabStatusChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No collaborative projects found.</div>';
           }
         }
+
+        // Chart 4: Budget Utilization by Project
+        fetch('{% url "dashboard_budget_utilization_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'bar',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         indexAxis: 'y',
+                         scales: {
+                             x: {
+                                 beginAtZero: true,
+                                 title: {
+                                     display: true,
+                                     text: 'Budget Utilization (%)'
+                                 },
+                                 ticks: {
+                                     callback: function(value) {
+                                         return value + '%';
+                                     }
+                                 }
+                             }
+                         },
+                         plugins: {
+                             legend: {
+                                 display: false
+                             },
+                             tooltip: {
+                                 callbacks: {
+                                     label: function(context) {
+                                         return 'Utilization: ' + context.parsed.x.toFixed(1) + '%';
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering budget utilization chart:', error);
+                 document.getElementById('budgetUtilizationChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+             }
+         })
+         .catch(error => {
+             console.error('Error fetching budget utilization data:', error);
+             document.getElementById('budgetUtilizationChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+         });
+
+        // Chart 5: Cost Breakdown by Type
+        fetch('{% url "dashboard_cost_breakdown_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'doughnut',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         plugins: {
+                             legend: {
+                                 position: 'bottom'
+                             },
+                             tooltip: {
+                                 callbacks: {
+                                     label: function(context) {
+                                         const label = context.label || '';
+                                         const value = context.parsed || 0;
+                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                         const percentage = ((value / total) * 100).toFixed(1);
+                                         return label + ': ₱' + value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' (' + percentage + '%)';
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering cost breakdown chart:', error);
+                 document.getElementById('costBreakdownChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+             }
+         })
+         .catch(error => {
+             console.error('Error fetching cost breakdown data:', error);
+             document.getElementById('costBreakdownChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+         });
+
+        // Chart 6: Monthly Spending Trend
+        fetch('{% url "dashboard_monthly_spending_data" %}')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('monthlySpendingChart').getContext('2d');
+                 new Chart(ctx, {
+                     type: 'line',
+                     data: data,
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         scales: {
+                             y: {
+                                 beginAtZero: true,
+                                 title: {
+                                     display: true,
+                                     text: 'Spending (₱)'
+                                 },
+                                 ticks: {
+                                     callback: function(value) {
+                                         return '₱' + value.toLocaleString('en-US');
+                                     }
+                                 }
+                             }
+                         },
+                         plugins: {
+                             legend: {
+                                 display: true,
+                                 position: 'top'
+                             },
+                             tooltip: {
+                                 callbacks: {
+                                     label: function(context) {
+                                         return 'Spending: ₱' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering monthly spending chart:', error);
+                 document.getElementById('monthlySpendingChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+             }
+         })
+         .catch(error => {
+             console.error('Error fetching monthly spending data:', error);
+             document.getElementById('monthlySpendingChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+         });
     });
 </script>
 {% endblock %} 
