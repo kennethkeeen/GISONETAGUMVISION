@@ -278,4 +278,35 @@ def get_project_from_notification(notification_message):
         except Project.DoesNotExist:
             pass
     
+    # Pattern 7: "⚠️ Budget Over-Utilized: ProjectName (PRN: PRN123) has exceeded..."
+    match = re.search(r"Budget Over-Utilized: ([^(]+)", notification_message)
+    if match:
+        project_text = match.group(1).strip()
+        # Try to extract PRN first (more reliable)
+        prn_match = re.search(r"\(PRN:\s*([^)]+)\)", notification_message)
+        if prn_match:
+            prn = prn_match.group(1).strip()
+            prn_normalized = re.sub(r'\s+', ' ', prn).strip()
+            try:
+                project = Project.objects.get(prn=prn_normalized)
+                return project.id
+            except Project.DoesNotExist:
+                pass
+            except Project.MultipleObjectsReturned:
+                project = Project.objects.filter(prn=prn_normalized).order_by('-created_at').first()
+                if project:
+                    return project.id
+        
+        # Fallback to project name (remove PRN if present)
+        project_name = re.sub(r'\s*\(PRN:[^)]+\)', '', project_text).strip()
+        try:
+            project = Project.objects.get(name__iexact=project_name)
+            return project.id
+        except Project.DoesNotExist:
+            pass
+        except Project.MultipleObjectsReturned:
+            project = Project.objects.filter(name__iexact=project_name).order_by('-created_at').first()
+            if project:
+                return project.id
+    
     return None 

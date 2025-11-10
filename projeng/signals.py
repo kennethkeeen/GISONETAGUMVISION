@@ -290,6 +290,56 @@ def notify_progress_updates(sender, instance, created, **kwargs):
                 print(f"⚠️  WebSocket broadcast failed (SSE still works): {e}")
     # Skip notifications for progress modifications to reduce noise
 
+def check_budget_over_utilization(project):
+    """
+    Check if project budget is over-utilized and notify Head Engineers.
+    Budget is considered over-utilized when total costs exceed the project budget.
+    """
+    from django.db.models import Sum
+    from .models import ProjectCost
+    from .utils import notify_head_engineers, notify_admins
+    
+    # Only check if project has a budget set
+    if not project.project_cost:
+        return
+    
+    # Calculate total costs for the project
+    total_costs = ProjectCost.objects.filter(project=project).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Convert to float for comparison
+    try:
+        total_costs_float = float(total_costs)
+        project_budget_float = float(project.project_cost)
+    except (ValueError, TypeError):
+        return  # Skip if conversion fails
+    
+    # Check if budget is exceeded
+    if total_costs_float > project_budget_float:
+        # Calculate overage amount and percentage
+        overage_amount = total_costs_float - project_budget_float
+        overage_percentage = ((total_costs_float / project_budget_float) - 1) * 100
+        
+        # Format amounts
+        formatted_total = f"₱{total_costs_float:,.2f}"
+        formatted_budget = f"₱{project_budget_float:,.2f}"
+        formatted_overage = f"₱{overage_amount:,.2f}"
+        
+        # Build project display name
+        project_display = format_project_display(project)
+        
+        # Create notification message
+        budget_message = (
+            f"⚠️ Budget Over-Utilized: {project_display} has exceeded its budget. "
+            f"Total costs: {formatted_total} (Budget: {formatted_budget}) - "
+            f"Over by {formatted_overage} ({overage_percentage:.1f}% over budget)"
+        )
+        
+        # Notify Head Engineers and Admins
+        notify_head_engineers(budget_message, check_duplicates=True)
+        notify_admins(budget_message, check_duplicates=True)
+
 @receiver(post_save, sender=ProjectCost)
 def notify_cost_updates(sender, instance, created, **kwargs):
     """Notify Head Engineers and Finance Managers about cost updates"""
@@ -325,6 +375,9 @@ def notify_cost_updates(sender, instance, created, **kwargs):
         # Notify head engineers when finance managers or project engineers add costs
         notify_head_engineers(message)
         notify_admins(message)
+        
+        # Check if budget is over-utilized after this cost entry
+        check_budget_over_utilization(instance.project)
         
         # Phase 3: Also broadcast via WebSocket (parallel to SSE)
         if WEBSOCKET_AVAILABLE:
