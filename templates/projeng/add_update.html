@@ -66,15 +66,26 @@
                                 Percentage Complete (%)
                                 <span class="text-red-500">*</span>
                             </label>
-                            <input type="number" 
-                                   id="percentage_complete" 
-                                   name="percentage_complete" 
-                                   min="0" 
-                                   max="100" 
-                                   required 
-                                   placeholder="0-100"
-                                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
-                            <p class="text-xs text-gray-500 mt-1">Enter a value between 0 and 100</p>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                    <span class="font-medium">Current Progress:</span>
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold">{{ current_progress }}%</span>
+                                </div>
+                                <input type="number" 
+                                       id="percentage_complete" 
+                                       name="percentage_complete" 
+                                       min="{{ current_progress }}" 
+                                       max="100" 
+                                       value="{{ current_progress }}"
+                                       required 
+                                       placeholder="Enter new percentage..."
+                                       class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Current: {{ current_progress }}% | 
+                                    Max increase: 30% per update | 
+                                    Range: {{ current_progress }}-100%
+                                </p>
+                            </div>
                         </div>
                     </div>
 

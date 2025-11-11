@@ -844,11 +844,17 @@ def add_progress_update(request, pk):
         # Render combined form page for adding progress update or cost entry
         from datetime import date
         today = date.today()
-        from projeng.models import ProjectCost
+        from projeng.models import ProjectCost, ProjectProgress
+        
+        # Get current progress percentage
+        latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date', '-created_at').first()
+        current_progress = latest_progress.percentage_complete if latest_progress else (project.progress or 0)
+        
         return render(request, 'projeng/add_update.html', {
             'project': project,
             'today': today,
-            'cost_types': ProjectCost.COST_TYPES
+            'cost_types': ProjectCost.COST_TYPES,
+            'current_progress': current_progress
         })
     
     if request.method == 'POST':
@@ -872,6 +878,23 @@ def add_progress_update(request, pk):
             from datetime import date
             progress_date = date.today()
 
+            # Get current progress to validate against
+            from projeng.models import ProjectProgress
+            latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date', '-created_at').first()
+            current_progress = latest_progress.percentage_complete if latest_progress else (project.progress or 0)
+            
+            # Validation: Prevent going backwards (unless explicitly allowed for corrections)
+            if percentage_complete < current_progress:
+                return JsonResponse({
+                    'error': f'Progress cannot decrease. Current progress is {current_progress}%. If you need to correct this, please contact an administrator.'
+                }, status=400)
+            
+            # Validation: Prevent unrealistic jumps (more than 30% increase in one update)
+            if percentage_complete > current_progress + 30:
+                return JsonResponse({
+                    'error': f'Progress increase is too large. Current progress is {current_progress}%. Maximum allowed increase is 30% per update (up to {current_progress + 30}%).'
+                }, status=400)
+            
             # Timeline validation: ensure progress is within the timeline (with 10% buffer)
             if project.start_date and project.end_date:
                 total_days = (project.end_date - project.start_date).days
@@ -994,11 +1017,17 @@ def add_cost_entry(request, pk):
         # Render combined form page for adding progress update or cost entry
         from datetime import date
         today = date.today()
-        from projeng.models import ProjectCost
+        from projeng.models import ProjectCost, ProjectProgress
+        
+        # Get current progress percentage (for consistency, even though cost form doesn't use it)
+        latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date', '-created_at').first()
+        current_progress = latest_progress.percentage_complete if latest_progress else (project.progress or 0)
+        
         return render(request, 'projeng/add_update.html', {
             'project': project,
             'today': today,
-            'cost_types': ProjectCost.COST_TYPES
+            'cost_types': ProjectCost.COST_TYPES,
+            'current_progress': current_progress
         })
     
     if request.method == 'POST':
