@@ -752,9 +752,8 @@ document.addEventListener('DOMContentLoaded', function() {
             btnPlanned.classList.remove('bg-gray-50', 'text-yellow-800');
         }
         
-        if (currentMapMode === 'markers') {
-            renderMarkers();
-        }
+        // Always render markers (combined view)
+        renderMarkers();
     }
 
     btnCompleted.addEventListener('click', function() {
@@ -767,9 +766,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setStatusFilter('planned');
     });
     barangayFilter.addEventListener('change', function() {
-        if (currentMapMode === 'markers') {
-            renderMarkers();
-        }
+        // Always render markers (combined view)
+        renderMarkers();
     });
 
     // Add date filter logic in JS
@@ -777,20 +775,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const endDateFilter = document.getElementById('end-date-filter');
 
     startDateFilter.addEventListener('change', function() {
-        if (currentMapMode === 'markers') {
-            renderMarkers();
-        }
+        // Always render markers (combined view)
+        renderMarkers();
     });
     endDateFilter.addEventListener('change', function() {
-        if (currentMapMode === 'markers') {
-            renderMarkers();
-        }
+        // Always render markers (combined view)
+        renderMarkers();
     });
 
     // Initial render - ensure map is ready
     setTimeout(() => {
-        console.log('Starting initial render - map:', map, 'markers:', markers, 'currentMapMode:', currentMapMode);
-        if (map && markers && currentMapMode === 'markers') {
+        console.log('Starting initial render - map:', map, 'markers:', markers);
+        if (map && markers) {
             try {
                 renderMarkers();
                 console.log('Initial render completed successfully');
