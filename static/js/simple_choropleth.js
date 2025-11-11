@@ -403,14 +403,28 @@ class SimpleChoropleth {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+            console.log('API Response:', data);
+            console.log('Barangays array:', data.barangays);
+            console.log('Barangays count:', data.barangays ? data.barangays.length : 0);
+            
             this.zoningData = {};
             if (data.barangays && Array.isArray(data.barangays)) {
-                data.barangays.forEach(barangay => {
-                    this.zoningData[barangay.name] = barangay;
-                });
-                console.log('Zoning data loaded:', Object.keys(this.zoningData).length, 'barangays');
+                if (data.barangays.length === 0) {
+                    console.error('⚠️ WARNING: API returned empty barangays array!');
+                    console.error('This means no barangay metadata exists in the database.');
+                    console.error('Please run: python manage.py populate_barangay_metadata');
+                } else {
+                    data.barangays.forEach(barangay => {
+                        this.zoningData[barangay.name] = barangay;
+                    });
+                    console.log('✓ Zoning data loaded:', Object.keys(this.zoningData).length, 'barangays');
+                    // Log first few barangay names for verification
+                    const names = Object.keys(this.zoningData).slice(0, 5);
+                    console.log('Sample barangay names:', names);
+                }
             } else {
-                console.warn('Unexpected data format:', data);
+                console.error('❌ Unexpected data format:', data);
+                console.error('Expected: {barangays: [...]}');
                 this.zoningData = {};
             }
         } catch (error) {

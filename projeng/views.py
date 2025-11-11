@@ -1712,6 +1712,14 @@ def barangay_metadata_api(request):
     Accessible to all authenticated users (for map display).
     """
     barangays = BarangayMetadata.objects.all().order_by('name')
+    count = barangays.count()
+    
+    # Log warning if no data exists (for debugging)
+    if count == 0:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning('BarangayMetadata table is empty! Run: python manage.py populate_barangay_metadata')
+    
     data = []
     for barangay in barangays:
         data.append({
@@ -1728,7 +1736,12 @@ def barangay_metadata_api(request):
             'special_features': barangay.special_features,
             'zoning_summary': barangay.get_zoning_summary(),
         })
-    return JsonResponse({'barangays': data})
+    
+    return JsonResponse({
+        'barangays': data,
+        'count': count,  # Include count for debugging
+        'message': 'No barangay metadata found. Run: python manage.py populate_barangay_metadata' if count == 0 else None
+    })
 
 @require_http_methods(["GET"])
 @head_engineer_required
