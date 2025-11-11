@@ -410,9 +410,29 @@ class SimpleChoropleth {
             this.zoningData = {};
             if (data.barangays && Array.isArray(data.barangays)) {
                 if (data.barangays.length === 0) {
-                    console.error('⚠️ WARNING: API returned empty barangays array!');
-                    console.error('This means no barangay metadata exists in the database.');
-                    console.error('Please run: python manage.py populate_barangay_metadata');
+                    console.error('========================================');
+                    console.error('⚠️ CRITICAL: Zoning data is empty!');
+                    console.error('========================================');
+                    console.error('The database has no barangay metadata.');
+                    console.error('');
+                    console.error('TO FIX THIS:');
+                    console.error('1. Open terminal/command prompt');
+                    console.error('2. Navigate to project directory');
+                    console.error('3. Run: python manage.py populate_barangay_metadata');
+                    console.error('');
+                    console.error('If you get a celery error:');
+                    console.error('- Temporarily comment out: from .celery import app as celery_app');
+                    console.error('- In file: gistagum/__init__.py');
+                    console.error('- Then run the command again');
+                    console.error('- Restore the import after');
+                    console.error('');
+                    console.error('See POPULATE_ZONING_DATA.md for detailed instructions.');
+                    console.error('========================================');
+                    
+                    // Show user-friendly message in UI if possible
+                    if (typeof alert !== 'undefined') {
+                        console.warn('Showing alert to user...');
+                    }
                 } else {
                     data.barangays.forEach(barangay => {
                         this.zoningData[barangay.name] = barangay;
@@ -425,6 +445,7 @@ class SimpleChoropleth {
             } else {
                 console.error('❌ Unexpected data format:', data);
                 console.error('Expected: {barangays: [...]}');
+                console.error('Received:', Object.keys(data));
                 this.zoningData = {};
             }
         } catch (error) {
