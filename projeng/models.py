@@ -52,7 +52,7 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     last_update = models.DateField(blank=True, null=True)
     progress = models.PositiveIntegerField(default=0, help_text="Project progress in percentage (0-100)", blank=True, null=True)
-    
+
     # Zoning classification (Phase 2: Simplified Zoning Integration)
     zone_type = models.CharField(
         max_length=20,
@@ -124,7 +124,20 @@ class ProjectProgress(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text="Percentage of project completion (0-100)"
     )
-    description = models.TextField()
+    description = models.TextField(help_text="Detailed description of progress made and work completed")
+    milestone = models.ForeignKey(
+        'ProjectMilestone',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='progress_updates',
+        help_text="Optional: Link this progress update to a specific milestone"
+    )
+    justification = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Justification for the progress increase (required for increases >10%)"
+    )
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -134,6 +147,41 @@ class ProjectProgress(models.Model):
 
     def __str__(self):
         return f"{self.project.name} - {self.date} ({self.percentage_complete}%)"
+
+class ProjectMilestone(models.Model):
+    """Milestones for tracking project deliverables and progress"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='milestones')
+    name = models.CharField(max_length=255, help_text="Name of the milestone/deliverable")
+    description = models.TextField(blank=True, null=True, help_text="Description of what this milestone represents")
+    target_date = models.DateField(help_text="Expected completion date for this milestone")
+    completion_date = models.DateField(blank=True, null=True, help_text="Actual completion date")
+    is_completed = models.BooleanField(default=False, help_text="Whether this milestone has been completed")
+    estimated_progress_contribution = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Estimated percentage of project completion this milestone represents (0-100)"
+    )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_milestones')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['target_date', 'created_at']
+        verbose_name = "Project Milestone"
+        verbose_name_plural = "Project Milestones"
+
+    def __str__(self):
+        status = "✓" if self.is_completed else "○"
+        return f"{status} {self.name} - {self.project.name}"
+
+    def mark_completed(self, completion_date=None):
+        """Mark milestone as completed"""
+        if completion_date is None:
+            from datetime import date
+            completion_date = date.today()
+        self.is_completed = True
+        self.completion_date = completion_date
+        self.save()
 
 class ProjectCost(models.Model):
     COST_TYPES = [
@@ -183,7 +231,7 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'Notification for {self.recipient.username}: {self.message[:50]}'
+        return f'Notification for {self.recipient.username}: {self.message[:50]}' 
 
 class BarangayMetadata(models.Model):
     """Metadata and zoning information for barangays in Tagum City"""

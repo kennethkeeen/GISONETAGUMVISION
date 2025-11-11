@@ -550,16 +550,22 @@ def project_detail_view(request, pk):
         })
         
         # Add progress updates
-        progress_updates = ProjectProgress.objects.filter(project=project).select_related('created_by').order_by('-created_at')
+        progress_updates = ProjectProgress.objects.filter(project=project).select_related('created_by', 'milestone').order_by('-created_at')
         for progress in progress_updates:
+            milestone_info = ''
+            if progress.milestone:
+                milestone_info = f' (Milestone: {progress.milestone.name})'
+            
             activity_log.append({
                 'type': 'progress_update',
                 'timestamp': progress.created_at,
                 'user': progress.created_by,
-                'message': f'Progress updated to {progress.percentage_complete}%',
+                'message': f'Progress updated to {progress.percentage_complete}%{milestone_info}',
                 'description': progress.description,
+                'justification': progress.justification,
                 'date': progress.date,
                 'percentage': progress.percentage_complete,
+                'milestone': progress.milestone.name if progress.milestone else None,
                 'icon': 'chart-bar',
                 'color': 'green'
             })
@@ -596,10 +602,108 @@ def project_detail_view(request, pk):
         # Sort by timestamp (most recent first)
         activity_log.sort(key=lambda x: x['timestamp'], reverse=True)
         
+        # Progress Trends Data for Analytics
+        progress_updates_for_chart = ProjectProgress.objects.filter(project=project).order_by('date', 'created_at')
+        progress_timeline_data = []
+        progress_percentages = []
+        progress_dates = []
+        
+        for progress in progress_updates_for_chart:
+            progress_timeline_data.append({
+                'date': progress.date.isoformat(),
+                'percentage': progress.percentage_complete,
+                'description': progress.description[:50] + '...' if len(progress.description) > 50 else progress.description
+            })
+            progress_dates.append(progress.date.strftime('%Y-%m-%d'))
+            progress_percentages.append(progress.percentage_complete)
+        
+        # Timeline Comparison: Expected vs Actual Progress
+        timeline_comparison = None
+        if project.start_date and project.end_date:
+            from datetime import date, timedelta
+            import json
+            today = date.today()
+            total_days = (project.end_date - project.start_date).days
+            elapsed_days = (today - project.start_date).days if today >= project.start_date else 0
+            
+            if total_days > 0 and elapsed_days >= 0:
+                # Calculate expected progress based on linear timeline
+                expected_progress = min(100, (elapsed_days / total_days) * 100)
+                actual_progress = progress_percentages[-1] if progress_percentages else 0
+                progress_variance = actual_progress - expected_progress
+                
+                # Generate expected progress data points for chart
+                # Combine actual progress dates with expected timeline dates for better alignment
+                all_dates_set = set(progress_dates)  # Actual progress update dates
+                # Add weekly expected dates from start to today
+                current_date = project.start_date
+                while current_date <= project.end_date and current_date <= today:
+                    all_dates_set.add(current_date.strftime('%Y-%m-%d'))
+                    current_date += timedelta(days=7)  # Weekly intervals
+                
+                # Sort all dates
+                all_dates_sorted = sorted(list(all_dates_set))
+                
+                # Calculate expected progress for each date
+                expected_progress_data = []
+                actual_progress_aligned = []
+                
+                for date_str in all_dates_sorted:
+                    # Parse date string (format: YYYY-MM-DD)
+                    year, month, day = map(int, date_str.split('-'))
+                    date_obj = date(year, month, day)
+                    days_elapsed = (date_obj - project.start_date).days
+                    if days_elapsed >= 0:
+                        expected_pct = min(100, (days_elapsed / total_days) * 100) if total_days > 0 else 0
+                        expected_progress_data.append(expected_pct)
+                    else:
+                        expected_progress_data.append(0)
+                    
+                    # Find actual progress for this date (use latest progress up to this date)
+                    actual_pct = 0
+                    for i, prog_date in enumerate(progress_dates):
+                        if prog_date <= date_str:
+                            actual_pct = progress_percentages[i]
+                        else:
+                            break
+                    actual_progress_aligned.append(actual_pct)
+                
+                expected_dates = all_dates_sorted
+                
+                timeline_comparison = {
+                    'expected_progress': round(expected_progress, 2),
+                    'actual_progress': actual_progress,
+                    'progress_variance': round(progress_variance, 2),
+                    'elapsed_days': elapsed_days,
+                    'total_days': total_days,
+                    'remaining_days': max(0, (project.end_date - today).days),
+                    'is_ahead': progress_variance > 0,
+                    'is_behind': progress_variance < -5,  # Consider behind if more than 5% behind
+                    'expected_progress_data': expected_progress_data,
+                    'expected_dates': expected_dates,
+                    'actual_progress_aligned': actual_progress_aligned,
+                }
+        
+        # Convert lists to JSON for JavaScript
+        import json
+        progress_dates_json = json.dumps(progress_dates)
+        progress_percentages_json = json.dumps(progress_percentages)
+        timeline_comparison_json = json.dumps(timeline_comparison) if timeline_comparison else None
+        expected_dates_json = json.dumps(timeline_comparison['expected_dates']) if timeline_comparison else '[]'
+        expected_progress_data_json = json.dumps(timeline_comparison['expected_progress_data']) if timeline_comparison else '[]'
+        actual_progress_aligned_json = json.dumps(timeline_comparison['actual_progress_aligned']) if timeline_comparison else '[]'
+        
         return render(request, 'projeng/project_detail.html', {
             'project': project,
             'status_choices': Project.STATUS_CHOICES,
-            'activity_log': activity_log
+            'activity_log': activity_log,
+            'progress_timeline_data': progress_timeline_data,
+            'progress_dates': progress_dates_json,
+            'progress_percentages': progress_percentages_json,
+            'timeline_comparison': timeline_comparison,
+            'expected_dates_json': expected_dates_json,
+            'expected_progress_data_json': expected_progress_data_json,
+            'actual_progress_aligned_json': actual_progress_aligned_json,
         })
     except Project.DoesNotExist:
         raise Http404("Project does not exist.")
@@ -844,17 +948,21 @@ def add_progress_update(request, pk):
         # Render combined form page for adding progress update or cost entry
         from datetime import date
         today = date.today()
-        from projeng.models import ProjectCost, ProjectProgress
+        from projeng.models import ProjectCost, ProjectProgress, ProjectMilestone
         
         # Get current progress percentage
         latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date', '-created_at').first()
         current_progress = latest_progress.percentage_complete if latest_progress else (project.progress or 0)
         
+        # Get milestones for this project
+        milestones = ProjectMilestone.objects.filter(project=project, is_completed=False).order_by('target_date')
+        
         return render(request, 'projeng/add_update.html', {
             'project': project,
             'today': today,
             'cost_types': ProjectCost.COST_TYPES,
-            'current_progress': current_progress
+            'current_progress': current_progress,
+            'milestones': milestones
         })
     
     if request.method == 'POST':
@@ -882,6 +990,7 @@ def add_progress_update(request, pk):
             from projeng.models import ProjectProgress
             latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date', '-created_at').first()
             current_progress = latest_progress.percentage_complete if latest_progress else (project.progress or 0)
+            progress_increase = percentage_complete - current_progress
             
             # Validation: Prevent going backwards (unless explicitly allowed for corrections)
             if percentage_complete < current_progress:
@@ -893,6 +1002,20 @@ def add_progress_update(request, pk):
             if percentage_complete > current_progress + 30:
                 return JsonResponse({
                     'error': f'Progress increase is too large. Current progress is {current_progress}%. Maximum allowed increase is 30% per update (up to {current_progress + 30}%).'
+                }, status=400)
+            
+            # Validation: Require justification for increases >10%
+            justification = request.POST.get('justification', '').strip()
+            if progress_increase > 10 and not justification:
+                return JsonResponse({
+                    'error': f'Justification is required for progress increases greater than 10%. Please explain why the progress increased by {progress_increase}%.'
+                }, status=400)
+            
+            # Validation: Require photos for increases >10%
+            uploaded_photos = request.FILES.getlist('photos')
+            if progress_increase > 10 and len(uploaded_photos) == 0:
+                return JsonResponse({
+                    'error': f'Photos are required for progress increases greater than 10%. Please upload at least one photo showing the work completed.'
                 }, status=400)
             
             # Timeline validation: ensure progress is within the timeline (with 10% buffer)
@@ -916,14 +1039,31 @@ def add_progress_update(request, pk):
                 audit_logger.setLevel(logging.INFO)
             audit_logger.info(f"User {request.user.username} updated progress for project {project.id} ({project.name}) to {percentage_complete}% on {progress_date}")
 
+            # Get milestone if provided
+            milestone_id = request.POST.get('milestone')
+            milestone = None
+            if milestone_id:
+                try:
+                    from projeng.models import ProjectMilestone
+                    milestone = ProjectMilestone.objects.get(pk=milestone_id, project=project)
+                except (ProjectMilestone.DoesNotExist, ValueError):
+                    milestone = None
+            
             progress = ProjectProgress(
                 project=project,
                 date=progress_date,
                 percentage_complete=percentage_complete,
                 description=description,
+                milestone=milestone,
+                justification=justification if progress_increase > 10 else None,
                 created_by=request.user
             )
             progress.save()
+            
+            # If milestone is linked and progress reaches estimated contribution, mark milestone as completed
+            if milestone and not milestone.is_completed:
+                if percentage_complete >= milestone.estimated_progress_contribution:
+                    milestone.mark_completed()
             print(f"DEBUG: Saved ProjectProgress with id={progress.id}, percentage_complete={progress.percentage_complete}, project_id={project.id}")
 
             # Update the parent project's progress field
@@ -933,8 +1073,7 @@ def add_progress_update(request, pk):
             project.save(update_fields=["progress"])
             print(f"DEBUG: Updated Project id={project.id} progress to {project.progress}")
 
-            # Handle multiple photo uploads
-            uploaded_photos = request.FILES.getlist('photos')
+            # Handle multiple photo uploads (already retrieved above for validation)
             for photo in uploaded_photos:
                 ProgressPhoto.objects.create(
                     progress_update=progress,
@@ -1017,17 +1156,21 @@ def add_cost_entry(request, pk):
         # Render combined form page for adding progress update or cost entry
         from datetime import date
         today = date.today()
-        from projeng.models import ProjectCost, ProjectProgress
+        from projeng.models import ProjectCost, ProjectProgress, ProjectMilestone
         
         # Get current progress percentage (for consistency, even though cost form doesn't use it)
         latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date', '-created_at').first()
         current_progress = latest_progress.percentage_complete if latest_progress else (project.progress or 0)
         
+        # Get milestones for this project
+        milestones = ProjectMilestone.objects.filter(project=project, is_completed=False).order_by('target_date')
+        
         return render(request, 'projeng/add_update.html', {
             'project': project,
             'today': today,
             'cost_types': ProjectCost.COST_TYPES,
-            'current_progress': current_progress
+            'current_progress': current_progress,
+            'milestones': milestones
         })
     
     if request.method == 'POST':

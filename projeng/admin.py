@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, BarangayMetadata, ZoningZone
+from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, BarangayMetadata, ZoningZone, ProjectMilestone
 from django.contrib.auth.models import Group
 
 @admin.register(Layer)
@@ -50,15 +50,23 @@ class ProjectAdmin(admin.ModelAdmin):
                 kwargs["queryset"] = User.objects.none()
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
+@admin.register(ProjectMilestone)
+class ProjectMilestoneAdmin(admin.ModelAdmin):
+    list_display = ('name', 'project', 'target_date', 'is_completed', 'estimated_progress_contribution', 'created_by')
+    list_filter = ('is_completed', 'target_date', 'created_at')
+    search_fields = ('name', 'project__name', 'description')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'target_date'
+
 @admin.register(ProjectProgress)
 class ProjectProgressAdmin(admin.ModelAdmin):
-    list_display = ('project', 'date', 'percentage_complete', 'created_by', 'created_at')
-    list_filter = ('date', 'created_at')
-    search_fields = ('project__name', 'description')
+    list_display = ('project', 'date', 'percentage_complete', 'milestone', 'created_by', 'created_at')
+    list_filter = ('date', 'created_at', 'milestone')
+    search_fields = ('project__name', 'description', 'justification')
     readonly_fields = ('created_at',)
     fieldsets = (
         ('Progress Information', {
-            'fields': ('project', 'date', 'percentage_complete', 'description')
+            'fields': ('project', 'date', 'percentage_complete', 'description', 'milestone', 'justification')
         }),
         ('Metadata', {
             'fields': ('created_by', 'created_at')
