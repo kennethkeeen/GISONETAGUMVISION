@@ -384,16 +384,34 @@ class SimpleChoropleth {
     // Phase 3: Zoning functionality
     async loadZoningData() {
         try {
-            const response = await fetch('/projeng/api/barangay-metadata/');
+            const response = await fetch('/projeng/api/barangay-metadata/', {
+                method: 'GET',
+                credentials: 'same-origin', // Include cookies for authentication
+                headers: {
+                    'Accept': 'application/json',
+                }
+            });
             if (!response.ok) {
+                if (response.status === 401) {
+                    console.error('Authentication required. Please log in.');
+                } else if (response.status === 403) {
+                    console.error('Access forbidden. You may not have permission to view this data.');
+                } else {
+                    console.error(`HTTP error! status: ${response.status}`);
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
             this.zoningData = {};
-            data.barangays.forEach(barangay => {
-                this.zoningData[barangay.name] = barangay;
-            });
-            console.log('Zoning data loaded:', Object.keys(this.zoningData).length, 'barangays');
+            if (data.barangays && Array.isArray(data.barangays)) {
+                data.barangays.forEach(barangay => {
+                    this.zoningData[barangay.name] = barangay;
+                });
+                console.log('Zoning data loaded:', Object.keys(this.zoningData).length, 'barangays');
+            } else {
+                console.warn('Unexpected data format:', data);
+                this.zoningData = {};
+            }
         } catch (error) {
             console.error('Error loading zoning data:', error);
             this.zoningData = {};
