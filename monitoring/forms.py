@@ -21,6 +21,15 @@ class ProjectForm(forms.ModelForm):
         except Group.DoesNotExist:
             # If the group doesn't exist, show no users in the dropdown
             self.fields['assigned_engineers'].queryset = User.objects.none()
+        
+        # Phase 4: Configure zone fields (if they exist in the form)
+        if 'zone_type' in self.fields:
+            self.fields['zone_type'].required = False
+            self.fields['zone_type'].help_text = 'Auto-detected based on project details. Can be manually adjusted.'
+        
+        if 'zone_validated' in self.fields:
+            self.fields['zone_validated'].required = False
+            self.fields['zone_validated'].help_text = 'Checked if zone has been validated against official zoning.'
 
     def clean(self):
         cleaned_data = super().clean()

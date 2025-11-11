@@ -89,6 +89,33 @@ class Project(models.Model):
             return BarangayMetadata.objects.get(name=self.barangay)
         except BarangayMetadata.DoesNotExist:
             return None
+    
+    def detect_and_set_zone(self, save=False):
+        """
+        Automatically detect and set the zone_type for this project.
+        
+        Args:
+            save: If True, save the project after setting zone_type
+            
+        Returns:
+            tuple: (zone_type, confidence_score) or (None, 0)
+        """
+        from projeng.zoning_utils import detect_zone_for_project
+        
+        zone_type, confidence, matched_zone = detect_zone_for_project(self)
+        
+        if zone_type and confidence >= 30:  # Minimum confidence threshold
+            self.zone_type = zone_type
+            # Only auto-validate if confidence is very high
+            if confidence >= 70:
+                self.zone_validated = True
+            else:
+                self.zone_validated = False
+            
+            if save:
+                self.save(update_fields=['zone_type', 'zone_validated'])
+        
+        return zone_type, confidence
 
 class ProjectProgress(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='progress_updates')

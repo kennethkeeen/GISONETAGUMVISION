@@ -256,8 +256,19 @@ def project_list(request):
         if form.is_valid():
             project = form.save(commit=False)
             project.created_by = request.user
+            
+            # Phase 4: Auto-detect zone before saving
+            zone_type, confidence = project.detect_and_set_zone(save=False)
+            
             project.save()
             form.save_m2m()  # Save assigned engineers
+            
+            # Log zone detection result (optional, for debugging)
+            if zone_type:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Zone detected for project '{project.name}': {zone_type} (confidence: {confidence}%)")
+            
             # Optionally add a success message or redirect
             return redirect('project_list')
         else:
