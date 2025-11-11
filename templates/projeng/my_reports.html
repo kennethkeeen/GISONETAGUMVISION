@@ -16,7 +16,7 @@
         </div>
 
         {# Add Filter Form Here #}
-        <form method="get" class="mb-4">
+        <form method="get" id="filter-form" class="mb-4">
             <div class="flex flex-wrap gap-4 items-center">
                 <div>
                     <label for="barangay-filter" class="block text-sm font-medium text-gray-700">Barangay:</label>
@@ -47,7 +47,7 @@
                     <input type="date" id="end-date-filter" name="end_date" value="{{ selected_end_date|default:'' }}" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                 </div>
                 <div class="flex items-end">
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-blue-500 focus:border-blue-500">Apply Filters</button>
+                    <button type="button" id="clear-filters-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:ring-gray-500 focus:border-gray-500">Clear Filters</button>
                 </div>
             </div>
         </form>
@@ -210,6 +210,65 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit filter form when filters change
+    const filterForm = document.getElementById('filter-form');
+    const barangayFilter = document.getElementById('barangay-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const startDateFilter = document.getElementById('start-date-filter');
+    const endDateFilter = document.getElementById('end-date-filter');
+    const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    
+    // Debounce function for date inputs to avoid too many requests
+    let dateFilterTimeout;
+    function submitFilterForm() {
+        // Reset to page 1 when filtering
+        const pageInput = document.createElement('input');
+        pageInput.type = 'hidden';
+        pageInput.name = 'page';
+        pageInput.value = '1';
+        filterForm.appendChild(pageInput);
+        filterForm.submit();
+    }
+    
+    // Auto-submit on dropdown changes (immediate)
+    if (barangayFilter) {
+        barangayFilter.addEventListener('change', function() {
+            submitFilterForm();
+        });
+    }
+    
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            submitFilterForm();
+        });
+    }
+    
+    // Auto-submit on date changes (with debounce for better UX)
+    if (startDateFilter) {
+        startDateFilter.addEventListener('change', function() {
+            clearTimeout(dateFilterTimeout);
+            dateFilterTimeout = setTimeout(submitFilterForm, 300);
+        });
+    }
+    
+    if (endDateFilter) {
+        endDateFilter.addEventListener('change', function() {
+            clearTimeout(dateFilterTimeout);
+            dateFilterTimeout = setTimeout(submitFilterForm, 300);
+        });
+    }
+    
+    // Clear filters button
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            barangayFilter.value = '';
+            statusFilter.value = '';
+            startDateFilter.value = '';
+            endDateFilter.value = '';
+            submitFilterForm();
+        });
+    }
+    
     const exportButton = document.getElementById('export-button');
     const exportModal = document.getElementById('exportModal');
     const closeModalButton = document.getElementById('closeModal');
@@ -278,12 +337,15 @@ document.addEventListener('DOMContentLoaded', function() {
         exportModal.classList.add('flex');
     }
 
-    // Event listeners for export button and close button
-    exportButton.addEventListener('click', openExportModal);
-    closeModalButton.addEventListener('click', () => {
+    // Function to close export modal
+    function closeExportModal() {
         exportModal.classList.add('hidden');
         exportModal.classList.remove('flex');
-    });
+    }
+    
+    // Event listeners for export button and close button
+    exportButton.addEventListener('click', openExportModal);
+    closeModalButton.addEventListener('click', closeExportModal);
 
     // Event listener for the modal barangay filter dropdown
     modalBarangayFilter.addEventListener('change', function() {
