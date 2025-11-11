@@ -532,13 +532,74 @@ def project_detail_view(request, pk):
             if latest_document['uploaded_at__max']:
                 last_updates.append(latest_document['uploaded_at__max'])
             
-            # Get the most recent update (max of all timestamps)
-            # Only count actual activity: progress updates, cost entries, or document uploads
-            project.calculated_last_update = max(last_updates) if last_updates else None
+        # Get the most recent update (max of all timestamps)
+        # Only count actual activity: progress updates, cost entries, or document uploads
+        project.calculated_last_update = max(last_updates) if last_updates else None
+        
+        # Build activity history log
+        activity_log = []
+        
+        # Add project creation
+        activity_log.append({
+            'type': 'project_created',
+            'timestamp': project.created_at,
+            'user': project.created_by,
+            'message': f'Project "{project.name}" was created',
+            'icon': 'plus-circle',
+            'color': 'blue'
+        })
+        
+        # Add progress updates
+        progress_updates = ProjectProgress.objects.filter(project=project).select_related('created_by').order_by('-created_at')
+        for progress in progress_updates:
+            activity_log.append({
+                'type': 'progress_update',
+                'timestamp': progress.created_at,
+                'user': progress.created_by,
+                'message': f'Progress updated to {progress.percentage_complete}%',
+                'description': progress.description,
+                'date': progress.date,
+                'percentage': progress.percentage_complete,
+                'icon': 'chart-bar',
+                'color': 'green'
+            })
+        
+        # Add cost entries
+        cost_entries = ProjectCost.objects.filter(project=project).select_related('created_by').order_by('-created_at')
+        for cost in cost_entries:
+            activity_log.append({
+                'type': 'cost_entry',
+                'timestamp': cost.created_at,
+                'user': cost.created_by,
+                'message': f'Cost entry added: {cost.get_cost_type_display()} - ₱{cost.amount:,.2f}',
+                'description': cost.description,
+                'date': cost.date,
+                'amount': cost.amount,
+                'cost_type': cost.get_cost_type_display(),
+                'icon': 'currency-dollar',
+                'color': 'yellow'
+            })
+        
+        # Add document uploads
+        documents = ProjectDocument.objects.filter(project=project).select_related('uploaded_by').order_by('-uploaded_at')
+        for doc in documents:
+            activity_log.append({
+                'type': 'document_upload',
+                'timestamp': doc.uploaded_at,
+                'user': doc.uploaded_by,
+                'message': f'Document uploaded: {doc.name}',
+                'document_name': doc.name,
+                'icon': 'document',
+                'color': 'purple'
+            })
+        
+        # Sort by timestamp (most recent first)
+        activity_log.sort(key=lambda x: x['timestamp'], reverse=True)
         
         return render(request, 'projeng/project_detail.html', {
             'project': project,
-            'status_choices': Project.STATUS_CHOICES
+            'status_choices': Project.STATUS_CHOICES,
+            'activity_log': activity_log
         })
     except Project.DoesNotExist:
         raise Http404("Project does not exist.")
@@ -1698,7 +1759,7 @@ def projects_updates_api(request):
             for p in recent_projects
         ],
         'count': recent_projects.count()
-    })
+    }) 
 
 # ============================================================================
 # Phase 2: Barangay Metadata and Zoning API Endpoints
