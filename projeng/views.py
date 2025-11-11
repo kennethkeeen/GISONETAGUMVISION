@@ -684,6 +684,31 @@ def project_detail_view(request, pk):
                     'actual_progress_aligned': actual_progress_aligned,
                 }
         
+        # Calculate budget information
+        from django.db.models import Sum
+        total_cost = ProjectCost.objects.filter(project=project).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        # Calculate remaining budget
+        project_cost = float(project.project_cost) if project.project_cost else 0
+        total_cost_float = float(total_cost)
+        remaining_budget = project_cost - total_cost_float if project_cost > 0 else None
+        budget_utilization = (total_cost_float / project_cost * 100) if project_cost > 0 else 0
+        over_budget_amount = abs(remaining_budget) if remaining_budget is not None and remaining_budget < 0 else 0
+        
+        # Determine budget status for color coding
+        budget_status = 'normal'
+        if project_cost > 0:
+            if budget_utilization >= 100:
+                budget_status = 'over'
+            elif budget_utilization >= 80:
+                budget_status = 'warning'
+            elif budget_utilization >= 50:
+                budget_status = 'normal'
+            else:
+                budget_status = 'good'
+        
         # Convert lists to JSON for JavaScript
         import json
         progress_dates_json = json.dumps(progress_dates)
@@ -704,6 +729,11 @@ def project_detail_view(request, pk):
             'expected_dates_json': expected_dates_json,
             'expected_progress_data_json': expected_progress_data_json,
             'actual_progress_aligned_json': actual_progress_aligned_json,
+            'total_cost': total_cost_float,
+            'remaining_budget': remaining_budget,
+            'budget_utilization': budget_utilization,
+            'budget_status': budget_status,
+            'over_budget_amount': over_budget_amount,
         })
     except Project.DoesNotExist:
         raise Http404("Project does not exist.")
@@ -1176,6 +1206,7 @@ def add_cost_entry(request, pk):
     if request.method == 'POST':
         try:
             from decimal import Decimal, InvalidOperation
+            from projeng.models import ProjectCost
             
             # Use request.POST and request.FILES for multipart/form-data
             date = request.POST.get('date')
