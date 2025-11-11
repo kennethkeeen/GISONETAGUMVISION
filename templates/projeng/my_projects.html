@@ -68,19 +68,19 @@
             
             <!-- Status Filter Buttons -->
             <div class="mt-4 flex flex-wrap gap-2">
-                <button id="filter-all" class="filter-btn active px-4 py-2 rounded-lg font-semibold text-sm border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100">
+                <button type="button" id="filter-all" class="filter-btn active px-4 py-2 rounded-lg font-semibold text-sm border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100" style="cursor: pointer;">
                     All
                 </button>
-                <button id="filter-in-progress" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
+                <button type="button" id="filter-in-progress" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100" style="cursor: pointer;">
                     In Progress
                 </button>
-                <button id="filter-planned" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100">
+                <button type="button" id="filter-planned" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100" style="cursor: pointer;">
                     Planned
                 </button>
-                <button id="filter-completed" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-green-300 bg-green-50 text-green-700 hover:bg-green-100">
+                <button type="button" id="filter-completed" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-green-300 bg-green-50 text-green-700 hover:bg-green-100" style="cursor: pointer;">
                     Completed
                 </button>
-                <button id="filter-delayed" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-red-300 bg-red-50 text-red-700 hover:bg-red-100">
+                <button type="button" id="filter-delayed" class="filter-btn px-4 py-2 rounded-lg font-semibold text-sm border border-red-300 bg-red-50 text-red-700 hover:bg-red-100" style="cursor: pointer;">
                     Delayed
                 </button>
             </div>
@@ -347,45 +347,63 @@ function setupEventListeners() {
         filterProjects();
     });
     
-    // Status filter buttons
+    // Status filter buttons - use both click and mousedown for better reliability
     filterAll.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         currentStatusFilter = '';
         console.log('Status filter: All');
         updateActiveFilter('');
         filterProjects();
+        return false;
     });
     
     filterInProgress.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         currentStatusFilter = 'in_progress';
         console.log('Status filter: In Progress');
         updateActiveFilter('in_progress');
         filterProjects();
+        return false;
     });
     
     filterPlanned.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         currentStatusFilter = 'planned';
         console.log('Status filter: Planned');
         updateActiveFilter('planned');
         filterProjects();
+        return false;
     });
     
     filterCompleted.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         currentStatusFilter = 'completed';
         console.log('Status filter: Completed');
         updateActiveFilter('completed');
         filterProjects();
+        return false;
     });
     
     filterDelayed.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         currentStatusFilter = 'delayed';
         console.log('Status filter: Delayed');
         updateActiveFilter('delayed');
         filterProjects();
+        return false;
+    });
+    
+    // Also add pointer-events style to ensure buttons are clickable
+    [filterAll, filterInProgress, filterPlanned, filterCompleted, filterDelayed].forEach(btn => {
+        if (btn) {
+            btn.style.cursor = 'pointer';
+            btn.style.pointerEvents = 'auto';
+        }
     });
     
     console.log('Filter event listeners set up successfully');
@@ -692,11 +710,24 @@ function escapeHtml(text) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Initializing filters...');
     
-    // Setup event listeners first
-    setupEventListeners();
-    
-    // Initialize filters - ensure all projects are visible initially
-    filterProjects();
+    // Wait a tiny bit to ensure all elements are rendered
+    setTimeout(function() {
+        // Setup event listeners first
+        setupEventListeners();
+        
+        // Initialize filters - ensure all projects are visible initially
+        filterProjects();
+        
+        // Test that filters are working
+        console.log('Filter initialization complete. Testing...');
+        console.log('Available filter buttons:', {
+            all: !!filterAll,
+            inProgress: !!filterInProgress,
+            planned: !!filterPlanned,
+            completed: !!filterCompleted,
+            delayed: !!filterDelayed
+        });
+    }, 100);
     
     // Wait a bit for realtimeManager to be initialized
     setTimeout(() => {
