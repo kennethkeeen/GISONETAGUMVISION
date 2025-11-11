@@ -827,12 +827,30 @@ def export_project_report(request, pk):
     except Project.DoesNotExist:
         return JsonResponse({'error': 'Project not found'}, status=404)
 
-@user_passes_test(is_project_engineer, login_url='/accounts/login/')
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 @csrf_exempt
 def add_progress_update(request, pk):
+    try:
+        project = Project.objects.get(pk=pk)
+        
+        # Check permissions - head engineers can add updates to any project
+        if not is_head_engineer(request.user):
+            if request.user not in project.assigned_engineers.all():
+                return JsonResponse({'error': 'You are not assigned to this project.'}, status=403)
+    except Project.DoesNotExist:
+        return JsonResponse({'error': 'Project not found.'}, status=404)
+    
+    if request.method == 'GET':
+        # Render form page for adding progress update
+        from datetime import date
+        today = date.today()
+        return render(request, 'projeng/add_progress_update.html', {
+            'project': project,
+            'today': today
+        })
+    
     if request.method == 'POST':
         try:
-            project = Project.objects.get(pk=pk)
             # Use request.POST and request.FILES for multipart/form-data
             date_str = request.POST.get('date')
             raw_percentage = request.POST.get('percentage_complete')
