@@ -1,4 +1,5 @@
 // Simple Choropleth Map implementation for Tagum City Barangays
+// Version: 2.0 - Includes zoning functionality (switchView, loadZoningData, createZoningLayer)
 class SimpleChoropleth {
     constructor(map, geojsonUrl, projectsData = null) {
         this.map = map;
