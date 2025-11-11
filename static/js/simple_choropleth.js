@@ -592,7 +592,9 @@ class SimpleChoropleth {
 
         // Add to map
         this.choroplethLayer.addTo(this.map);
-        console.log('Zoning layer created for view:', viewType);
+        console.log('Zoning layer created and added to map');
+        console.log('Colored barangays:', coloredCount, 'Default (gray):', defaultCount);
+        console.log('=== createZoningLayer completed ===');
     }
 
     createZoningPopup(name, barangay, stats) {
