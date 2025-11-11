@@ -250,29 +250,29 @@ class SimpleChoropleth {
                 });
             } else {
                 // Default: show barangay list
-                div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Tagum City Barangays</h4>';
-                
-                // Get unique barangays with their colors
-                const uniqueBarangays = new Map();
-                this.barangayData.forEach(feature => {
-                    const name = feature.properties.name;
-                    const color = feature.properties.color || '#FF6B6B';
-                    if (!uniqueBarangays.has(name)) {
-                        uniqueBarangays.set(name, color);
-                    }
-                });
+            div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Tagum City Barangays</h4>';
+            
+            // Get unique barangays with their colors
+            const uniqueBarangays = new Map();
+            this.barangayData.forEach(feature => {
+                const name = feature.properties.name;
+                const color = feature.properties.color || '#FF6B6B';
+                if (!uniqueBarangays.has(name)) {
+                    uniqueBarangays.set(name, color);
+                }
+            });
 
-                // Sort barangays alphabetically
-                const sortedBarangays = Array.from(uniqueBarangays.entries()).sort();
+            // Sort barangays alphabetically
+            const sortedBarangays = Array.from(uniqueBarangays.entries()).sort();
 
-                sortedBarangays.forEach(([name, color]) => {
-                    div.innerHTML += `
-                        <div style="margin: 2px 0; display: flex; align-items: center;">
-                            <i style="background: ${color}; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                            <span>${name}</span>
-                        </div>
-                    `;
-                });
+            sortedBarangays.forEach(([name, color]) => {
+                div.innerHTML += `
+                    <div style="margin: 2px 0; display: flex; align-items: center;">
+                        <i style="background: ${color}; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
+                        <span>${name}</span>
+                    </div>
+                `;
+            });
             }
 
             return div;
