@@ -185,6 +185,40 @@ let searchTerm = '';
 // Filter elements (will be initialized in DOMContentLoaded)
 let searchInput, barangayFilter, filterAll, filterInProgress, filterPlanned, filterCompleted, filterDelayed;
 
+// Define global functions IMMEDIATELY so inline handlers can use them
+window.setStatusFilter = function(status) {
+    console.log('setStatusFilter called with:', status);
+    currentStatusFilter = status;
+    if (typeof updateActiveFilter === 'function') {
+        updateActiveFilter(status);
+    }
+    if (typeof filterProjects === 'function') {
+        filterProjects();
+    } else {
+        console.warn('filterProjects not yet defined, will retry...');
+        setTimeout(function() {
+            if (typeof filterProjects === 'function') {
+                filterProjects();
+            }
+        }, 100);
+    }
+};
+
+window.setBarangayFilter = function(barangay) {
+    console.log('setBarangayFilter called with:', barangay);
+    currentBarangayFilter = barangay;
+    if (typeof filterProjects === 'function') {
+        filterProjects();
+    } else {
+        console.warn('filterProjects not yet defined, will retry...');
+        setTimeout(function() {
+            if (typeof filterProjects === 'function') {
+                filterProjects();
+            }
+        }, 100);
+    }
+};
+
 // Function to get status filter buttons object
 function getStatusFilters() {
     return {
@@ -408,20 +442,6 @@ function setupEventListeners() {
     
     console.log('Filter event listeners set up successfully');
 }
-
-// Global functions for inline onclick handlers (backup method)
-window.setStatusFilter = function(status) {
-    console.log('setStatusFilter called with:', status);
-    currentStatusFilter = status;
-    updateActiveFilter(status);
-    filterProjects();
-};
-
-window.setBarangayFilter = function(barangay) {
-    console.log('setBarangayFilter called with:', barangay);
-    currentBarangayFilter = barangay;
-    filterProjects();
-};
 
 // Real-time project list updates
 function setupRealtimeProjectList() {
