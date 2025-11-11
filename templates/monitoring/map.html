@@ -122,7 +122,27 @@
 {{ projects_data|json_script:"projects-data" }}
 
 <!-- Load SimpleChoropleth script statically (before DOMContentLoaded) -->
-<script src="{% static 'js/simple_choropleth.js' %}"></script>
+<!-- Add cache busting with timestamp to ensure latest version loads -->
+<script src="{% static 'js/simple_choropleth.js' %}?v=2.0"></script>
+<script>
+    // Verify SimpleChoropleth class is loaded with all methods
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof SimpleChoropleth !== 'undefined') {
+            console.log('✓ SimpleChoropleth class loaded');
+            // Check if zoning methods exist on prototype
+            const prototype = SimpleChoropleth.prototype;
+            console.log('✓ switchView method exists:', typeof prototype.switchView === 'function');
+            console.log('✓ loadZoningData method exists:', typeof prototype.loadZoningData === 'function');
+            console.log('✓ createZoningLayer method exists:', typeof prototype.createZoningLayer === 'function');
+            
+            // List all methods
+            const allMethods = Object.getOwnPropertyNames(prototype).filter(name => name !== 'constructor');
+            console.log('✓ All methods:', allMethods);
+        } else {
+            console.error('✗ SimpleChoropleth class not loaded!');
+        }
+    });
+</script>
 
 <!-- View Details Modal (Initially hidden) -->
 <div id="details-modal" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-40" style="opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; position: fixed; z-index: 10000;">
