@@ -829,16 +829,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Map is ready, switch view
-        if (typeof choroplethMap.switchView === 'function') {
+        console.log('Checking switchView method...', {
+            choroplethMap: !!choroplethMap,
+            hasSwitchView: choroplethMap ? typeof choroplethMap.switchView : 'N/A',
+            choroplethMapKeys: choroplethMap ? Object.keys(choroplethMap) : []
+        });
+        
+        if (choroplethMap && typeof choroplethMap.switchView === 'function') {
             try {
+                console.log('Calling switchView with:', viewType);
                 choroplethMap.switchView(viewType);
                 console.log('Successfully switched to view:', viewType);
             } catch (error) {
                 console.error('Error switching view:', error);
+                console.error('Error stack:', error.stack);
             }
         } else {
             console.error('switchView method not available on choroplethMap');
             console.log('choroplethMap object:', choroplethMap);
+            console.log('Available methods:', choroplethMap ? Object.getOwnPropertyNames(Object.getPrototypeOf(choroplethMap)) : 'N/A');
         }
     }
     

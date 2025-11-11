@@ -419,13 +419,19 @@ class SimpleChoropleth {
     }
 
     switchView(viewType) {
-        console.log('switchView called with viewType:', viewType);
+        console.log('=== switchView called ===');
+        console.log('viewType:', viewType);
+        console.log('currentView:', this.currentView);
+        console.log('zoningData available:', this.zoningData ? Object.keys(this.zoningData).length + ' barangays' : 'none');
+        console.log('barangayData available:', this.barangayData.length + ' features');
+        
         this.currentView = viewType;
         
         // Check if zoning data is loaded
         if (viewType !== 'projects' && (!this.zoningData || Object.keys(this.zoningData).length === 0)) {
             console.warn('Zoning data not loaded yet. Loading...');
             this.loadZoningData().then(() => {
+                console.log('Zoning data loaded, retrying switchView');
                 this.switchView(viewType); // Retry after loading
             }).catch((error) => {
                 console.error('Failed to load zoning data:', error);
@@ -436,6 +442,7 @@ class SimpleChoropleth {
         // Remove current layer
         if (this.choroplethLayer) {
             try {
+                console.log('Removing existing choropleth layer');
                 this.map.removeLayer(this.choroplethLayer);
             } catch (e) {
                 console.log('Error removing layer:', e);
@@ -445,53 +452,102 @@ class SimpleChoropleth {
 
         // Create and add new layer based on view
         if (viewType === 'projects') {
+            console.log('Creating projects choropleth');
             this.createChoropleth();
         } else {
+            console.log('Creating zoning layer for:', viewType);
             this.createZoningLayer(viewType);
         }
         
         // Update legend
+        console.log('Updating legend');
         this.createLegend();
-        console.log('View switched to:', viewType);
+        console.log('=== View switched successfully to:', viewType, '===');
     }
 
     createZoningLayer(viewType) {
+        console.log('=== createZoningLayer called ===');
+        console.log('viewType:', viewType);
+        console.log('barangayData length:', this.barangayData.length);
+        console.log('zoningData keys:', this.zoningData ? Object.keys(this.zoningData).length : 0);
+        
         if (!this.barangayData.length) {
             console.error('No barangay data available');
             return;
         }
 
+        if (!this.zoningData || Object.keys(this.zoningData).length === 0) {
+            console.error('No zoning data available');
+            return;
+        }
+
         // Clear existing layer
         if (this.choroplethLayer) {
-            this.map.removeLayer(this.choroplethLayer);
+            try {
+                this.map.removeLayer(this.choroplethLayer);
+            } catch (e) {
+                console.log('Error removing existing layer:', e);
+            }
         }
 
         // Create zoning layer based on view type
+        console.log('Creating GeoJSON layer with zoning colors...');
+        let coloredCount = 0;
+        let defaultCount = 0;
+        
         this.choroplethLayer = L.geoJSON(this.barangayData, {
             style: (feature) => {
-                const barangay = this.zoningData[feature.properties.name];
-                let color = '#ccc'; // Default
+                const barangayName = feature.properties.name;
+                const barangay = this.zoningData[barangayName];
+                let color = '#cccccc'; // Default gray
                 
                 if (barangay) {
                     switch(viewType) {
                         case 'urban_rural':
-                            color = barangay.barangay_class === 'urban' ? '#ef4444' : '#fbbf24';
+                            if (barangay.barangay_class === 'urban') {
+                                color = '#ef4444'; // Red for urban
+                                coloredCount++;
+                            } else if (barangay.barangay_class === 'rural') {
+                                color = '#fbbf24'; // Yellow for rural
+                                coloredCount++;
+                            } else {
+                                defaultCount++;
+                            }
                             break;
                         case 'economic':
-                            switch(barangay.economic_class) {
-                                case 'growth_center': color = '#3b82f6'; break;
-                                case 'emerging': color = '#10b981'; break;
-                                case 'satellite': color = '#fbbf24'; break;
+                            if (barangay.economic_class === 'growth_center') {
+                                color = '#3b82f6'; // Blue
+                                coloredCount++;
+                            } else if (barangay.economic_class === 'emerging') {
+                                color = '#10b981'; // Green
+                                coloredCount++;
+                            } else if (barangay.economic_class === 'satellite') {
+                                color = '#fbbf24'; // Yellow
+                                coloredCount++;
+                            } else {
+                                defaultCount++;
                             }
                             break;
                         case 'elevation':
-                            switch(barangay.elevation_type) {
-                                case 'highland': color = '#8b5cf6'; break;
-                                case 'plains': color = '#84cc16'; break;
-                                case 'coastal': color = '#06b6d4'; break;
+                            if (barangay.elevation_type === 'highland') {
+                                color = '#8b5cf6'; // Purple
+                                coloredCount++;
+                            } else if (barangay.elevation_type === 'plains') {
+                                color = '#84cc16'; // Green
+                                coloredCount++;
+                            } else if (barangay.elevation_type === 'coastal') {
+                                color = '#06b6d4'; // Cyan
+                                coloredCount++;
+                            } else {
+                                defaultCount++;
                             }
                             break;
+                        default:
+                            defaultCount++;
                     }
+                } else {
+                    defaultCount++;
+                    console.log('No zoning data for barangay:', barangayName);
                 }
                 
                 return {
@@ -499,7 +555,7 @@ class SimpleChoropleth {
                     weight: 2,
                     opacity: 1,
                     color: '#333',
-                    fillOpacity: 0.6
+                    fillOpacity: 0.7 // Slightly more opaque for better visibility
                 };
             },
             onEachFeature: (feature, layer) => {
