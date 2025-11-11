@@ -116,6 +116,20 @@
                         {% endif %}
                     </div>
                     <div class="text-sm text-gray-600 mt-1 mb-2">{{ project.description|default:"No description" }}</div>
+                    
+                    <!-- Progress Bar (Only for In Progress projects) -->
+                    {% if project.status == 'in_progress' and project.progress is not None %}
+                    <div class="mb-3">
+                        <div class="flex items-center justify-between text-xs text-gray-600 mb-1.5">
+                            <span class="font-medium">Progress</span>
+                            <span class="font-semibold text-gray-900">{{ project.progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ project.progress }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                         {% if project.barangay %}
                         <div class="flex items-center gap-1">
@@ -446,6 +460,47 @@ function updateProjectCard(card, projectData) {
         statusContainer.innerHTML = `<span class="font-medium">Last Update:</span> ${lastUpdateText}`;
     }
     
+    // Update progress bar for in-progress projects
+    const isInProgress = (projectData.status || '').toLowerCase() === 'in_progress';
+    const progressValue = projectData.progress !== null && projectData.progress !== undefined ? parseInt(projectData.progress, 10) : null;
+    const showProgressBar = isInProgress && progressValue !== null && !isNaN(progressValue);
+    
+    // Find existing progress bar or location to insert it
+    const descriptionEl = card.querySelector('.text-sm.text-gray-600');
+    const locationInfoEl = card.querySelector('.flex.items-center.gap-4.text-xs.text-gray-500');
+    
+    if (descriptionEl && locationInfoEl) {
+        // Check if progress bar already exists
+        let existingProgressBar = card.querySelector('.mb-3 .bg-gray-200.rounded-full');
+        
+        if (showProgressBar) {
+            const progressBarHTML = `
+                <div class="mb-3">
+                    <div class="flex items-center justify-between text-xs text-gray-600 mb-1.5">
+                        <span class="font-medium">Progress</span>
+                        <span class="font-semibold text-gray-900">${progressValue}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${progressValue}%"></div>
+                    </div>
+                </div>
+            `;
+            
+            if (existingProgressBar) {
+                // Update existing progress bar
+                existingProgressBar.closest('.mb-3').outerHTML = progressBarHTML.trim();
+            } else {
+                // Insert new progress bar before location info
+                locationInfoEl.insertAdjacentHTML('beforebegin', progressBarHTML);
+            }
+        } else {
+            // Remove progress bar if project is no longer in progress
+            if (existingProgressBar) {
+                existingProgressBar.closest('.mb-3').remove();
+            }
+        }
+    }
+    
     // Re-apply filters after update
     filterProjects();
 }
@@ -491,6 +546,23 @@ function addProjectToList(projectData) {
     // Get status badge HTML
     const statusBadge = getStatusBadgeHTML(projectData.status, projectData.status_display || projectData.get_status_display || projectData.status);
     
+    // Check if project is in progress and has progress value
+    const isInProgress = (projectData.status || '').toLowerCase() === 'in_progress';
+    const progressValue = projectData.progress !== null && projectData.progress !== undefined ? parseInt(projectData.progress, 10) : null;
+    const showProgressBar = isInProgress && progressValue !== null && !isNaN(progressValue);
+    
+    const progressBarHTML = showProgressBar ? `
+        <div class="mb-3">
+            <div class="flex items-center justify-between text-xs text-gray-600 mb-1.5">
+                <span class="font-medium">Progress</span>
+                <span class="font-semibold text-gray-900">${progressValue}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${progressValue}%"></div>
+            </div>
+        </div>
+    ` : '';
+    
     projectCard.innerHTML = `
         <div class="flex-1">
             <div class="flex items-center gap-3 mb-2 flex-wrap">
@@ -501,6 +573,7 @@ function addProjectToList(projectData) {
                 <span class="font-medium">Last Update:</span> ${lastUpdateText}
             </div>
             <div class="text-sm text-gray-600 mt-1 mb-2">${escapeHtml(projectData.description || 'No description')}</div>
+            ${progressBarHTML}
             <div class="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                 ${projectData.barangay ? `
                 <div class="flex items-center gap-1">
@@ -555,6 +628,9 @@ function escapeHtml(text) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize filters - ensure all projects are visible initially
+    filterProjects();
+    
     // Wait a bit for realtimeManager to be initialized
     setTimeout(() => {
         setupRealtimeProjectList();
