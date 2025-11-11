@@ -157,13 +157,21 @@
                 </a>
             </div>
         {% empty %}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center" id="empty-state-container">
                 <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 <p id="no-projects-message" class="text-gray-500 text-lg">No projects found.</p>
             </div>
         {% endfor %}
+        
+        <!-- Empty state for filtered results (hidden by default) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center hidden" id="empty-state-filtered">
+            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p id="no-projects-message-filtered" class="text-gray-500 text-lg">No projects match your filters.</p>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -243,31 +251,36 @@ function filterProjects() {
     const projectCards = document.querySelectorAll('.project-card');
     let visibleCount = 0;
     
+    console.log('Filtering projects:', {
+        statusFilter: currentStatusFilter,
+        barangayFilter: currentBarangayFilter,
+        searchTerm: searchTerm
+    });
+    
     projectCards.forEach(card => {
-        const projectStatus = card.getAttribute('data-status') || '';
-        const projectBarangay = card.getAttribute('data-barangay') || '';
+        const projectStatus = (card.getAttribute('data-status') || '').trim();
+        const projectBarangay = (card.getAttribute('data-barangay') || '').trim();
         const nameEl = card.querySelector('.text-lg');
         const descEl = card.querySelector('.text-sm.text-gray-600');
         const name = nameEl ? nameEl.textContent.toLowerCase() : '';
         const desc = descEl ? descEl.textContent.toLowerCase() : '';
         
-        // Status filter
+        // Status filter - must match exactly
         let statusMatch = true;
         if (currentStatusFilter) {
-            if (currentStatusFilter === 'in_progress') {
-                statusMatch = projectStatus === 'in_progress';
-            } else {
-                statusMatch = projectStatus === currentStatusFilter;
-            }
+            statusMatch = projectStatus === currentStatusFilter;
         }
         
-        // Barangay filter
-        const barangayMatch = !currentBarangayFilter || projectBarangay.toLowerCase() === currentBarangayFilter.toLowerCase();
+        // Barangay filter - must match exactly (case-insensitive)
+        let barangayMatch = true;
+        if (currentBarangayFilter) {
+            barangayMatch = projectBarangay.toLowerCase() === currentBarangayFilter.toLowerCase();
+        }
         
-        // Search filter
+        // Search filter - must contain search term
         const searchMatch = !searchTerm || name.includes(searchTerm) || desc.includes(searchTerm);
         
-        // Show/hide card
+        // Show/hide card based on all filters
         if (statusMatch && barangayMatch && searchMatch) {
             card.style.display = '';
             visibleCount++;
@@ -276,14 +289,21 @@ function filterProjects() {
         }
     });
     
-    // Show/hide "no projects" message
-    const noProjectsMsg = document.getElementById('no-projects-message');
-    if (noProjectsMsg) {
-        if (visibleCount === 0) {
-            noProjectsMsg.textContent = 'No projects match your filters.';
-            noProjectsMsg.parentElement.style.display = '';
-        } else {
-            noProjectsMsg.parentElement.style.display = 'none';
+    console.log(`Filtered: ${visibleCount} projects visible out of ${projectCards.length} total`);
+    
+    // Show/hide "no projects" message for filtered results
+    const emptyStateFiltered = document.getElementById('empty-state-filtered');
+    const noProjectsMsgFiltered = document.getElementById('no-projects-message-filtered');
+    
+    if (visibleCount === 0 && projectCards.length > 0) {
+        // Show empty state for filtered results
+        if (emptyStateFiltered) {
+            emptyStateFiltered.classList.remove('hidden');
+        }
+    } else {
+        // Hide empty state for filtered results
+        if (emptyStateFiltered) {
+            emptyStateFiltered.classList.add('hidden');
         }
     }
 }
