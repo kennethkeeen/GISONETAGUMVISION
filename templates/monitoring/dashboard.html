@@ -162,6 +162,25 @@
         </div>
     </div>
 
+    <!-- Phase 6: Zone Analytics Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Chart 7: Projects by Zone Type -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Projects by Zone Type</h2>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="projectsByZoneChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 8: Zone Cost Distribution -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Cost Distribution by Zone</h2>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="zoneCostChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Any remaining content would go here -->
 
 </div>
@@ -431,6 +450,174 @@
          .catch(error => {
              console.error('Error fetching monthly spending data:', error);
              document.getElementById('monthlySpendingChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+         });
+
+        // Phase 6: Chart 7 - Projects by Zone Type
+        fetch('/projeng/api/zone-analytics/')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('projectsByZoneChart').getContext('2d');
+                 const zones = data.zones || [];
+                 
+                 const labels = zones.map(z => z.zone_type);
+                 const projectCounts = zones.map(z => z.total_projects);
+                 
+                 // Zone colors matching the map
+                 const zoneColors = {
+                     'R-1': 'rgba(227, 242, 253, 0.8)', // Light blue
+                     'R-2': 'rgba(144, 202, 249, 0.8)', // Medium blue
+                     'R-3': 'rgba(25, 118, 210, 0.8)', // Dark blue
+                     'SHZ': 'rgba(129, 199, 132, 0.8)', // Green
+                     'C-1': 'rgba(255, 152, 0, 0.8)', // Orange
+                     'C-2': 'rgba(255, 183, 77, 0.8)', // Light orange
+                     'I-1': 'rgba(244, 67, 54, 0.8)', // Red
+                     'I-2': 'rgba(239, 83, 80, 0.8)', // Light red
+                     'AGRO': 'rgba(102, 187, 106, 0.8)', // Green
+                     'INS-1': 'rgba(156, 39, 176, 0.8)', // Purple
+                     'PARKS': 'rgba(76, 175, 80, 0.8)', // Green
+                     'AGRICULTURAL': 'rgba(139, 195, 74, 0.8)', // Light green
+                     'ECO-TOURISM': 'rgba(0, 188, 212, 0.8)', // Cyan
+                     'SPECIAL': 'rgba(121, 85, 72, 0.8)' // Brown
+                 };
+                 
+                 const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
+                 
+                 new Chart(ctx, {
+                     type: 'bar',
+                     data: {
+                         labels: labels,
+                         datasets: [{
+                             label: 'Number of Projects',
+                             data: projectCounts,
+                             backgroundColor: backgroundColors,
+                             borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
+                             borderWidth: 1
+                         }]
+                     },
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         scales: {
+                             y: {
+                                 beginAtZero: true,
+                                 ticks: {
+                                     stepSize: 1
+                                 }
+                             }
+                         },
+                         plugins: {
+                             legend: {
+                                 display: false
+                             },
+                             tooltip: {
+                                 callbacks: {
+                                     title: function(context) {
+                                         const zone = zones[context[0].dataIndex];
+                                         return zone.display_name || zone.zone_type;
+                                     },
+                                     label: function(context) {
+                                         const zone = zones[context.dataIndex];
+                                         return [
+                                             `Projects: ${context.parsed.y}`,
+                                             `Completed: ${zone.completed}`,
+                                             `In Progress: ${zone.in_progress}`,
+                                             `Planned: ${zone.planned}`
+                                         ];
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering projects by zone chart:', error);
+                 document.getElementById('projectsByZoneChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+             }
+         })
+         .catch(error => {
+             console.error('Error fetching zone analytics data:', error);
+             document.getElementById('projectsByZoneChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+         });
+
+        // Phase 6: Chart 8 - Zone Cost Distribution
+        fetch('/projeng/api/zone-analytics/')
+         .then(response => response.json())
+         .then(data => {
+             try {
+                 const ctx = document.getElementById('zoneCostChart').getContext('2d');
+                 const zones = data.zones || [];
+                 
+                 // Filter zones with costs > 0
+                 const zonesWithCosts = zones.filter(z => z.total_cost > 0);
+                 
+                 const labels = zonesWithCosts.map(z => z.zone_type);
+                 const costs = zonesWithCosts.map(z => z.total_cost);
+                 
+                 // Zone colors matching the map
+                 const zoneColors = {
+                     'R-1': 'rgba(227, 242, 253, 0.8)',
+                     'R-2': 'rgba(144, 202, 249, 0.8)',
+                     'R-3': 'rgba(25, 118, 210, 0.8)',
+                     'SHZ': 'rgba(129, 199, 132, 0.8)',
+                     'C-1': 'rgba(255, 152, 0, 0.8)',
+                     'C-2': 'rgba(255, 183, 77, 0.8)',
+                     'I-1': 'rgba(244, 67, 54, 0.8)',
+                     'I-2': 'rgba(239, 83, 80, 0.8)',
+                     'AGRO': 'rgba(102, 187, 106, 0.8)',
+                     'INS-1': 'rgba(156, 39, 176, 0.8)',
+                     'PARKS': 'rgba(76, 175, 80, 0.8)',
+                     'AGRICULTURAL': 'rgba(139, 195, 74, 0.8)',
+                     'ECO-TOURISM': 'rgba(0, 188, 212, 0.8)',
+                     'SPECIAL': 'rgba(121, 85, 72, 0.8)'
+                 };
+                 
+                 const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
+                 
+                 new Chart(ctx, {
+                     type: 'doughnut',
+                     data: {
+                         labels: labels,
+                         datasets: [{
+                             label: 'Total Cost (₱)',
+                             data: costs,
+                             backgroundColor: backgroundColors,
+                             borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
+                             borderWidth: 2
+                         }]
+                     },
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         plugins: {
+                             legend: {
+                                 display: true,
+                                 position: 'right'
+                             },
+                             tooltip: {
+                                 callbacks: {
+                                     title: function(context) {
+                                         const zone = zonesWithCosts[context[0].dataIndex];
+                                         return zone.display_name || zone.zone_type;
+                                     },
+                                     label: function(context) {
+                                         const value = context.parsed;
+                                         const percentage = ((value / costs.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                                         return `Cost: ₱${value.toLocaleString('en-US')} (${percentage}%)`;
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                 });
+             } catch (error) {
+                 console.error('Error rendering zone cost chart:', error);
+                 document.getElementById('zoneCostChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
+             }
+         })
+         .catch(error => {
+             console.error('Error fetching zone analytics data:', error);
+             document.getElementById('zoneCostChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
          });
     });
 </script>

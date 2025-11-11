@@ -1863,4 +1863,97 @@ def barangay_zone_data_api(request):
     return JsonResponse({
         'barangay_zones': response_data,
         'count': len(response_data)
-    }) 
+    })
+
+@require_http_methods(["GET"])
+@head_engineer_required
+def zone_analytics_api(request):
+    """
+    Return zone analytics data for charts.
+    Shows project distribution, costs, and statistics by zone type.
+    """
+    from collections import defaultdict
+    
+    # Get all projects with zone_type
+    projects_with_zones = Project.objects.filter(
+        zone_type__isnull=False
+    ).exclude(zone_type='')
+    
+    # Aggregate statistics by zone type
+    zone_stats = defaultdict(lambda: {
+        'total_projects': 0,
+        'total_cost': 0,
+        'completed': 0,
+        'in_progress': 0,
+        'planned': 0,
+        'delayed': 0,
+        'validated': 0,
+        'unvalidated': 0
+    })
+    
+    for project in projects_with_zones:
+        zone_type = project.zone_type
+        zone_stats[zone_type]['total_projects'] += 1
+        
+        # Add project cost
+        if project.project_cost:
+            zone_stats[zone_type]['total_cost'] += float(project.project_cost)
+        
+        # Count by status
+        status = project.status.lower() if project.status else ''
+        if status == 'completed':
+            zone_stats[zone_type]['completed'] += 1
+        elif status in ['in_progress', 'ongoing']:
+            zone_stats[zone_type]['in_progress'] += 1
+        elif status == 'planned':
+            zone_stats[zone_type]['planned'] += 1
+        elif status == 'delayed':
+            zone_stats[zone_type]['delayed'] += 1
+        
+        # Count validated vs unvalidated
+        if project.zone_validated:
+            zone_stats[zone_type]['validated'] += 1
+        else:
+            zone_stats[zone_type]['unvalidated'] += 1
+    
+    # Convert to list format for charts
+    zone_list = []
+    for zone_type, stats in sorted(zone_stats.items()):
+        zone_list.append({
+            'zone_type': zone_type,
+            'display_name': _get_zone_display_name(zone_type),
+            **stats
+        })
+    
+    # Calculate totals
+    total_projects = sum(s['total_projects'] for s in zone_stats.values())
+    total_cost = sum(s['total_cost'] for s in zone_stats.values())
+    
+    return JsonResponse({
+        'zones': zone_list,
+        'summary': {
+            'total_projects': total_projects,
+            'total_cost': total_cost,
+            'zone_count': len(zone_stats)
+        }
+    })
+
+def _get_zone_display_name(zone_type):
+    """Helper method to get display name for zone type"""
+    zone_names = {
+        'R-1': 'Low Density Residential',
+        'R-2': 'Medium Density Residential',
+        'R-3': 'High Density Residential',
+        'SHZ': 'Socialized Housing',
+        'C-1': 'Major Commercial',
+        'C-2': 'Minor Commercial',
+        'I-1': 'Heavy Industrial',
+        'I-2': 'Light/Medium Industrial',
+        'AGRO': 'Agro-Industrial',
+        'INS-1': 'Institutional',
+        'PARKS': 'Parks & Open Spaces',
+        'AGRICULTURAL': 'Agricultural',
+        'ECO-TOURISM': 'Eco-tourism',
+        'SPECIAL': 'Special Use',
+    }
+    return zone_names.get(zone_type, zone_type) 
