@@ -35,7 +35,10 @@
 /* Floating Zoning Controls Styling */
 #zoning-controls-panel {
   pointer-events: auto !important;
-  z-index: 1000 !important;
+  z-index: 10002 !important;
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
 }
 
 /* Ensure floating controls don't interfere with map interactions */
@@ -212,11 +215,11 @@
             </div>
             
             <!-- Map Container with Floating Zoning Controls -->
-            <div class="relative">
+            <div class="relative" style="position: relative;">
                 <div id="map" style="height: 70vh; width: 100%; z-index: 1; position: relative; background-color: #f0f0f0;"></div>
                 
                 <!-- Floating Zoning Controls Panel (Inside Map) -->
-                <div class="absolute top-4 right-4 z-[1000] bg-white rounded-lg shadow-lg border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="pointer-events: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                <div id="zoning-controls-panel" class="absolute top-4 right-4 bg-white rounded-lg shadow-xl border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="position: absolute; top: 16px; right: 16px; z-index: 10002; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                     <!-- Panel Header -->
                     <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                         <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
