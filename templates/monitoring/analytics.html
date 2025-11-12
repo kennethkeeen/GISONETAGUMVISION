@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}
     {% if user_role == 'project_engineer' %}
@@ -10,200 +11,316 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header Section -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">
-            {% if user_role == 'project_engineer' %}
-                My Projects Analytics
-            {% else %}
-                All Projects Analytics
-            {% endif %}
-        </h1>
-        <p class="text-gray-600">
-            {% if user_role == 'project_engineer' %}
-                Track and manage your assigned projects
-            {% else %}
-                Monitor and analyze all projects across the system
-            {% endif %}
-        </p>
-    </div>
+<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                {% if user_role == 'project_engineer' %}
+                    My Projects Analytics
+                {% else %}
+                    All Projects Analytics
+                {% endif %}
+            </h1>
+            <p class="text-gray-600 text-sm lg:text-base">
+                {% if user_role == 'project_engineer' %}
+                    Track and manage your assigned projects
+                {% else %}
+                    Monitor and analyze all projects across the system
+                {% endif %}
+            </p>
+        </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <div id="card-all" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('all', this)">
-            <div class="flex items-center gap-3">
-                <span class="bg-blue-100 text-blue-600 rounded-full p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
-                    </svg>
-                </span>
-                <h3 class="text-lg font-semibold text-gray-700">Total Projects</h3>
+        <!-- Stats Cards - Modern Gradient Design -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
+            <div id="card-all" class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer {% if not status_filter %}active{% endif %}" onclick="filterByStatus('all', this)">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1">{{ total_projects }}</div>
+                <div class="text-blue-100 text-sm font-medium">Total Projects</div>
             </div>
-            <p class="text-3xl font-bold text-blue-600 mt-2 group-hover:text-blue-800 transition">{{ total_projects }}</p>
-        </div>
-        <div id="card-completed" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('completed', this)">
-            <div class="flex items-center gap-3">
-                <span class="bg-green-100 text-green-600 rounded-full p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                </span>
-                <h3 class="text-lg font-semibold text-gray-700">Completed</h3>
+            
+            <div id="card-completed" class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer {% if status_filter == 'completed' %}active{% endif %}" onclick="filterByStatus('completed', this)">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1">{{ completed_projects }}</div>
+                <div class="text-green-100 text-sm font-medium">Completed</div>
             </div>
-            <p class="text-3xl font-bold text-green-600 mt-2 group-hover:text-green-800 transition">{{ completed_projects }}</p>
-        </div>
-        <div id="card-inprogress" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('in_progress', this)">
-            <div class="flex items-center gap-3">
-                <span class="bg-yellow-100 text-yellow-600 rounded-full p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
-                    </svg>
-                </span>
-                <h3 class="text-lg font-semibold text-gray-700">In Progress</h3>
+            
+            <div id="card-inprogress" class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer {% if status_filter == 'in_progress' %}active{% endif %}" onclick="filterByStatus('in_progress', this)">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1">{{ ongoing_projects }}</div>
+                <div class="text-yellow-100 text-sm font-medium">In Progress</div>
             </div>
-            <p class="text-3xl font-bold text-yellow-600 mt-2 group-hover:text-yellow-800 transition">{{ ongoing_projects }}</p>
-        </div>
-        <div id="card-planned" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('planned', this)">
-            <div class="flex items-center gap-3">
-                <span class="bg-purple-100 text-purple-600 rounded-full p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <rect width="20" height="20" x="2" y="2" rx="5" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
-                    </svg>
-                </span>
-                <h3 class="text-lg font-semibold text-gray-700">Planned</h3>
+            
+            <div id="card-planned" class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer {% if status_filter == 'planned' %}active{% endif %}" onclick="filterByStatus('planned', this)">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1">{{ planned_projects }}</div>
+                <div class="text-purple-100 text-sm font-medium">Planned</div>
             </div>
-            <p class="text-3xl font-bold text-purple-600 mt-2 group-hover:text-purple-800 transition">{{ planned_projects }}</p>
-        </div>
-        <div id="card-delayed" class="analytics-card cursor-pointer hover:shadow-lg transition group" onclick="filterByStatus('delayed', this)">
-            <div class="flex items-center gap-3">
-                <span class="bg-red-100 text-red-600 rounded-full p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" />
-                        <circle cx="12" cy="12" r="10" />
-                    </svg>
-                </span>
-                <h3 class="text-lg font-semibold text-gray-700">Delayed</h3>
+            
+            <div id="card-delayed" class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl cursor-pointer {% if status_filter == 'delayed' %}active{% endif %}" onclick="filterByStatus('delayed', this)">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1">{{ delayed_projects }}</div>
+                <div class="text-red-100 text-sm font-medium">Delayed</div>
             </div>
-            <p class="text-3xl font-bold text-red-600 mt-2 group-hover:text-red-800 transition">{{ delayed_projects }}</p>
         </div>
-    </div>
 
-    <!-- Projects Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="p-4 border-b border-gray-200">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <h2 class="text-xl font-semibold text-gray-900">Projects List</h2>
-                <div class="flex gap-4">
-                    <input type="text" id="search-input" placeholder="Search projects..." 
-                           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <select id="filter-barangay" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <!-- Filters Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-6">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="search-input" class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                    <input type="text" id="search-input" name="search" value="{{ search_query }}" placeholder="Search projects by name..." 
+                           class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all hover:border-gray-300">
+                </div>
+                <div>
+                    <label for="filter-barangay" class="block text-sm font-semibold text-gray-700 mb-2">Barangay</label>
+                    <select id="filter-barangay" name="barangay" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300" onchange="this.form.submit()">
                         <option value="">All Barangays</option>
-                        <option value="Apokon">Apokon</option>
-                        <option value="Bincungan">Bincungan</option>
-                        <option value="Busaon">Busaon</option>
-                        <option value="Canocotan">Canocotan</option>
-                        <option value="Cuambogan">Cuambogan</option>
-                        <option value="La Filipina">La Filipina</option>
-                        <option value="Liboganon">Liboganon</option>
-                        <option value="Madaum">Madaum</option>
-                        <option value="Magdum">Magdum</option>
-                        <option value="Magugpo East">Magugpo East</option>
-                        <option value="Magugpo North">Magugpo North</option>
-                        <option value="Magugpo Poblacion">Magugpo Poblacion</option>
-                        <option value="Magugpo South">Magugpo South</option>
-                        <option value="Magugpo West">Magugpo West</option>
-                        <option value="Mankilam">Mankilam</option>
-                        <option value="New Balamban">New Balamban</option>
-                        <option value="Nueva Fuerza">Nueva Fuerza</option>
-                        <option value="Pagsabangan">Pagsabangan</option>
-                        <option value="Pandapan">Pandapan</option>
-                        <option value="San Agustin">San Agustin</option>
-                        <option value="San Isidro">San Isidro</option>
-                        <option value="San Miguel">San Miguel</option>
-                        <option value="Visayan Village">Visayan Village</option>
+                        <option value="Apokon" {% if barangay_filter == 'Apokon' %}selected{% endif %}>Apokon</option>
+                        <option value="Bincungan" {% if barangay_filter == 'Bincungan' %}selected{% endif %}>Bincungan</option>
+                        <option value="Busaon" {% if barangay_filter == 'Busaon' %}selected{% endif %}>Busaon</option>
+                        <option value="Canocotan" {% if barangay_filter == 'Canocotan' %}selected{% endif %}>Canocotan</option>
+                        <option value="Cuambogan" {% if barangay_filter == 'Cuambogan' %}selected{% endif %}>Cuambogan</option>
+                        <option value="La Filipina" {% if barangay_filter == 'La Filipina' %}selected{% endif %}>La Filipina</option>
+                        <option value="Liboganon" {% if barangay_filter == 'Liboganon' %}selected{% endif %}>Liboganon</option>
+                        <option value="Madaum" {% if barangay_filter == 'Madaum' %}selected{% endif %}>Madaum</option>
+                        <option value="Magdum" {% if barangay_filter == 'Magdum' %}selected{% endif %}>Magdum</option>
+                        <option value="Magugpo East" {% if barangay_filter == 'Magugpo East' %}selected{% endif %}>Magugpo East</option>
+                        <option value="Magugpo North" {% if barangay_filter == 'Magugpo North' %}selected{% endif %}>Magugpo North</option>
+                        <option value="Magugpo Poblacion" {% if barangay_filter == 'Magugpo Poblacion' %}selected{% endif %}>Magugpo Poblacion</option>
+                        <option value="Magugpo South" {% if barangay_filter == 'Magugpo South' %}selected{% endif %}>Magugpo South</option>
+                        <option value="Magugpo West" {% if barangay_filter == 'Magugpo West' %}selected{% endif %}>Magugpo West</option>
+                        <option value="Mankilam" {% if barangay_filter == 'Mankilam' %}selected{% endif %}>Mankilam</option>
+                        <option value="New Balamban" {% if barangay_filter == 'New Balamban' %}selected{% endif %}>New Balamban</option>
+                        <option value="Nueva Fuerza" {% if barangay_filter == 'Nueva Fuerza' %}selected{% endif %}>Nueva Fuerza</option>
+                        <option value="Pagsabangan" {% if barangay_filter == 'Pagsabangan' %}selected{% endif %}>Pagsabangan</option>
+                        <option value="Pandapan" {% if barangay_filter == 'Pandapan' %}selected{% endif %}>Pandapan</option>
+                        <option value="San Agustin" {% if barangay_filter == 'San Agustin' %}selected{% endif %}>San Agustin</option>
+                        <option value="San Isidro" {% if barangay_filter == 'San Isidro' %}selected{% endif %}>San Isidro</option>
+                        <option value="San Miguel" {% if barangay_filter == 'San Miguel' %}selected{% endif %}>San Miguel</option>
+                        <option value="Visayan Village" {% if barangay_filter == 'Visayan Village' %}selected{% endif %}>Visayan Village</option>
                     </select>
                 </div>
-            </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200">
+                        Apply Filters
+                    </button>
+                    <a href="{% url 'head_engineer_analytics' %}" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all duration-200">
+                        Clear
+                    </a>
+                </div>
+            </form>
         </div>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangay</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
-                        {% if user_role == 'head_engineer' %}
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
-                        {% endif %}
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="projects-table-body">
-                    {% for project in projects %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ project.name }}</div>
-                            <div class="text-sm text-gray-500">{{ project.prn }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ project.barangay }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ project.total_progress }}%"></div>
-                            </div>
-                            <span class="text-sm text-gray-500">{{ project.total_progress }}%</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {% if project.status == 'completed' %}bg-green-100 text-green-800
-                                {% elif project.status in 'ongoing,in_progress' %}bg-blue-100 text-blue-800
-                                {% elif project.status in 'planned,pending' %}bg-yellow-100 text-yellow-800
-                                {% elif project.status == 'delayed' %}bg-red-100 text-red-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ project.status_display }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ project.start_date }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ project.end_date }}
-                        </td>
-                        {% if user_role == 'head_engineer' %}
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ project.assigned_to|join:', ' }}
-                        </td>
-                        {% endif %}
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+
+        <!-- Projects Table Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    Projects List
+                </h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[900px] divide-y divide-gray-200">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Project Name</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Barangay</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Progress</th>
+                            <th class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Start Date</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">End Date</th>
                             {% if user_role == 'head_engineer' %}
-                                {% if project.id %}
-                                    <a href="{% url 'monitoring_project_detail' project.id %}"
-                                       class="inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-lg shadow hover:from-blue-600 hover:to-indigo-700 transition duration-200">
-                                       <svg class="inline w-5 h-5 mr-1 -mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 0h6" />
-                                       </svg>
-                                       Timeline Report
-                                    </a>
-                                {% else %}
-                                    <span class="text-gray-400">No detail</span>
-                                {% endif %}
-                            {% elif user_role == 'project_engineer' %}
-                                <a href="javascript:void(0);" onclick="openProjectModal({{ project.id }})" class="text-blue-600 hover:text-blue-900">View</a>
-                                <a href="{% url 'project_update' project.id %}" class="ml-4 text-green-600 hover:text-green-900">Update</a>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Assigned To</th>
                             {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            <th class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="projects-table-body">
+                        {% for project in page_obj.object_list %}
+                        <tr class="hover:bg-blue-50 transition-colors duration-150">
+                            <td class="px-4 py-4">
+                                <div class="text-sm font-semibold text-gray-900">{{ project.name }}</div>
+                                <div class="text-xs text-gray-500 font-mono mt-1">{{ project.prn|default:'—' }}</div>
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-700">
+                                {{ project.barangay|default:'—' }}
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: {{ project.total_progress }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-700 min-w-[45px]">{{ project.total_progress }}%</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                {% if project.status == 'completed' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Completed</span>
+                                {% elif project.status == 'ongoing' or project.status == 'in_progress' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Ongoing</span>
+                                {% elif project.status == 'planned' or project.status == 'pending' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Planned</span>
+                                {% elif project.status == 'delayed' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Delayed</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{{ project.status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600">
+                                {{ project.start_date|default:'—' }}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600">
+                                {{ project.end_date|default:'—' }}
+                            </td>
+                            {% if user_role == 'head_engineer' %}
+                            <td class="px-4 py-4 text-sm text-gray-600">
+                                {% if project.assigned_to %}
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for engineer in project.assigned_to %}
+                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">{{ engineer }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-gray-400">—</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td class="px-4 py-4 text-center">
+                                {% if user_role == 'head_engineer' %}
+                                    {% if project.id %}
+                                        <a href="{% url 'monitoring_project_detail' project.id %}"
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg">
+                                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                           </svg>
+                                           Timeline Report
+                                        </a>
+                                    {% else %}
+                                        <span class="text-gray-400 text-sm">—</span>
+                                    {% endif %}
+                                {% elif user_role == 'project_engineer' %}
+                                    <div class="flex items-center justify-center gap-2">
+                                        <a href="javascript:void(0);" onclick="openProjectModal({{ project.id }})" class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </a>
+                                        <a href="{% url 'project_update' project.id %}" class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if user_role == 'head_engineer' %}8{% else %}7{% endif %}" class="text-center py-12">
+                                <div class="flex flex-col items-center">
+                                    <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-gray-500 text-lg font-medium">No projects found</p>
+                                    <p class="text-gray-400 text-sm mt-1">Try adjusting your filters</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-700">
+                        Showing <span class="font-semibold">{{ page_obj.start_index }}</span> to <span class="font-semibold">{{ page_obj.end_index }}</span> of <span class="font-semibold">{{ page_obj.paginator.count }}</span> projects
+                    </div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                                Previous
+                            </a>
+                        {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                                Previous
+                            </span>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span aria-current="page" class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-semibold text-blue-600">
+                                    {{ num }}
+                                </span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                                Next
+                                <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                Next
+                                <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </span>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -231,30 +348,15 @@
 </div>
 
 <style>
-.analytics-card.active-blue {
-    border: 2px solid #2563eb !important;
-    background-color: #eff6ff !important;
-    box-shadow: 0 0 0 2px #2563eb33;
-}
-.analytics-card.active-green {
-    border: 2px solid #16a34a !important;
-    background-color: #f0fdf4 !important;
-    box-shadow: 0 0 0 2px #16a34a33;
-}
-.analytics-card.active-yellow {
-    border: 2px solid #eab308 !important;
-    background-color: #fefce8 !important;
-    box-shadow: 0 0 0 2px #eab30833;
-}
-.analytics-card.active-purple {
-    border: 2px solid #a21caf !important;
-    background-color: #faf5ff !important;
-    box-shadow: 0 0 0 2px #a21caf33;
-}
-.analytics-card.active-red {
-    border: 2px solid #dc2626 !important;
-    background-color: #fef2f2 !important;
-    box-shadow: 0 0 0 2px #dc262633;
+/* Active status card indicator */
+#card-all.active,
+#card-completed.active,
+#card-inprogress.active,
+#card-planned.active,
+#card-delayed.active {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.5);
 }
 </style>
 
@@ -352,80 +454,29 @@ function toggleUpdateDetails(id) {
     if (el) utils.toggleElement(el);
 }
 
-// Filter functions
+// Filter functions - redirect to backend filter
 function filterByStatus(status, card) {
-    const cards = utils.getElements('.analytics-card');
-    cards.forEach(el => el.classList.remove('active-blue', 'active-green', 'active-yellow', 'active-purple', 'active-red'));
-
-    if (card) {
-        const statusClasses = {
-            'all': 'active-blue',
-            'completed': 'active-green',
-            'in_progress': 'active-yellow',
-            'planned': 'active-purple',
-            'delayed': 'active-red'
-        };
-        const className = statusClasses[status];
-        if (className) card.classList.add(className);
+    // Build URL with current filters
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Remove page parameter when filtering
+    urlParams.delete('page');
+    
+    // Set status filter
+    if (status === 'all') {
+        urlParams.delete('status');
+    } else {
+        urlParams.set('status', status);
     }
-
-    const tableBody = utils.getElement('projects-table-body');
-    if (!tableBody) return;
-
-    const rows = tableBody.getElementsByTagName('tr');
-    for (let row of rows) {
-        const statusCell = row.querySelector('td:nth-child(4) span');
-        if (!statusCell) continue;
-
-        const projectStatus = statusCell.textContent.trim().toLowerCase().replace(/[_ ]/g, '');
-        const statusMap = {
-            'all': () => true,
-            'in_progress': (status) => ['inprogress', 'in_progress', 'ongoing'].includes(status),
-            'planned': (status) => ['planned', 'pending'].includes(status),
-            'delayed': (status) => status === 'delayed',
-            'completed': (status) => status === 'completed'
-        };
-
-        const shouldShow = statusMap[status]?.(projectStatus) ?? (projectStatus === status);
-        row.style.display = shouldShow ? '' : 'none';
-    }
+    
+    // Redirect to filtered page
+    window.location.href = '?' + urlParams.toString();
 }
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize status filter
-    const cardAll = utils.getElement('card-all');
-    if (cardAll) filterByStatus('all', cardAll);
-
-    // Initialize search and filter
-    const searchInput = utils.getElement('search-input');
-    const filterBarangay = utils.getElement('filter-barangay');
-    const tableBody = utils.getElement('projects-table-body');
+    // Search and filter are now handled by backend form submission
     const costEntryForm = utils.getElement('cost-entry-form');
-
-    if (tableBody) {
-        const rows = tableBody.getElementsByTagName('tr');
-
-        function filterTable() {
-            const searchTerm = searchInput?.value.toLowerCase() || '';
-            const selectedBarangay = (filterBarangay?.value || '').toLowerCase().trim();
-
-            for (let row of rows) {
-                if (!row.cells[0] || !row.cells[1]) continue;
-                
-                const projectName = row.cells[0].textContent.toLowerCase();
-                const barangay = (row.cells[1].textContent || '').toLowerCase().trim();
-                
-                const matchesSearch = projectName.includes(searchTerm);
-                const matchesBarangay = !selectedBarangay || barangay === selectedBarangay;
-
-                row.style.display = matchesSearch && matchesBarangay ? '' : 'none';
-            }
-        }
-
-        if (searchInput) searchInput.addEventListener('input', filterTable);
-        if (filterBarangay) filterBarangay.addEventListener('change', filterTable);
-    }
 
     // Initialize cost entry form
     if (costEntryForm) {

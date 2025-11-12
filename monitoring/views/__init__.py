@@ -727,17 +727,49 @@ def project_engineer_analytics(request, pk):
 def head_engineer_analytics(request):
     from projeng.models import Project, ProjectProgress
     from django.contrib.auth.models import User
+    from django.core.paginator import Paginator
     import json
     # Get all projects
     projects = Project.objects.all()
-    # Prepare project list for the table and JS
+    
+    # Apply search filter
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        projects = projects.filter(name__icontains=search_query)
+    
+    # Apply barangay filter
+    barangay_filter = request.GET.get('barangay', '')
+    if barangay_filter:
+        projects = projects.filter(barangay=barangay_filter)
+    
+    # Apply status filter
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        if status_filter == 'in_progress':
+            projects = projects.filter(status__in=['in_progress', 'ongoing'])
+        elif status_filter == 'planned':
+            projects = projects.filter(status__in=['planned', 'pending'])
+        else:
+            projects = projects.filter(status=status_filter)
+    
+    # Count totals (before filtering for pagination)
+    total_projects_all = Project.objects.all().count()
+    completed_projects = Project.objects.filter(status='completed').count()
+    ongoing_projects = Project.objects.filter(status__in=['in_progress', 'ongoing']).count()
+    planned_projects = Project.objects.filter(status__in=['planned', 'pending']).count()
+    delayed_projects = Project.objects.filter(status='delayed').count()
+    
+    # Order by created_at descending
+    projects = projects.order_by('-created_at')
+    
+    # Pagination - 15 items per page
+    paginator = Paginator(projects, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Prepare project list for the table and JS (only for current page)
     projects_list = []
-    total_projects = projects.count()
-    completed_projects = 0
-    ongoing_projects = 0
-    planned_projects = 0
-    delayed_projects = 0
-    for p in projects:
+    for p in page_obj.object_list:
         # Get latest progress
         latest_progress = ProjectProgress.objects.filter(project=p).order_by('-date').first()
         progress = int(latest_progress.percentage_complete) if latest_progress else 0
@@ -748,15 +780,6 @@ def head_engineer_analytics(request):
             'Completed' if p.status == 'completed' else
             'Delayed' if p.status == 'delayed' else p.status.title()
         )
-        # Count for cards
-        if status_display == 'Completed':
-            completed_projects += 1
-        elif status_display == 'Ongoing':
-            ongoing_projects += 1
-        elif status_display == 'Planned':
-            planned_projects += 1
-        elif status_display == 'Delayed':
-            delayed_projects += 1
         # Assigned engineers
         assigned_to = list(p.assigned_engineers.values_list('username', flat=True))
         projects_list.append({
@@ -774,12 +797,16 @@ def head_engineer_analytics(request):
     context = {
         'projects': projects_list,  # for Django template rendering
         'projects_json': json.dumps(projects_list),  # for JS
-        'total_projects': total_projects,
+        'page_obj': page_obj,  # for pagination
+        'total_projects': total_projects_all,
         'completed_projects': completed_projects,
         'ongoing_projects': ongoing_projects,
         'planned_projects': planned_projects,
         'delayed_projects': delayed_projects,
         'user_role': 'head_engineer',
+        'search_query': search_query,
+        'barangay_filter': barangay_filter,
+        'status_filter': status_filter,
     }
     return render(request, 'monitoring/analytics.html', context)
 
