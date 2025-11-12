@@ -333,10 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
             touchZoom: true
         }).setView([7.4475, 125.8096], 13);
         
-        // Use CartoDB Positron - Clean, modern, Google Maps-like style
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
+        // Use OpenStreetMap standard tiles - Colorful and reliable
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
             minZoom: 3
         }).addTo(map);
@@ -1184,9 +1183,8 @@ window.openDetailsModal = function(id) {
                        L.DomUtil.get('details-map')._leaflet_id = null;
                     }
                     window.detailsMap = L.map('details-map').setView([detailMapLat, detailMapLng], 15);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                        subdomains: 'abcd',
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                         maxZoom: 19
                     }).addTo(window.detailsMap);
                     L.marker([detailMapLat, detailMapLng]).addTo(window.detailsMap);
