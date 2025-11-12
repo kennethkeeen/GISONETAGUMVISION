@@ -1,188 +1,326 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
-<div class="container mx-auto px-4 py-8 bg-gray-100 min-h-screen">
-    <!-- Notification Panel -->
-    {% if notifications %}
-    <div class="flex justify-end mb-4">
-      <div class="relative">
-        <button class="focus:outline-none">
-          <svg class="h-8 w-8 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          {% if notifications|length > 0 %}
-          <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">{{ notifications|length }}</span>
-          {% endif %}
-        </button>
-        <div class="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg z-50">
-          <div class="p-4 border-b font-bold text-gray-700 flex items-center gap-2">
-            <svg class="h-5 w-5 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-            Notifications
-          </div>
-          <ul class="max-h-80 overflow-y-auto divide-y divide-gray-100">
-            {% for n in notifications|slice:':5' %}
-            <li class="p-4 hover:bg-yellow-50">
-              <div class="text-gray-800 text-sm">{{ n.message }}</div>
-              <div class="text-xs text-gray-400 mt-1">{{ n.created_at|date:'M d, Y H:i' }}</div>
-            </li>
-            {% empty %}
-            <li class="p-4 text-gray-500">No notifications.</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Welcome Section -->
-    <div class="flex flex-col items-center justify-center w-full text-center px-6 py-4 bg-white shadow-md rounded-lg mb-8">
-        <h1 class="text-4xl font-extrabold text-gray-800">Welcome to OneTagumVision</h1>
-    </div>
-
-    <!-- Top Row: Overall Project Metrics and Recent Projects -->
-    <div class="flex flex-col md:flex-row gap-8 mb-8">
-        <!-- Overall Project Metrics Section (moved to top-left) -->
-        <div class="w-full md:w-1/3 bg-white rounded-lg shadow-md p-6">
-             <h2 class="text-2xl font-bold text-gray-800 mb-6">Overall Project Metrics</h2>
-            <div class="grid grid-cols-1 gap-3">
-                <div class="flex items-center p-2 bg-blue-50 rounded-lg">
-                    <div class="bg-blue-100 text-blue-700 rounded-full p-2 mr-3 flex-shrink-0">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6m-6 0H7m6 0v6m0 0H7m6 0h6" /></svg>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-blue-700" id="card-total-projects">{{ project_count }}</div>
-                        <div class="text-gray-600 text-xs">Total Projects</div>
-                    </div>
+<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6 lg:px-8">
+        <!-- Header Section with Welcome and Quick Actions -->
+        <div class="mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+                <!-- Welcome Section -->
+                <div>
+                    <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                        Welcome back, <span class="text-blue-600">{{ user.get_full_name|default:user.username }}</span>!
+                    </h1>
+                    <p class="text-gray-600 text-sm lg:text-base">Here's an overview of your projects and city development progress</p>
                 </div>
-                <div class="flex items-center p-2 bg-green-50 rounded-lg">
-                    <div class="bg-green-100 text-green-700 rounded-full p-2 mr-3 flex-shrink-0">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-green-600" id="card-completed">{{ completed_count }}</div>
-                        <div class="text-gray-600 text-xs">Completed</div>
-                    </div>
-                </div>
-                <div class="flex items-center p-2 bg-yellow-50 rounded-lg">
-                    <div class="bg-yellow-100 text-yellow-700 rounded-full p-2 mr-3 flex-shrink-0">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-yellow-500" id="card-in-progress">{{ in_progress_count }}</div>
-                        <div class="text-gray-600 text-xs">In Progress</div>
-                    </div>
-                </div>
-                <div class="flex items-center p-2 bg-purple-50 rounded-lg">
-                    <div class="bg-purple-100 text-purple-700 rounded-full p-2 mr-3 flex-shrink-0">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" /></svg>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-purple-600" id="card-planned">{{ planned_count }}</div>
-                        <div class="text-gray-600 text-xs">Planned</div>
-                    </div>
-                </div>
-                <div class="flex items-center p-2 bg-red-50 rounded-lg">
-                    <div class="bg-red-100 text-red-700 rounded-full p-2 mr-3 flex-shrink-0">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-red-600" id="card-delayed">{{ delayed_count }}</div>
-                        <div class="text-gray-600 text-xs">Delayed</div>
-                    </div>
+                
+                <!-- Quick Actions -->
+                <div class="flex gap-3">
+                    <a href="{% url 'project_list' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add Project
+                    </a>
+                    <a href="{% url 'map_view' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-lg shadow-md border border-gray-200 transition-all duration-200 hover:shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67"></path>
+                        </svg>
+                        View Map
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Projects Section -->
-        <div class="w-full md:w-2/3 bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Recent Projects</h2>
-            <ul class="space-y-4">
-                {% for project in recent_projects %}
-                <li class="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 hover:bg-gray-100 transition duration-200">
-                    <div>
-                        <span class="font-semibold text-gray-800">{{ project.name }}</span>
-                        <span class="ml-2 text-xs px-2 py-1 rounded-full {% if project.status == 'completed' %}bg-green-100 text-green-700{% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-700{% endif %}">{{ project.status|title }}</span>
+        <!-- Key Metrics Cards - Modern Grid Layout -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
+            <!-- Total Projects Card -->
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
                     </div>
-                    <span class="text-gray-500 text-xs">{{ project.created_at|date:"M d, Y" }}</span>
-                </li>
-                {% empty %}
-                <li class="text-gray-600">No recent projects.</li>
-                {% endfor %}
-            </ul>
+                </div>
+                <div class="text-3xl font-bold mb-1" id="card-total-projects">{{ project_count }}</div>
+                <div class="text-blue-100 text-sm font-medium">Total Projects</div>
+            </div>
+
+            <!-- Completed Projects Card -->
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1" id="card-completed">{{ completed_count }}</div>
+                <div class="text-green-100 text-sm font-medium">Completed</div>
+            </div>
+
+            <!-- In Progress Card -->
+            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1" id="card-in-progress">{{ in_progress_count }}</div>
+                <div class="text-yellow-100 text-sm font-medium">In Progress</div>
+            </div>
+
+            <!-- Planned Projects Card -->
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1" id="card-planned">{{ planned_count }}</div>
+                <div class="text-purple-100 text-sm font-medium">Planned</div>
+            </div>
+
+            <!-- Delayed Projects Card -->
+            <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white transform transition-all duration-200 hover:scale-105 hover:shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold mb-1" id="card-delayed">{{ delayed_count }}</div>
+                <div class="text-red-100 text-sm font-medium">Delayed</div>
+            </div>
         </div>
+
+        <!-- Recent Projects and Quick Stats Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Recent Projects Section -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Recent Projects
+                    </h2>
+                    <a href="{% url 'project_list' %}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">View All →</a>
+                </div>
+                <div class="space-y-3">
+                    {% for project in recent_projects %}
+                    <a href="{% url 'monitoring_project_detail' project.id %}" class="block bg-gradient-to-r from-gray-50 to-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">{{ project.name }}</h3>
+                                <div class="flex items-center gap-3 text-sm text-gray-600">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        {{ project.barangay|default:"N/A" }}
+                                    </span>
+                                    <span class="text-gray-400">•</span>
+                                    <span>{{ project.created_at|date:"M d, Y" }}</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {% if project.status == 'completed' %}bg-green-100 text-green-700{% elif project.status == 'in_progress' or project.status == 'ongoing' %}bg-blue-100 text-blue-700{% elif project.status == 'planned' or project.status == 'pending' %}bg-yellow-100 text-yellow-700{% elif project.status == 'delayed' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+                                    {{ project.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>No recent projects</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Stats Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Quick Stats
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <span class="text-gray-700 font-medium">Completion Rate</span>
+                        <span class="text-lg font-bold text-blue-600">{{ completion_rate }}%</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <span class="text-gray-700 font-medium">Active Projects</span>
+                        <span class="text-lg font-bold text-green-600">{{ in_progress_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                        <span class="text-gray-700 font-medium">Pending</span>
+                        <span class="text-lg font-bold text-yellow-600">{{ planned_count }}</span>
+                    </div>
+                    {% if delayed_count > 0 %}
+                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                        <span class="text-gray-700 font-medium">Needs Attention</span>
+                        <span class="text-lg font-bold text-red-600">{{ delayed_count }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section Header -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Analytics & Insights</h2>
+            <p class="text-gray-600 text-sm">Comprehensive data visualization for strategic decision-making</p>
+        </div>
+
+        <!-- Charts Section: 6 Charts in 2 Columns -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Chart 1: Project Status Overview Chart -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-blue-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Project Status Overview</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="projectStatusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Collaborative Projects per Barangay -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-green-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Projects per Barangay</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="collabBarangayChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Collaborative Projects per Status -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-purple-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Projects per Status</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="collabStatusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Budget Utilization by Project -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-yellow-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Budget Utilization</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="budgetUtilizationChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 5: Cost Breakdown by Type -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-indigo-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Cost Breakdown by Type</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="costBreakdownChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 6: Monthly Spending Trend -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-pink-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Monthly Spending Trend</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="monthlySpendingChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Analytics Section -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Zoning Analytics</h2>
+            <p class="text-gray-600 text-sm">Strategic insights based on zoning classifications</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Chart 7: Projects by Zone Type -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-teal-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Projects by Zone Type</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="projectsByZoneChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 8: Zone Cost Distribution -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-cyan-100 rounded-lg p-2">
+                        <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">Cost Distribution by Zone</h3>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="zoneCostChart"></canvas>
+                </div>
+            </div>
+        </div>
+
     </div>
-
-    <!-- Charts Section: 6 Charts in 2 Columns -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <!-- Chart 1: Project Status Overview Chart -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Project Status Overview</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="projectStatusChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Chart 2: Collaborative Projects per Barangay -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Projects per Barangay</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="collabBarangayChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Chart 3: Collaborative Projects per Status -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Projects per Status</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="collabStatusChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Chart 4: Budget Utilization by Project -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Budget Utilization by Project</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="budgetUtilizationChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Chart 5: Cost Breakdown by Type -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Cost Breakdown by Type</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="costBreakdownChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Chart 6: Monthly Spending Trend -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Monthly Spending Trend</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="monthlySpendingChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Phase 6: Zone Analytics Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <!-- Chart 7: Projects by Zone Type -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Projects by Zone Type</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="projectsByZoneChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Chart 8: Zone Cost Distribution -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Cost Distribution by Zone</h2>
-            <div class="chart-container" style="position: relative; height:300px; width:100%">
-                <canvas id="zoneCostChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Any remaining content would go here -->
-
 </div>
 
 {{ collab_by_barangay|default:'{}'|json_script:"collab-barangay-data" }}

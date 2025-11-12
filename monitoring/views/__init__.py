@@ -87,6 +87,12 @@ def dashboard(request):
         # Sort keys for consistent chart order
         collab_by_barangay = {k: collab_by_barangay[k] for k in sorted(collab_by_barangay.keys())}
         collab_by_status = {k: collab_by_status[k] for k in sorted(collab_by_status.keys())}
+        
+        # Calculate completion rate
+        completion_rate = 0.0
+        if project_count > 0:
+            completion_rate = (completed_count / project_count) * 100
+        
         context = {
             'recent_projects': recent_projects,
             'project_count': project_count,
@@ -94,6 +100,7 @@ def dashboard(request):
             'in_progress_count': in_progress_count,
             'planned_count': planned_count,
             'delayed_count': delayed_count,
+            'completion_rate': round(completion_rate, 1),
             'collab_by_barangay': dict(collab_by_barangay),
             'collab_by_status': dict(collab_by_status),
         }
