@@ -3,31 +3,15 @@
 {% block content %}
 <div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-6 lg:px-8">
-        <!-- Header Section with Welcome and Quick Actions -->
+        <!-- Header Section with Welcome -->
         <div class="mb-8">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div class="mb-6">
                 <!-- Welcome Section -->
                 <div>
                     <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
                         Welcome back, <span class="text-blue-600">{{ user.get_full_name|default:user.username }}</span>!
                     </h1>
                     <p class="text-gray-600 text-sm lg:text-base">Here's an overview of your projects and city development progress</p>
-                </div>
-                
-                <!-- Quick Actions -->
-                <div class="flex gap-3">
-                    <a href="{% url 'project_list' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Add Project
-                    </a>
-                    <a href="{% url 'map_view' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-lg shadow-md border border-gray-200 transition-all duration-200 hover:shadow-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67"></path>
-                        </svg>
-                        City Overview
-                    </a>
                 </div>
             </div>
         </div>
