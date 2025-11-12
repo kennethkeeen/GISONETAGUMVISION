@@ -733,31 +733,31 @@ class SimpleChoropleth {
 
     createZoningPopup(name, barangay, stats, zoneInfo = null, viewType = 'projects') {
         let content = `
-            <div style="min-width: 250px;">
-                <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">${name}</h3>
+            <div style="min-width: 280px; padding: 4px;">
+                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; font-weight: 700; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">${name}</h3>
         `;
         
         // Phase 5: Add zone type information if available
         if (viewType === 'zone_type' && zoneInfo) {
             content += `
-                <div style="border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px;">
-                    <div style="font-weight: bold; margin-bottom: 5px; color: #555;">Zone Classification</div>
+                <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Zone Classification</div>
                     ${zoneInfo.dominant_zone ? `
-                        <div style="margin: 3px 0; font-size: 12px;">
-                            <strong>Dominant Zone:</strong> ${zoneInfo.dominant_zone} - ${this.getZoneTypeDisplayName(zoneInfo.dominant_zone)}
+                        <div style="margin: 6px 0; font-size: 13px; line-height: 1.6;">
+                            <strong style="color: #4b5563;">Dominant Zone:</strong> <span style="color: #1f2937;">${zoneInfo.dominant_zone} - ${this.getZoneTypeDisplayName(zoneInfo.dominant_zone)}</span>
                         </div>
                     ` : ''}
                     ${zoneInfo.zone_types && zoneInfo.zone_types.length > 0 ? `
-                        <div style="margin: 3px 0; font-size: 12px;">
-                            <strong>Zone Types:</strong> ${zoneInfo.zone_types.join(', ')}
+                        <div style="margin: 6px 0; font-size: 13px; line-height: 1.6;">
+                            <strong style="color: #4b5563;">Zone Types:</strong> <span style="color: #1f2937;">${zoneInfo.zone_types.join(', ')}</span>
                         </div>
                     ` : ''}
                     ${zoneInfo.zone_counts && Object.keys(zoneInfo.zone_counts).length > 0 ? `
-                        <div style="margin: 3px 0; font-size: 12px;">
-                            <strong>Projects by Zone:</strong>
-                            <ul style="margin: 3px 0; padding-left: 20px; font-size: 11px;">
+                        <div style="margin: 6px 0; font-size: 13px; line-height: 1.6;">
+                            <strong style="color: #4b5563;">Projects by Zone:</strong>
+                            <ul style="margin: 6px 0; padding-left: 24px; font-size: 12px; line-height: 1.8;">
                                 ${Object.entries(zoneInfo.zone_counts).map(([zone, count]) => 
-                                    `<li>${zone}: ${count} project${count !== 1 ? 's' : ''}</li>`
+                                    `<li style="color: #1f2937;">${zone}: ${count} project${count !== 1 ? 's' : ''}</li>`
                                 ).join('')}
                             </ul>
                         </div>
@@ -769,42 +769,42 @@ class SimpleChoropleth {
         // Add zoning information if available
         if (barangay && viewType !== 'zone_type') {
             content += `
-                <div style="border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px;">
-                    <div style="font-weight: bold; margin-bottom: 5px; color: #555;">Zoning Information</div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Classification:</strong> ${barangay.barangay_class ? barangay.barangay_class.charAt(0).toUpperCase() + barangay.barangay_class.slice(1) : 'N/A'}
+                <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 16px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Zoning Information</div>
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Classification:</strong> <span style="color: #1f2937;">${barangay.barangay_class ? barangay.barangay_class.charAt(0).toUpperCase() + barangay.barangay_class.slice(1) : 'N/A'}</span>
                     </div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Economic Type:</strong> ${barangay.economic_class ? barangay.economic_class.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Economic Type:</strong> <span style="color: #1f2937;">${barangay.economic_class ? barangay.economic_class.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}</span>
                     </div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Elevation:</strong> ${barangay.elevation_type ? barangay.elevation_type.charAt(0).toUpperCase() + barangay.elevation_type.slice(1) : 'N/A'}
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Elevation:</strong> <span style="color: #1f2937;">${barangay.elevation_type ? barangay.elevation_type.charAt(0).toUpperCase() + barangay.elevation_type.slice(1) : 'N/A'}</span>
                     </div>
-                    ${barangay.population ? `<div style="margin: 3px 0; font-size: 12px;"><strong>Population:</strong> ${barangay.population.toLocaleString()}</div>` : ''}
-                    ${barangay.density ? `<div style="margin: 3px 0; font-size: 12px;"><strong>Density:</strong> ${barangay.density.toLocaleString()} /km²</div>` : ''}
-                    ${barangay.growth_rate ? `<div style="margin: 3px 0; font-size: 12px;"><strong>Growth Rate:</strong> ${barangay.growth_rate}%</div>` : ''}
+                    ${barangay.population ? `<div style="margin: 8px 0; font-size: 13px; line-height: 1.6;"><strong style="color: #4b5563;">Population:</strong> <span style="color: #1f2937;">${barangay.population.toLocaleString()}</span></div>` : ''}
+                    ${barangay.density ? `<div style="margin: 8px 0; font-size: 13px; line-height: 1.6;"><strong style="color: #4b5563;">Density:</strong> <span style="color: #1f2937;">${barangay.density.toLocaleString()} /km²</span></div>` : ''}
+                    ${barangay.growth_rate ? `<div style="margin: 8px 0; font-size: 13px; line-height: 1.6;"><strong style="color: #4b5563;">Growth Rate:</strong> <span style="color: #1f2937;">${barangay.growth_rate}%</span></div>` : ''}
                 </div>
             `;
         }
         
         // Add project statistics
         content += `
-                <div style="margin-top: 8px;">
-                    <div style="font-weight: bold; margin-bottom: 5px; color: #555;">Project Statistics</div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Total Projects:</strong> ${stats.totalProjects}
+                <div style="margin-top: 12px;">
+                    <div style="font-weight: 600; margin-bottom: 10px; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Project Statistics</div>
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Total Projects:</strong> <span style="color: #1f2937;">${stats.totalProjects}</span>
                     </div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Total Cost:</strong> ${this.formatCurrency(stats.totalCost)}
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Total Cost:</strong> <span style="color: #1f2937;">${this.formatCurrency(stats.totalCost)}</span>
                     </div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Completed:</strong> ${stats.completedProjects}
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Completed:</strong> <span style="color: #1f2937;">${stats.completedProjects}</span>
                     </div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Ongoing:</strong> ${stats.ongoingProjects}
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Ongoing:</strong> <span style="color: #1f2937;">${stats.ongoingProjects}</span>
                     </div>
-                    <div style="margin: 3px 0; font-size: 12px;">
-                        <strong>Planned:</strong> ${stats.plannedProjects}
+                    <div style="margin: 8px 0; font-size: 13px; line-height: 1.6;">
+                        <strong style="color: #4b5563;">Planned:</strong> <span style="color: #1f2937;">${stats.plannedProjects}</span>
                     </div>
                 </div>
             </div>
