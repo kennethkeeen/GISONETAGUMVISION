@@ -121,7 +121,9 @@
                         {% elif project.status == 'planned' or project.status == 'pending' %}bg-yellow-100 text-yellow-700
                         {% elif project.status == 'delayed' %}bg-red-100 text-red-700
                         {% else %}bg-gray-100 text-gray-700{% endif %}">
-                        {{ project.status|title|replace:"_":" " }}
+                        {% if project.status == 'in_progress' %}In Progress
+                        {% elif project.status == 'ongoing' %}Ongoing
+                        {% else %}{{ project.status|title }}{% endif %}
                     </span>
                 </div>
                 <div class="flex flex-col">
