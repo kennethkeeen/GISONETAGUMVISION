@@ -360,7 +360,7 @@ def project_list(request):
     # Order by created_at descending
     projects = projects.order_by('-created_at')
     
-    paginator = Paginator(projects, 10)  # Show 10 projects per page
+    paginator = Paginator(projects, 15)  # Show 15 projects per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     form = ProjectForm()
