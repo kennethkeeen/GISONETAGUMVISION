@@ -89,6 +89,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'projeng.context_processors.notifications_context',
+                'gistagum.context_processors.login_success_modal',
             ],
         },
     },

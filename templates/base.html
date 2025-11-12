@@ -134,7 +134,7 @@
         <!-- Main Content -->
         <main class="flex-1 h-full bg-gray-100 text-gray-900 ml-64">
             <!-- Login Success Modal -->
-            {% if request.session.show_login_success %}
+            {% if show_login_success_modal %}
             <div id="login-success-modal" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-50">
                 <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all animate-modal-scale">
                     <div class="flex flex-col items-center text-center">
@@ -241,7 +241,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Login Success Modal
-  {% if request.session.show_login_success %}
+  {% if show_login_success_modal %}
   const loginSuccessModal = document.getElementById('login-success-modal');
   const closeLoginSuccessBtn = document.getElementById('close-login-success-modal');
   
@@ -249,17 +249,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show modal immediately
     loginSuccessModal.classList.remove('hidden');
     
-    // Close modal and clear session flag
+    // Close modal (session flag already cleared by context processor)
     function closeLoginSuccessModal() {
       loginSuccessModal.classList.add('hidden');
-      // Clear the session flag via AJAX
-      fetch('/accounts/clear-login-success/', {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken'),
-          'Content-Type': 'application/json',
-        },
-      }).catch(err => console.error('Error clearing login success flag:', err));
     }
     
     if (closeLoginSuccessBtn) {
