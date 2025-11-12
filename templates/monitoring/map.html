@@ -123,75 +123,127 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 </style>
-<div class="flex flex-col items-center w-full px-4 py-8 md:px-8 md:py-12">
-    <div class="w-full max-w-6xl bg-white rounded-2xl shadow-lg">
-        <div class="p-4 md:p-8">
-            <!-- Combined View Controls -->
-            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Map View Options</h3>
-                
-                <!-- Zoning Overlay Toggle -->
-                <div class="mb-4">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" id="zoning-overlay-toggle" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <span class="text-base font-medium text-gray-700">Show Zoning Overlay</span>
-                    </label>
-                    <p class="text-sm text-gray-500 mt-1 ml-8">Display zoning information as colored overlay on the map</p>
+<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">City Overview</h1>
+            <p class="text-gray-600 text-sm lg:text-base">Interactive map view of all projects and zoning information across Tagum City</p>
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <!-- Controls Panel -->
+            <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                <!-- Zoning Controls Section -->
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-gray-800">Zoning & Overlay Options</h3>
+                    </div>
+                    
+                    <!-- Zoning Overlay Toggle -->
+                    <div class="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" id="zoning-overlay-toggle" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                            <div class="flex-1">
+                                <span class="text-base font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">Show Zoning Overlay</span>
+                                <p class="text-sm text-gray-500 mt-1">Display zoning information as colored overlay on the map</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <!-- Zoning View Type Selector (Visible when overlay is enabled) -->
+                    <div id="zoning-view-controls" class="hidden bg-white rounded-lg p-4 border border-gray-200">
+                        <label class="block text-sm font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                            </svg>
+                            Zoning View Type
+                        </label>
+                        <select id="zoning-view-selector" class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-base font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-300">
+                            <option value="projects">Projects (Default)</option>
+                            <option value="urban_rural">Urban / Rural</option>
+                            <option value="economic">Economic Classification</option>
+                            <option value="elevation">Elevation Type</option>
+                            <option value="zone_type">Zone Type (R-1, R-2, C-1, etc.)</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <!-- Zoning View Type Selector (Visible when overlay is enabled) -->
-                <div id="zoning-view-controls" class="hidden">
-                    <label class="block text-sm font-medium mb-2 text-gray-700">Zoning View Type</label>
-                    <select id="zoning-view-selector" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="projects">Projects (Default)</option>
-                        <option value="urban_rural">Urban / Rural</option>
-                        <option value="economic">Economic Classification</option>
-                        <option value="elevation">Elevation Type</option>
-                        <option value="zone_type">Zone Type (R-1, R-2, C-1, etc.)</option>
-                    </select>
+                <!-- Filter Section -->
+                <div id="filter-section">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-gray-800">Filters</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Date Range -->
+                        <div class="lg:col-span-2 grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Start Date</label>
+                                <input id="start-date-filter" type="date" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all hover:border-gray-300" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1.5">End Date</label>
+                                <input id="end-date-filter" type="date" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all hover:border-gray-300" />
+                            </div>
+                        </div>
+                        
+                        <!-- Barangay Filter -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Barangay</label>
+                            <select id="barangay-filter" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
+                                <option value="">All Barangays</option>
+                                <option value="Apokon">Apokon</option>
+                                <option value="Bincungan">Bincungan</option>
+                                <option value="Busaon">Busaon</option>
+                                <option value="Canocotan">Canocotan</option>
+                                <option value="Cuambogan">Cuambogan</option>
+                                <option value="La Filipina">La Filipina</option>
+                                <option value="Liboganon">Liboganon</option>
+                                <option value="Madaum">Madaum</option>
+                                <option value="Magdum">Magdum</option>
+                                <option value="Magugpo North">Magugpo North</option>
+                                <option value="Magugpo South">Magugpo South</option>
+                                <option value="Magugpo East">Magugpo East</option>
+                                <option value="Magugpo West">Magugpo West</option>
+                                <option value="Magugpo Poblacion">Magugpo Poblacion</option>
+                                <option value="Mankilam">Mankilam</option>
+                                <option value="New Balamban">New Balamban</option>
+                                <option value="Nueva Fuerza">Nueva Fuerza</option>
+                                <option value="Pagsabangan">Pagsabangan</option>
+                                <option value="Pandapan">Pandapan</option>
+                                <option value="San Agustin">San Agustin</option>
+                                <option value="San Isidro">San Isidro</option>
+                                <option value="San Miguel">San Miguel</option>
+                                <option value="Visayan Village">Visayan Village</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Status Filters -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
+                            <div class="flex gap-2">
+                                <button id="btn-completed" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-all text-sm">Completed</button>
+                                <button id="btn-ongoing" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all text-sm">Ongoing</button>
+                                <button id="btn-planned" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-300 transition-all text-sm">Planned</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Filter Section - Centered and Adjusted Size (Hidden in Choropleth View) -->
-            <div id="filter-section" class="flex flex-col lg:flex-row gap-4 mb-6 justify-center items-center">
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <input id="start-date-filter" type="date" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48 text-base" placeholder="Start Date" />
-                    <input id="end-date-filter" type="date" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48 text-base" placeholder="End Date" />
-                </div>
-                <select id="barangay-filter" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-56 text-base">
-                    <option value="">All Barangays</option>
-                    <option value="Apokon">Apokon</option>
-                    <option value="Bincungan">Bincungan</option>
-                    <option value="Busaon">Busaon</option>
-                    <option value="Canocotan">Canocotan</option>
-                    <option value="Cuambogan">Cuambogan</option>
-                    <option value="La Filipina">La Filipina</option>
-                    <option value="Liboganon">Liboganon</option>
-                    <option value="Madaum">Madaum</option>
-                    <option value="Magdum">Magdum</option>
-                    <option value="Magugpo North">Magugpo North</option>
-                    <option value="Magugpo South">Magugpo South</option>
-                    <option value="Magugpo East">Magugpo East</option>
-                    <option value="Magugpo West">Magugpo West</option>
-                    <option value="Magugpo Poblacion">Magugpo Poblacion</option>
-                    <option value="Mankilam">Mankilam</option>
-                    <option value="New Balamban">New Balamban</option>
-                    <option value="Nueva Fuerza">Nueva Fuerza</option>
-                    <option value="Pagsabangan">Pagsabangan</option>
-                    <option value="Pandapan">Pandapan</option>
-                    <option value="San Agustin">San Agustin</option>
-                    <option value="San Isidro">San Isidro</option>
-                    <option value="San Miguel">San Miguel</option>
-                    <option value="Visayan Village">Visayan Village</option>
-                </select>
-                <div class="flex gap-3 w-full sm:w-auto">
-                    <button id="btn-completed" class="px-5 py-3 rounded-lg font-semibold border border-gray-300 bg-gray-50 text-green-700 hover:bg-green-100 transition text-base">Completed</button>
-                    <button id="btn-ongoing" class="px-5 py-3 rounded-lg font-semibold border border-gray-300 bg-gray-50 text-blue-700 hover:bg-blue-100 transition text-base">Ongoing</button>
-                    <button id="btn-planned" class="px-5 py-3 rounded-lg font-semibold border border-gray-300 bg-gray-50 text-yellow-800 hover:bg-yellow-200 transition text-base">Planned</button>
-                </div>
+            <!-- Map Container -->
+            <div class="relative">
+                <div id="map" style="height: 70vh; width: 100%; z-index: 1; position: relative; background-color: #f0f0f0;"></div>
             </div>
         </div>
-        <div id="map" style="height: 60vh; width: 100%; z-index: 1; position: relative; background-color: #f0f0f0;"></div>
     </div>
 </div>
 {% endblock %}
