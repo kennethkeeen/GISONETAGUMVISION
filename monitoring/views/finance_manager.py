@@ -406,10 +406,12 @@ def finance_project_detail(request, project_id):
             
             # Find the most recent Budget Review Request notification for this project
             # that was sent to any Finance Manager
+            from django.db.models import Q
             notifications = Notification.objects.filter(
                 recipient__in=finance_managers,
-                message__icontains='Budget Review Request',
-                message__icontains=project.name
+                message__icontains='Budget Review Request'
+            ).filter(
+                Q(message__icontains=project.name) | Q(message__icontains=project.prn) if project.prn else Q(message__icontains=project.name)
             ).order_by('-created_at')
             
             if notifications.exists():
