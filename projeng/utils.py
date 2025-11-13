@@ -536,7 +536,10 @@ def get_project_from_notification(notification_message):
                         return project.id
     
     # Pattern 9: Budget Concern notifications - "📋 Budget Concern: ProjectName (PRN: ...)"
-    match = re.search(r"📋\s*Budget Concern:\s*([^(]+)\s*\(PRN:\s*([^)]+)\)", notification_message)
+    # This pattern handles both formats:
+    # - "📋 Budget Concern: ProjectName (PRN: ...) - message..."
+    # - "📋 Budget Concern: ProjectName (PRN: ...) is at X%..."
+    match = re.search(r"📋\s*Budget Concern:\s*([^(]+?)\s*\(PRN:\s*([^)]+)\)", notification_message)
     if match:
         project_text = match.group(1).strip()
         prn = match.group(2).strip()
