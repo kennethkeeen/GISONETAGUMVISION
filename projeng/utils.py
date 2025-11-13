@@ -598,17 +598,17 @@ def get_project_from_notification(notification_message):
             pass
     
     # Pattern 10: Budget Review Request - "💰 Budget Review Request: ProjectName (PRN: ...)"
-    # Handle both formats:
+    # Handle multiple formats:
     # 1. "💰 Budget Review Request: ProjectName (PRN: ...) (Utilization: ...)"
-    # 2. "💰 Budget Review Request: ProjectName (PRN: ...)"
-    # Extract PRN from anywhere in the message
-    match = re.search(r"💰\s*Budget Review Request:\s*([^(]+?)\s*\(PRN:\s*([^)]+)\)", notification_message)
-    if match:
-        project_text = match.group(1).strip()
-        prn = match.group(2).strip()
+    # 2. "Budget Review Request: ProjectName (PRN: ...) (Utilization: ...)" (without emoji)
+    # 3. "💰 Budget Review Request: ProjectName (PRN: ...)"
+    # First, try to extract PRN from anywhere in the message (most flexible)
+    prn_match = re.search(r"\(PRN:\s*([^)]+)\)", notification_message, re.IGNORECASE)
+    if prn_match and 'Budget Review Request' in notification_message:
+        prn = prn_match.group(1).strip()
         prn_normalized = re.sub(r'\s+', ' ', prn).strip()
         
-        logger.info(f"Budget Review Request: Extracted PRN '{prn_normalized}' from project text '{project_text}'")
+        logger.info(f"Budget Review Request: Extracted PRN '{prn_normalized}' from message")
         
         # Try both models
         for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
@@ -631,11 +631,26 @@ def get_project_from_notification(notification_message):
                 if project:
                     logger.info(f"[{model_name}] Found project by PRN (Budget Review Request, multiple): {project.id} - {project.name}")
                     return project.id
+        
+        logger.warning(f"Budget Review Request: Could not find project with PRN '{prn_normalized}'")
+    
+    # Fallback: Try to extract project name from the beginning of the message
+    name_match = re.search(r"(?:💰\s*)?Budget Review Request:\s*([^(]+?)(?:\s*\(PRN:|\s*\(Utilization:)", notification_message, re.IGNORECASE)
+    if name_match and 'Budget Review Request' in notification_message:
+        project_name = name_match.group(1).strip()
+        project_name = re.sub(r'\s+', ' ', project_name).strip()
+        
+        logger.info(f"Budget Review Request: Trying to find project by name '{project_name}'")
+        
+        # Try both models
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
             
-            # Fallback to project name (extract name before any parentheses)
-            project_name = project_text.strip()
-            # Remove any trailing spaces or special characters
-            project_name = re.sub(r'\s+', ' ', project_name).strip()
             try:
                 project = ProjectModel.objects.get(name__iexact=project_name)
                 logger.info(f"[{model_name}] Found project by name (Budget Review Request): {project.id} - {project.name}")
@@ -648,8 +663,6 @@ def get_project_from_notification(notification_message):
                 if project:
                     logger.info(f"[{model_name}] Found project by name (Budget Review Request, multiple): {project.id} - {project.name}")
                     return project.id
-        
-        logger.warning(f"Budget Review Request: Could not find project with PRN '{prn_normalized}' or name '{project_name}'")
     
     # Pattern 11: Generic budget notification - "ProjectName (PRN: ...) is at X% of budget"
     match = re.search(r"([^(]+)\s*\(PRN:\s*([^)]+)\)\s+is\s+(?:at|OVER)\s+.*budget", notification_message, re.IGNORECASE)
