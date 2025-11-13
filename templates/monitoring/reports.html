@@ -1,809 +1,458 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% block content %}
-<div class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
-  <div class="container mx-auto px-4 py-8 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Project Reports</h1>
-          <p class="text-gray-600 text-sm lg:text-base mt-1">Comprehensive project analytics and reporting dashboard</p>
-        </div>
-      </div>
-    </div>
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Project Reports</h1>
 
-    <!-- Filters Section -->
-    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-8 no-print backdrop-blur-sm">
-      <!-- Date Range Presets -->
-      <div class="mb-5 pb-5 border-b border-gray-200">
-        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Quick Date Range</label>
-        <div class="flex flex-wrap gap-2">
-          <button onclick="setDateRange('7days')" class="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 text-gray-700 hover:text-blue-700 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md border border-gray-200 hover:border-blue-300">Last 7 Days</button>
-          <button onclick="setDateRange('30days')" class="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 rounded-xl shadow-md border-2 border-blue-300">Last 30 Days</button>
-          <button onclick="setDateRange('month')" class="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 text-gray-700 hover:text-blue-700 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md border border-gray-200 hover:border-blue-300">This Month</button>
-          <button onclick="setDateRange('year')" class="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 text-gray-700 hover:text-blue-700 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md border border-gray-200 hover:border-blue-300">This Year</button>
-          <button onclick="setDateRange('all')" class="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 text-gray-700 hover:text-blue-700 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md border border-gray-200 hover:border-blue-300">All Time</button>
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold text-gray-800">All Projects for Reporting</h2>
+            {# Controls #}
+            <div class="flex flex-row gap-4 items-center">
+                <button id="export-button" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-green-500 focus:border-green-500">
+                    Export
+                </button>
+            </div>
         </div>
-      </div>
-      <div class="flex flex-col lg:flex-row lg:items-end gap-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 flex-1">
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Start Date</label>
-            <input id="filter-start-date" type="date" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all hover:border-gray-300">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">End Date</label>
-            <input id="filter-end-date" type="date" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all hover:border-gray-300">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Barangay</label>
-            <select id="filter-barangay" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
-              <option>All Barangays</option>
-              <option>Apokon</option>
-              <option>Bincungan</option>
-              <option>Busaon</option>
-              <option>Canocotan</option>
-              <option>Cuambogan</option>
-              <option>La Filipina</option>
-              <option>Liboganon</option>
-              <option>Madaum</option>
-              <option>Magdum</option>
-              <option>Magugpo North</option>
-              <option>Magugpo South</option>
-              <option>Magugpo East</option>
-              <option>Magugpo West</option>
-              <option>Magugpo Poblacion</option>
-              <option>Mankilam</option>
-              <option>New Balamban</option>
-              <option>Nueva Fuerza</option>
-              <option>Pagsabangan</option>
-              <option>Pandapan</option>
-              <option>San Agustin</option>
-              <option>San Isidro</option>
-              <option>San Miguel</option>
-              <option>Visayan Village</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
-            <select id="filter-status" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
-              <option>All Status</option>
-              <option>Completed</option>
-              <option>Ongoing</option>
-              <option>Planned</option>
-              <option>Delayed</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Search</label>
-            <input id="filter-search" type="text" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all hover:border-gray-300" placeholder="Search projects...">
-          </div>
-        </div>
-        <div class="flex gap-3">
-          <button id="view-project-list-btn" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-base font-semibold shadow-md transition-all duration-200 hover:shadow-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-            </svg>
-            View Project List
-            <span id="project-count-badge" class="bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-xs font-bold">0</span>
-          </button>
-          <button onclick="clearAllFilters()" class="inline-flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-5 py-2.5 rounded-lg text-base font-semibold shadow-md transition-all duration-200 hover:shadow-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-            Clear Filters
-          </button>
-          <div class="relative">
-            <button id="export-btn" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-base font-semibold shadow-md transition-all duration-200 hover:shadow-lg">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              Export
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </button>
-          <div id="export-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden">
-            <a href="{% url 'export_reports_pdf' %}" target="_blank" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                </svg>
-                Export to PDF
-              </div>
-            </a>
-            <a href="{% url 'export_reports_excel' %}" target="_blank" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Export to Excel
-              </div>
-            </a>
-            <a href="{% url 'export_reports_csv' %}" target="_blank" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Export to CSV
-              </div>
-            </a>
-            <button onclick="window.print()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                </svg>
-                Print Report
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Main Content: Summary, Charts -->
-    <div class="flex-1 flex flex-col min-h-0">
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div id="card-total" class="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-blue-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-3xl font-extrabold mb-2 drop-shadow-lg">0</div>
-          <div class="text-blue-100 text-xs font-semibold uppercase tracking-wide">Total Projects</div>
-        </div>
-        <div id="card-completed" class="bg-gradient-to-br from-emerald-600 via-green-500 to-teal-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-green-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-3xl font-extrabold mb-2 drop-shadow-lg">0</div>
-          <div class="text-green-100 text-xs font-semibold uppercase tracking-wide">Completed</div>
-        </div>
-        <div id="card-ongoing" class="bg-gradient-to-br from-amber-600 via-yellow-500 to-orange-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-yellow-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-3xl font-extrabold mb-2 drop-shadow-lg">0</div>
-          <div class="text-yellow-100 text-xs font-semibold uppercase tracking-wide">Ongoing</div>
-        </div>
-        <div id="card-planned" class="bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-purple-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-3xl font-extrabold mb-2 drop-shadow-lg">0</div>
-          <div class="text-purple-100 text-xs font-semibold uppercase tracking-wide">Planned</div>
-        </div>
-        <div id="card-delayed" class="bg-gradient-to-br from-rose-600 via-red-500 to-pink-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-red-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-3xl font-extrabold mb-2 drop-shadow-lg">0</div>
-          <div class="text-red-100 text-xs font-semibold uppercase tracking-wide">Delayed</div>
-        </div>
-      </div>
-
-      <!-- Budget Metrics Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <div class="bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-indigo-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-2xl lg:text-3xl font-extrabold mb-2 drop-shadow-lg">₱{{ total_budget|floatformat:0|intcomma }}</div>
-          <div class="text-indigo-100 text-xs font-semibold uppercase tracking-wide">Total Budget</div>
-        </div>
-        <div class="bg-gradient-to-br from-amber-600 via-orange-500 to-red-500 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-orange-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-2xl lg:text-3xl font-extrabold mb-2 drop-shadow-lg">₱{{ total_spent|floatformat:0|intcomma }}</div>
-          <div class="text-orange-100 text-xs font-semibold uppercase tracking-wide">Total Spent</div>
-        </div>
-        <div class="bg-gradient-to-br from-cyan-600 via-teal-500 to-emerald-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-teal-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-2xl lg:text-3xl font-extrabold mb-2 drop-shadow-lg">₱{{ remaining_budget|floatformat:0|intcomma }}</div>
-          <div class="text-teal-100 text-xs font-semibold uppercase tracking-wide">Remaining Budget</div>
-        </div>
-        <div class="bg-gradient-to-br from-rose-600 via-pink-500 to-fuchsia-600 rounded-2xl shadow-xl p-5 text-white transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-pink-400/20">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-white/25 backdrop-blur-sm rounded-xl p-2.5 shadow-lg">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="text-2xl lg:text-3xl font-extrabold mb-2 drop-shadow-lg">{{ budget_utilization|floatformat:1 }}%</div>
-          <div class="text-pink-100 text-xs font-semibold uppercase tracking-wide">Budget Utilization</div>
-        </div>
-      </div>
-
-      <!-- Charts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl transition-shadow duration-300">
-          <div class="flex items-center gap-3 mb-5 pb-4 border-b border-gray-200">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-              </svg>
-            </div>
-            <h2 class="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Projects by Status</h2>
-          </div>
-          <canvas id="barChart" height="120"></canvas>
-        </div>
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl transition-shadow duration-300">
-          <div class="flex items-center gap-3 mb-5 pb-4 border-b border-gray-200">
-            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-              </svg>
-            </div>
-            <h2 class="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Projects by Barangay</h2>
-          </div>
-          <canvas id="pieChart" height="120"></canvas>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Project List Modal -->
-  <div id="project-list-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl mx-4 max-h-[90vh] flex flex-col relative">
-      <!-- Modal Header -->
-      <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-white">Project List</h2>
-        <div class="flex items-center gap-3">
-          <div class="relative">
-            <button id="modal-export-btn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              Export
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </button>
-            <div id="modal-export-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 overflow-hidden">
-              <a href="{% url 'export_reports_pdf' %}" id="modal-export-pdf" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                  </svg>
-                  Export as PDF
+        {# Add Filter Form Here #}
+        <form method="get" id="filter-form" class="mb-4">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div>
+                    <label for="barangay-filter" class="block text-sm font-medium text-gray-700">Barangay:</label>
+                    <select id="barangay-filter" name="barangay" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">All Barangays</option>
+                        <option value="Apokon">Apokon</option>
+                        <option value="Bincungan">Bincungan</option>
+                        <option value="Busaon">Busaon</option>
+                        <option value="Canocotan">Canocotan</option>
+                        <option value="Cuambogan">Cuambogan</option>
+                        <option value="La Filipina">La Filipina</option>
+                        <option value="Liboganon">Liboganon</option>
+                        <option value="Madaum">Madaum</option>
+                        <option value="Magdum">Magdum</option>
+                        <option value="Magugpo East">Magugpo East</option>
+                        <option value="Magugpo North">Magugpo North</option>
+                        <option value="Magugpo Poblacion">Magugpo Poblacion</option>
+                        <option value="Magugpo South">Magugpo South</option>
+                        <option value="Magugpo West">Magugpo West</option>
+                        <option value="Mankilam">Mankilam</option>
+                        <option value="New Balamban">New Balamban</option>
+                        <option value="Nueva Fuerza">Nueva Fuerza</option>
+                        <option value="Pagsabangan">Pagsabangan</option>
+                        <option value="Pandapan">Pandapan</option>
+                        <option value="San Agustin">San Agustin</option>
+                        <option value="San Isidro">San Isidro</option>
+                        <option value="San Miguel">San Miguel</option>
+                        <option value="Visayan Village">Visayan Village</option>
+                    </select>
                 </div>
-              </a>
-              <a href="{% url 'export_reports_csv' %}" id="modal-export-csv" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  Export as CSV
+                <div>
+                    <label for="status-filter" class="block text-sm font-medium text-gray-700">Status:</label>
+                    <select id="status-filter" name="status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">All Statuses</option>
+                        <option value="completed">Completed</option>
+                        <option value="in_progress">Ongoing</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="planned">Planned</option>
+                        <option value="pending">Pending</option>
+                        <option value="delayed">Delayed</option>
+                    </select>
                 </div>
-              </a>
-              <a href="{% url 'export_reports_excel' %}" id="modal-export-excel" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                  </svg>
-                  Export as Excel
+                <div>
+                    <label for="start-date-filter" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                    <input type="date" id="start-date-filter" name="start_date" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                 </div>
-              </a>
+                <div>
+                    <label for="end-date-filter" class="block text-sm font-medium text-gray-700">End Date:</label>
+                    <input type="date" id="end-date-filter" name="end_date" class="mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                </div>
+                <div class="flex items-end">
+                    <button type="button" id="clear-filters-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:ring-gray-500 focus:border-gray-500">Clear Filters</button>
+                </div>
             </div>
-          </div>
-          <button id="close-modal-btn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all font-bold text-xl">&times;</button>
-        </div>
-      </div>
-      <!-- Modal Body -->
-      <div class="flex-1 overflow-auto p-6">
-        <div class="overflow-x-auto">
-          <table id="modal-report-table" class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50 sticky top-0">
-              <tr>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">#</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">PRN#</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Name of Project</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Project Description</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Location</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Project Cost</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Source of Funds</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Date Started</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Date Ended</th>
-                <th class="px-4 py-3 text-left font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">Status</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <!-- Table rows will be rendered by JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <!-- Modal Footer with Pagination -->
-      <div class="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200">
-        <div class="flex justify-between items-center">
-          <div class="text-sm text-gray-600">
-            Showing <span id="modal-page-info" class="font-semibold">0</span> of <span id="modal-total-info" class="font-semibold">0</span> projects
-          </div>
-          <nav id="modal-pagination" class="flex space-x-2"></nav>
-        </div>
-      </div>
-    </div>
-  </div>
+        </form>
 
-  <!-- Engineer Projects Modal (copied from base.html for reports page compatibility) -->
-  <!-- REMOVED: Modal HTML now only in base.html -->
+        {# Table of projects #}
+        <div class="overflow-x-auto bg-white rounded-xl shadow-lg">
+            <table id="projects-table" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRN#</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name of Project</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Description</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Cost</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source of Funds</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Started</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Ended</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="projects-table-body">
+                    {# Table rows will be populated by JavaScript #}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<!-- Export Modal -->
+<div id="exportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full" style="z-index: 1000;">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-screen-xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Export Project List</h3>
+                {# Group dropdown and close button #}
+                <div class="flex items-center">
+                    {# Add Barangay Dropdown Here #}
+                    <div class="relative inline-block text-left mr-4">
+                        <div>
+                            <label for="modal-barangay-filter" class="sr-only">Barangay:</label>
+                            <select id="modal-barangay-filter" name="modal_barangay" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
+                                <option value="">All Barangays</option>
+                                <option value="Apokon">Apokon</option>
+                                <option value="Bincungan">Bincungan</option>
+                                <option value="Busaon">Busaon</option>
+                                <option value="Canocotan">Canocotan</option>
+                                <option value="Cuambogan">Cuambogan</option>
+                                <option value="La Filipina">La Filipina</option>
+                                <option value="Liboganon">Liboganon</option>
+                                <option value="Madaum">Madaum</option>
+                                <option value="Magdum">Magdum</option>
+                                <option value="Magugpo East">Magugpo East</option>
+                                <option value="Magugpo North">Magugpo North</option>
+                                <option value="Magugpo Poblacion">Magugpo Poblacion</option>
+                                <option value="Magugpo South">Magugpo South</option>
+                                <option value="Magugpo West">Magugpo West</option>
+                                <option value="Mankilam">Mankilam</option>
+                                <option value="New Balamban">New Balamban</option>
+                                <option value="Nueva Fuerza">Nueva Fuerza</option>
+                                <option value="Pagsabangan">Pagsabangan</option>
+                                <option value="Pandapan">Pandapan</option>
+                                <option value="San Agustin">San Agustin</option>
+                                <option value="San Isidro">San Isidro</option>
+                                <option value="San Miguel">San Miguel</option>
+                                <option value="Visayan Village">Visayan Village</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    {# Export As Dropdown #}
+                    <div class="relative inline-block text-left mr-4">
+                        <div>
+                            <button type="button" id="export-dropdown-button" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500" aria-haspopup="true" aria-expanded="true">
+                                Export As
+                                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div id="export-dropdown-menu" class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="export-dropdown-button">
+                            <div class="py-1" role="none">
+                                <a href="{% url 'export_reports_csv' %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" id="export-csv">Export CSV</a>
+                                <a href="{% url 'export_reports_excel' %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" id="export-excel">Export Excel</a>
+                                <a href="{% url 'export_reports_pdf' %}" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem" id="export-pdf">Export PDF</a>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRN#</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name of Project</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Cost</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source of Funds</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Started</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Ended</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-projects-table-body" class="bg-white divide-y divide-gray-200">
+                        {# Project rows will be added here by JavaScript #}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ projects_json|json_script:"projects-data" }}
+
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
-
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Declare filteredProjects globally
-let filteredProjects = [];
+document.addEventListener('DOMContentLoaded', function() {
+    // Get project data directly from the template context
+    const projects = JSON.parse(document.getElementById('projects-data').textContent);
+    let filteredProjects = projects;
 
-// Example data, replace with Django context variables
-const statusLabels = {{ status_labels|safe }};
-const statusCounts = {{ status_counts|safe }};
-const barangayLabels = {{ barangay_labels|safe }};
-const barangayCounts = {{ barangay_counts|safe }};
-const allProjects = JSON.parse('{{ projects_json|escapejs }}');
+    // Filter elements
+    const filterForm = document.getElementById('filter-form');
+    const barangayFilter = document.getElementById('barangay-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const startDateFilter = document.getElementById('start-date-filter');
+    const endDateFilter = document.getElementById('end-date-filter');
+    const clearFiltersBtn = document.getElementById('clear-filters-btn');
+    const projectsTableBody = document.getElementById('projects-table-body');
 
-// Bar Chart
-const barCtx = document.getElementById('barChart').getContext('2d');
-const barChart = new Chart(barCtx, {
-    type: 'bar',
-    data: {
-        labels: statusLabels,
-        datasets: [{
-            label: 'Projects',
-            data: statusCounts,
-            backgroundColor: [
-                '#3B82F6', '#10B981', '#F59E0B', '#F87171', '#6366F1', '#F472B6'
-            ],
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } }
+    // Function to normalize status
+    function normalizeStatus(status) {
+        if (!status) return '';
+        status = status.toLowerCase();
+        if (status === 'in_progress' || status === 'ongoing') return 'Ongoing';
+        if (status === 'planned' || status === 'pending') return 'Planned';
+        if (status === 'completed') return 'Completed';
+        if (status === 'delayed') return 'Delayed';
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
-});
 
-// Pie Chart
-const pieCtx = document.getElementById('pieChart').getContext('2d');
-const pieChart = new Chart(pieCtx, {
-    type: 'pie',
-    data: {
-        labels: barangayLabels,
-        datasets: [{
-            data: barangayCounts,
-            backgroundColor: [
-                '#3B82F6', '#10B981', '#F59E0B', '#F87171', '#6366F1', '#F472B6', '#34D399', '#FBBF24', '#A78BFA', '#FCA5A5', '#6EE7B7', '#FDE68A', '#C4B5FD', '#F9A8D4', '#FCD34D', '#818CF8', '#FECACA', '#A7F3D0', '#FDE68A', '#DDD6FE', '#FBCFE8', '#FDE68A', '#C7D2FE'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: 'bottom' } }
+    // Function to format date
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     }
-});
 
-// Filtering logic
-const filterStartDate = document.getElementById('filter-start-date');
-const filterEndDate = document.getElementById('filter-end-date');
-const filterBarangay = document.getElementById('filter-barangay');
-const filterStatus = document.getElementById('filter-status');
-const filterSearch = document.getElementById('filter-search');
-
-function normalizeStatus(status) {
-    if (!status) return '';
-    status = status.toLowerCase();
-    if (status === 'in_progress' || status === 'ongoing') return 'Ongoing';
-    if (status === 'planned' || status === 'pending') return 'Planned';
-    if (status === 'completed') return 'Completed';
-    if (status === 'delayed') return 'Delayed';
-    return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function filterAndRender() {
-    const barangay = filterBarangay.value;
-    const status = filterStatus.value;
-    const search = filterSearch.value.trim().toLowerCase();
-    const startDate = filterStartDate.value;
-    const endDate = filterEndDate.value;
-    // Filter projects
-    filteredProjects = allProjects.filter(p => {
-        const matchesBarangay = (
-            barangay === 'All Barangays' ||
-            (p.barangay && p.barangay.trim().toLowerCase() === barangay.trim().toLowerCase())
-        );
-        const matchesStatus = (
-            status === 'All Status' ||
-            normalizeStatus(p.status) === status
-        );
-        const matchesSearch = (
-            !search ||
-            (p.name && p.name.toLowerCase().includes(search)) ||
-            (p.barangay && p.barangay.toLowerCase().includes(search)) ||
-            (p.status && normalizeStatus(p.status).toLowerCase().includes(search))
-        );
-        // Date filter logic
-        let matchesDate = true;
-        if (startDate) {
-            matchesDate = matchesDate && p.start_date && (new Date(p.start_date) >= new Date(startDate));
-        }
-        if (endDate) {
-            matchesDate = matchesDate && p.end_date && (new Date(p.end_date) <= new Date(endDate));
-        }
-        return matchesBarangay && matchesStatus && matchesSearch && matchesDate;
-    });
-    // Update summary cards
-    document.querySelector('#card-total span').textContent = filteredProjects.length;
-    document.querySelector('#card-completed span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Completed').length;
-    document.querySelector('#card-ongoing span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Ongoing').length;
-    document.querySelector('#card-planned span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Planned').length;
-    document.querySelector('#card-delayed span').textContent = filteredProjects.filter(p => normalizeStatus(p.status) === 'Delayed').length;
-    
-    // Update project count badge
-    const projectCountBadge = document.getElementById('project-count-badge');
-    if (projectCountBadge) {
-        projectCountBadge.textContent = filteredProjects.length;
+    // Function to format cost
+    function formatCost(cost) {
+        if (!cost) return 'N/A';
+        const num = Number(String(cost).replace(/[^\d.]/g, ''));
+        if (isNaN(num)) return cost;
+        return '₱' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-    // Update charts
-    // Bar chart (status)
-    const statusMap = {};
-    filteredProjects.forEach(p => {
-        const s = normalizeStatus(p.status);
-        statusMap[s] = (statusMap[s] || 0) + 1;
-    });
-    barChart.data.labels = Object.keys(statusMap);
-    barChart.data.datasets[0].data = Object.values(statusMap);
-    barChart.update();
-    // Pie chart (barangay)
-    const barangayMap = {};
-    filteredProjects.forEach(p => {
-        if (p.barangay) barangayMap[p.barangay] = (barangayMap[p.barangay] || 0) + 1;
-    });
-    pieChart.data.labels = Object.keys(barangayMap);
-    pieChart.data.datasets[0].data = Object.values(barangayMap);
-    pieChart.update();
-}
 
-filterStartDate.addEventListener('change', filterAndRender);
-filterEndDate.addEventListener('change', filterAndRender);
-filterBarangay.addEventListener('change', filterAndRender);
-filterStatus.addEventListener('change', filterAndRender);
-filterSearch.addEventListener('input', filterAndRender);
-
-// Initial render
-filterAndRender();
-
-// Date Range Preset Functions
-function setDateRange(range) {
-    const today = new Date();
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    
-    let startDate = new Date();
-    let endDate = new Date();
-    
-    switch(range) {
-        case '7days':
-            startDate.setDate(today.getDate() - 7);
-            endDate = today;
-            break;
-        case '30days':
-            startDate.setDate(today.getDate() - 30);
-            endDate = today;
-            break;
-        case 'month':
-            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-            endDate = today;
-            break;
-        case 'year':
-            startDate = new Date(today.getFullYear(), 0, 1);
-            endDate = today;
-            break;
-        case 'all':
-            startDate = null;
-            endDate = null;
-            break;
-    }
-    
-    if (startDate) {
-        startDateInput.value = startDate.toISOString().split('T')[0];
-    } else {
-        startDateInput.value = '';
-    }
-    
-    if (endDate) {
-        endDateInput.value = endDate.toISOString().split('T')[0];
-    } else {
-        endDateInput.value = '';
-    }
-    
-    filterAndRender();
-}
-
-// Clear All Filters Function
-function clearAllFilters() {
-    document.getElementById('filter-start-date').value = '';
-    document.getElementById('filter-end-date').value = '';
-    document.getElementById('filter-barangay').value = 'All Barangays';
-    document.getElementById('filter-status').value = 'All Status';
-    document.getElementById('filter-search').value = '';
-    filterAndRender();
-}
-
-// View Project List Button Handler
-const viewProjectListBtn = document.getElementById('view-project-list-btn');
-if (viewProjectListBtn) {
-    viewProjectListBtn.addEventListener('click', function() {
-        modalCurrentPage = 1;
-        renderModalTablePage(modalCurrentPage);
-        renderModalPagination();
-        projectListModal.classList.remove('hidden');
-    });
-}
-
-// Modal logic
-const projectListModal = document.getElementById('project-list-modal');
-const closeModalBtn = document.getElementById('close-modal-btn');
-const modalReportTable = document.getElementById('modal-report-table').getElementsByTagName('tbody')[0];
-const modalPagination = document.getElementById('modal-pagination');
-const modalExportBtn = document.getElementById('modal-export-btn');
-const modalExportDropdown = document.getElementById('modal-export-dropdown');
-const MODAL_PAGE_SIZE = 10;
-let modalCurrentPage = 1;
-
-// Export dropdown toggle
-const exportBtn = document.getElementById('export-btn');
-const exportDropdown = document.getElementById('export-dropdown');
-if (exportBtn) {
-  exportBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    exportDropdown.classList.toggle('hidden');
-  });
-}
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e) {
-  if (!exportDropdown.contains(e.target) && !exportBtn.contains(e.target)) {
-    exportDropdown.classList.add('hidden');
-  }
-});
-
-// Close modal on close button click
-closeModalBtn.addEventListener('click', function() {
-    projectListModal.classList.add('hidden');
-});
-// Close modal when clicking outside the modal content
-projectListModal.addEventListener('click', function(e) {
-    if (e.target === projectListModal) {
-        projectListModal.classList.add('hidden');
-    }
-});
-
-// Render paginated filtered projects in modal
-function renderModalTablePage(page) {
-    modalReportTable.innerHTML = '';
-    const start = (page - 1) * MODAL_PAGE_SIZE;
-    const end = start + MODAL_PAGE_SIZE;
-    const pageProjects = filteredProjects.slice(start, end);
-    pageProjects.forEach((project, idx) => {
-        let statusBadge = '';
-        const normStatus = normalizeStatus(project.status);
+    // Function to get status badge HTML
+    function getStatusBadge(status) {
+        const normStatus = normalizeStatus(status);
         if (normStatus === 'Completed') {
-            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">Completed</span>';
+            return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>';
         } else if (normStatus === 'Ongoing') {
-            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">Ongoing</span>';
+            return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Ongoing</span>';
         } else if (normStatus === 'Planned') {
-            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">Planned</span>';
+            return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Planned</span>';
         } else if (normStatus === 'Delayed') {
-            statusBadge = '<span class="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Delayed</span>';
+            return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Delayed</span>';
         } else {
-            statusBadge = normStatus;
-        }
-        modalReportTable.innerHTML += `
-        <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-4 py-3 text-gray-700 font-medium">${start + idx + 1}</td>
-            <td class="px-4 py-3 text-gray-700 break-words" title="${project.prn || ''}">${wrapAfterNWords(project.prn || 'N/A')}</td>
-            <td class="px-4 py-3 text-gray-900 font-medium break-words" title="${capitalize(project.name) || ''}">${wrapAfterNWords(capitalize(project.name) || 'N/A')}</td>
-            <td class="px-4 py-3 text-gray-600 break-words max-w-xs" title="${project.description || ''}">${wrapAfterNWords(project.description || 'N/A', 5)}</td>
-            <td class="px-4 py-3 text-gray-700 break-words" title="${project.location || ''}">${wrapAfterNWords(project.location || 'N/A')}</td>
-            <td class="px-4 py-3 text-gray-700 font-medium" title="${project.project_cost || ''}">${formatCost(project.project_cost) || 'N/A'}</td>
-            <td class="px-4 py-3 text-gray-600 break-words max-w-xs" title="${project.source_of_funds || ''}">${wrapAfterNWords(project.source_of_funds || 'N/A', 5)}</td>
-            <td class="px-4 py-3 text-gray-600">${formatDate(project.start_date) || 'N/A'}</td>
-            <td class="px-4 py-3 text-gray-600">${formatDate(project.end_date) || 'N/A'}</td>
-            <td class="px-4 py-3">${statusBadge}</td>
-        </tr>`;
-    });
-}
-
-function renderModalPagination() {
-    modalPagination.innerHTML = '';
-    const totalPages = Math.ceil(filteredProjects.length / MODAL_PAGE_SIZE);
-    const start = (modalCurrentPage - 1) * MODAL_PAGE_SIZE + 1;
-    const end = Math.min(modalCurrentPage * MODAL_PAGE_SIZE, filteredProjects.length);
-    
-    // Update page info
-    document.getElementById('modal-page-info').textContent = `${start}-${end}`;
-    document.getElementById('modal-total-info').textContent = filteredProjects.length;
-    
-    if (totalPages <= 1) return;
-    
-    // Previous button
-    if (modalCurrentPage > 1) {
-        const prevBtn = document.createElement('button');
-        prevBtn.innerHTML = '‹';
-        prevBtn.className = 'px-3 py-1.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors font-semibold';
-        prevBtn.onclick = () => {
-            modalCurrentPage--;
-            renderModalTablePage(modalCurrentPage);
-            renderModalPagination();
-        };
-        modalPagination.appendChild(prevBtn);
-    }
-    
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= modalCurrentPage - 1 && i <= modalCurrentPage + 1)) {
-            const btn = document.createElement('button');
-            btn.textContent = i;
-            btn.className = `px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                i === modalCurrentPage 
-                    ? 'bg-blue-600 text-white shadow-md' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`;
-            btn.onclick = () => {
-                modalCurrentPage = i;
-                renderModalTablePage(modalCurrentPage);
-                renderModalPagination();
-            };
-            modalPagination.appendChild(btn);
-        } else if (i === modalCurrentPage - 2 || i === modalCurrentPage + 2) {
-            const ellipsis = document.createElement('span');
-            ellipsis.textContent = '...';
-            ellipsis.className = 'px-2 text-gray-500';
-            modalPagination.appendChild(ellipsis);
+            return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">' + normStatus + '</span>';
         }
     }
-    
-    // Next button
-    if (modalCurrentPage < totalPages) {
-        const nextBtn = document.createElement('button');
-        nextBtn.innerHTML = '›';
-        nextBtn.className = 'px-3 py-1.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors font-semibold';
-        nextBtn.onclick = () => {
-            modalCurrentPage++;
-            renderModalTablePage(modalCurrentPage);
-            renderModalPagination();
-        };
-        modalPagination.appendChild(nextBtn);
-    }
-}
 
-// Update modal table and pagination when filters change
-filterStartDate.addEventListener('change', function() {
-    if (!projectListModal.classList.contains('hidden')) {
-        modalCurrentPage = 1;
-        renderModalTablePage(modalCurrentPage);
-        renderModalPagination();
-    }
-});
-filterEndDate.addEventListener('change', function() {
-    if (!projectListModal.classList.contains('hidden')) {
-        modalCurrentPage = 1;
-        renderModalTablePage(modalCurrentPage);
-        renderModalPagination();
-    }
-});
-filterBarangay.addEventListener('change', function() {
-    if (!projectListModal.classList.contains('hidden')) {
-        modalCurrentPage = 1;
-        renderModalTablePage(modalCurrentPage);
-        renderModalPagination();
-    }
-});
-filterStatus.addEventListener('change', function() {
-    if (!projectListModal.classList.contains('hidden')) {
-        modalCurrentPage = 1;
-        renderModalTablePage(modalCurrentPage);
-        renderModalPagination();
-    }
-});
-filterSearch.addEventListener('input', function() {
-    if (!projectListModal.classList.contains('hidden')) {
-        modalCurrentPage = 1;
-        renderModalTablePage(modalCurrentPage);
-        renderModalPagination();
-    }
-});
+    // Function to filter and render projects
+    function filterAndRender() {
+        const barangay = barangayFilter.value;
+        const status = statusFilter.value;
+        const startDate = startDateFilter.value;
+        const endDate = endDateFilter.value;
 
-// Modal Export Dropdown Logic
-modalExportBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    modalExportDropdown.classList.toggle('hidden');
-});
-document.addEventListener('click', function(e) {
-    if (!modalExportDropdown.classList.contains('hidden')) {
-        modalExportDropdown.classList.add('hidden');
-    }
-});
-modalExportDropdown.addEventListener('click', function(e) {
-    e.stopPropagation(); // Prevent closing when clicking inside dropdown
-});
+        filteredProjects = projects.filter(p => {
+            const matchesBarangay = !barangay || (p.barangay && p.barangay.trim().toLowerCase() === barangay.trim().toLowerCase());
+            const matchesStatus = !status || normalizeStatus(p.status) === normalizeStatus(status);
+            let matchesDate = true;
+            if (startDate && p.start_date) {
+                matchesDate = matchesDate && (new Date(p.start_date) >= new Date(startDate));
+            }
+            if (endDate && p.end_date) {
+                matchesDate = matchesDate && (new Date(p.end_date) <= new Date(endDate));
+            }
+            return matchesBarangay && matchesStatus && matchesDate;
+        });
 
-function formatDate(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-function formatCost(cost) {
-    if (!cost) return '';
-    // Remove commas and non-numeric except dot
-    const num = Number(String(cost).replace(/[^\d.]/g, ''));
-    if (isNaN(num)) return cost;
-    return num.toLocaleString();
-}
-function capitalize(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-function wrapAfterNWords(str, n = 3) {
-    if (!str) return '';
-    const words = str.split(' ');
-    let result = '';
-    for (let i = 0; i < words.length; i++) {
-        result += words[i];
-        if ((i + 1) % n === 0 && i !== words.length - 1) {
-            result += '<br>';
-        } else if (i !== words.length - 1) {
-            result += ' ';
+        renderTable();
+    }
+
+    // Function to render table
+    function renderTable() {
+        projectsTableBody.innerHTML = '';
+        if (filteredProjects.length === 0) {
+            projectsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        No projects found for the selected criteria.
+                    </td>
+                </tr>
+            `;
+            return;
         }
+
+        filteredProjects.forEach((project, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${index + 1}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.prn || 'N/A'}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${project.name || 'N/A'}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.description || 'N/A'}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.barangay || 'N/A'}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${formatCost(project.project_cost)}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.source_of_funds || 'N/A'}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${formatDate(project.start_date)}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${formatDate(project.end_date)}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap">${getStatusBadge(project.status)}</td>
+            `;
+            projectsTableBody.appendChild(row);
+        });
     }
-    return result;
-}
+
+    // Event listeners
+    if (barangayFilter) {
+        barangayFilter.addEventListener('change', filterAndRender);
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterAndRender);
+    }
+    if (startDateFilter) {
+        startDateFilter.addEventListener('change', filterAndRender);
+    }
+    if (endDateFilter) {
+        endDateFilter.addEventListener('change', filterAndRender);
+    }
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            barangayFilter.value = '';
+            statusFilter.value = '';
+            startDateFilter.value = '';
+            endDateFilter.value = '';
+            filterAndRender();
+        });
+    }
+
+    // Initial render
+    filterAndRender();
+
+    // Export Modal Logic
+    const exportButton = document.getElementById('export-button');
+    const exportModal = document.getElementById('exportModal');
+    const closeModalButton = document.getElementById('closeModal');
+    const modalTableBody = document.getElementById('modal-projects-table-body');
+    const exportDropdownButton = document.getElementById('export-dropdown-button');
+    const exportDropdownMenu = document.getElementById('export-dropdown-menu');
+    const modalBarangayFilter = document.getElementById('modal-barangay-filter');
+
+    // Function to render the modal table with provided projects
+    function renderModalTable(projectsToDisplay) {
+        modalTableBody.innerHTML = '';
+        if (projectsToDisplay.length === 0) {
+            modalTableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        No projects found for the selected criteria.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        projectsToDisplay.forEach((project, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${index + 1}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.prn || ''}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${project.name || ''}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.description || ''}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.barangay || ''}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${formatCost(project.project_cost)}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${project.source_of_funds || ''}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${formatDate(project.start_date)}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${formatDate(project.end_date)}</div></td>
+                <td class="px-6 py-4 whitespace-nowrap">${getStatusBadge(project.status)}</td>
+            `;
+            modalTableBody.appendChild(row);
+        });
+    }
+
+    // Function to open the modal
+    function openExportModal() {
+        renderModalTable(filteredProjects);
+        exportModal.classList.remove('hidden');
+    }
+
+    // Function to close export modal
+    function closeExportModal() {
+        exportModal.classList.add('hidden');
+    }
+    
+    // Event listeners for export button and close button
+    if (exportButton) {
+        exportButton.addEventListener('click', openExportModal);
+    }
+    if (closeModalButton) {
+        closeModalButton.addEventListener('click', closeExportModal);
+    }
+
+    // Event listener for the modal barangay filter dropdown
+    if (modalBarangayFilter) {
+        modalBarangayFilter.addEventListener('change', function() {
+            const selectedBarangay = this.value;
+            let filtered = filteredProjects;
+            if (selectedBarangay) {
+                filtered = filteredProjects.filter(project => project.barangay === selectedBarangay);
+            }
+            renderModalTable(filtered);
+        });
+    }
+
+    // Event listener for the export dropdown button (toggle menu visibility)
+    if (exportDropdownButton) {
+        exportDropdownButton.addEventListener('click', () => {
+            exportDropdownMenu.classList.toggle('hidden');
+        });
+    }
+
+    // Add event listeners for the export links
+    const exportCsv = document.getElementById('export-csv');
+    const exportExcel = document.getElementById('export-excel');
+    const exportPdf = document.getElementById('export-pdf');
+
+    if (exportCsv) {
+        exportCsv.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selectedBarangay = modalBarangayFilter ? modalBarangayFilter.value : '';
+            let exportUrl = this.href;
+            if (selectedBarangay) {
+                exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
+            }
+            window.location.href = exportUrl;
+            closeExportModal();
+        });
+    }
+
+    if (exportExcel) {
+        exportExcel.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selectedBarangay = modalBarangayFilter ? modalBarangayFilter.value : '';
+            let exportUrl = this.href;
+            if (selectedBarangay) {
+                exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
+            }
+            window.location.href = exportUrl;
+            closeExportModal();
+        });
+    }
+
+    if (exportPdf) {
+        exportPdf.addEventListener('click', function(e) {
+            e.preventDefault();
+            const selectedBarangay = modalBarangayFilter ? modalBarangayFilter.value : '';
+            let exportUrl = this.href;
+            if (selectedBarangay) {
+                exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
+            }
+            window.location.href = exportUrl;
+            closeExportModal();
+        });
+    }
+});
 </script>
-{% endblock %} 
+{% endblock %}
