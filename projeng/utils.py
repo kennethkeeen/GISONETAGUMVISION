@@ -106,14 +106,21 @@ def notify_head_engineer_about_budget_concern(project, sender_user, message=None
         sender_user: User sending the notification (Project Engineer)
         message: Optional custom message
         utilization_percentage: Current budget utilization percentage
+    
+    Returns:
+        int: Number of notifications created (0 if failed)
     """
+    import logging
+    logger = logging.getLogger(__name__)
     from django.db.models import Sum
     from .models import ProjectCost
     
     # Calculate current budget status if not provided
     if utilization_percentage is None:
         if not project.project_cost:
-            return  # Can't calculate if no budget
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Cannot send budget alert for project {project.name} (ID: {project.id}) - no budget set")
+            return 0  # Return 0 instead of None
         
         total_costs = ProjectCost.objects.filter(project=project).aggregate(
             total=Sum('amount')
@@ -123,7 +130,9 @@ def notify_head_engineer_about_budget_concern(project, sender_user, message=None
             total_costs_float = float(total_costs)
             project_budget_float = float(project.project_cost)
             utilization_percentage = (total_costs_float / project_budget_float) * 100 if project_budget_float > 0 else 0
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error calculating utilization for project {project.name}: {str(e)}")
             utilization_percentage = 0
     
     project_display = format_project_display(project)
@@ -143,15 +152,19 @@ def notify_head_engineer_about_budget_concern(project, sender_user, message=None
         )
     
     # Notify all Head Engineers
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"Sending budget concern notification for project: {project.name} (ID: {project.id}) from {sender_name}")
-    notification_count = notify_head_engineers(notification_message, check_duplicates=True)
-    if notification_count > 0:
-        logger.info(f"Budget concern notification sent successfully to {notification_count} Head Engineer(s)")
-    else:
-        logger.warning(f"Budget concern notification failed - no Head Engineers notified")
-    return notification_count
+    logger.info(f"Notification message: {notification_message}")
+    
+    try:
+        notification_count = notify_head_engineers(notification_message, check_duplicates=True)
+        if notification_count and notification_count > 0:
+            logger.info(f"Budget concern notification sent successfully to {notification_count} Head Engineer(s)")
+        else:
+            logger.warning(f"Budget concern notification failed - no Head Engineers notified (count: {notification_count})")
+        return notification_count if notification_count else 0
+    except Exception as e:
+        logger.error(f"Exception in notify_head_engineer_about_budget_concern: {str(e)}", exc_info=True)
+        return 0
 
 def can_update_budget(user, project):
     """
