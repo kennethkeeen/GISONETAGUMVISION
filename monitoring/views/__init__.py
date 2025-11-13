@@ -1778,3 +1778,35 @@ def export_project_comprehensive_csv(request, pk):
     writer.writerow(['TOTAL', '', '', f'₱{total_cost:,.2f}'])
     
     return response
+
+    writer.writerow(['Remaining', f'₱{remaining_budget:,.2f}'])
+    writer.writerow(['Utilization', f'{budget_utilization:.2f}%'])
+    writer.writerow([])
+    
+    # Progress Details
+    writer.writerow(['PROGRESS DETAILS'])
+    writer.writerow(['Date', 'Progress %', 'Description', 'Engineer'])
+    for update in progress_updates:
+        engineer_name = update.created_by.get_full_name() or update.created_by.username if update.created_by else 'N/A'
+        writer.writerow([
+            str(update.date),
+            update.percentage_complete,
+            update.description or '',
+            engineer_name
+        ])
+    writer.writerow([])
+    
+    # Budget Details
+    writer.writerow(['BUDGET DETAILS'])
+    writer.writerow(['Date', 'Category', 'Description', 'Amount'])
+    for cost in costs:
+        writer.writerow([
+            str(cost.date),
+            cost.get_cost_type_display(),
+            cost.description or '',
+            float(cost.amount)
+        ])
+    writer.writerow([])
+    writer.writerow(['TOTAL', '', '', f'₱{total_cost:,.2f}'])
+    
+    return response
