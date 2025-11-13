@@ -1,5 +1,6 @@
 {% extends 'projeng_base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
 <div class="container mx-auto p-6">
@@ -210,19 +211,22 @@
                  {% endif %}
 
              </div>
+             <!-- Cost Breakdown Button -->
              {% if cost_by_type %}
-                 <div class="mt-4">
-                     <h3 class="text-lg font-medium text-gray-700 mb-2">Cost Breakdown</h3>
-                     {% for cost in cost_by_type %}
-                         <div class="flex justify-between items-center mb-1">
-                             <span class="text-gray-600">{{ cost.cost_type|title }}</span>
-                             <span class="text-gray-700">₱{{ cost.total|floatformat:2 }}</span>
-                         </div>
-                     {% endfor %}
+                 <div class="mt-4 pt-4 border-t border-gray-200">
+                     <button type="button" 
+                             onclick="showCostBreakdownModal()"
+                             class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition flex items-center justify-center">
+                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                         </svg>
+                         📊 View Cost Breakdown
+                     </button>
                  </div>
-             {% endif %}
-             {% if not total_cost and not cost_by_type %}
-                  <p class="text-gray-500">No cost entries yet.</p>
+             {% elif not total_cost and not cost_by_type %}
+                 <div class="mt-4 pt-4 border-t border-gray-200">
+                     <p class="text-gray-500 text-center">No cost entries yet.</p>
+                 </div>
              {% endif %}
 
              <!-- Budget Alert Button (for Project Engineers) -->
@@ -231,11 +235,17 @@
                  <div class="mt-4 pt-4 border-t border-gray-200">
                      <button type="button" 
                              onclick="showBudgetAlertModal()"
-                             class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition flex items-center justify-center">
+                             class="w-full {% if budget_utilization >= 95 %}bg-red-500 hover:bg-red-600{% elif budget_utilization >= 80 %}bg-orange-500 hover:bg-orange-600{% else %}bg-yellow-500 hover:bg-yellow-600{% endif %} text-white px-4 py-2 rounded-lg transition flex items-center justify-center font-semibold shadow-lg">
                          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                          </svg>
-                         📋 Send Budget Alert to Head Engineer
+                         {% if budget_utilization >= 95 %}
+                             🚨 URGENT: Send Budget Alert to Head Engineer
+                         {% elif budget_utilization >= 80 %}
+                             ⚠️ Send Budget Alert to Head Engineer
+                         {% else %}
+                             📋 Send Budget Alert to Head Engineer
+                         {% endif %}
                      </button>
                  </div>
                  {% endif %}
@@ -480,12 +490,30 @@
             document.getElementById('budgetAlertModal').classList.add('hidden');
         }
 
-        // Close modal when clicking outside
+        // Cost Breakdown Modal Functions
+        function showCostBreakdownModal() {
+            document.getElementById('costBreakdownModal').classList.remove('hidden');
+        }
+
+        function hideCostBreakdownModal() {
+            document.getElementById('costBreakdownModal').classList.add('hidden');
+        }
+
+        // Close modals when clicking outside
         const budgetModal = document.getElementById('budgetAlertModal');
         if (budgetModal) {
             budgetModal.addEventListener('click', function(e) {
                 if (e.target === this) {
                     hideBudgetAlertModal();
+                }
+            });
+        }
+
+        const costModal = document.getElementById('costBreakdownModal');
+        if (costModal) {
+            costModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideCostBreakdownModal();
                 }
             });
         }
@@ -536,6 +564,68 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Cost Breakdown Modal -->
+<div id="costBreakdownModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Cost Breakdown</h3>
+            <button onclick="hideCostBreakdownModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="mb-4">
+                <h4 class="text-sm font-semibold text-gray-700 mb-1">{{ project.name }}</h4>
+                <p class="text-xs text-gray-600">PRN: {{ project.prn|default:"N/A" }} | {{ project.barangay|default:"N/A" }}</p>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                <div>
+                    <p class="text-xs text-gray-600 mb-1">Budget</p>
+                    <p class="text-sm font-semibold text-gray-900">₱{{ project.project_cost|default:"0"|floatformat:2|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-600 mb-1">Spent</p>
+                    <p class="text-sm font-semibold text-orange-600">₱{{ total_cost|default:"0"|floatformat:2|intcomma }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-600 mb-1">Utilization</p>
+                    <p class="text-sm font-semibold {% if budget_utilization >= 100 %}text-red-600{% elif budget_utilization >= 95 %}text-orange-600{% elif budget_utilization >= 80 %}text-yellow-600{% else %}text-green-600{% endif %}">
+                        {{ budget_utilization|default:"0"|floatformat:1 }}%
+                    </p>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 pt-4">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3">Cost Breakdown by Type</h4>
+                {% if cost_by_type %}
+                    <div class="space-y-2">
+                        {% for cost in cost_by_type %}
+                            <div class="flex justify-between items-center p-2 bg-white rounded border border-gray-200 hover:bg-gray-50 transition-colors">
+                                <span class="text-sm font-medium text-gray-700">{{ cost.cost_type|title }}</span>
+                                <span class="text-sm font-semibold text-gray-900">₱{{ cost.total|floatformat:2|intcomma }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-bold text-gray-900">Total</span>
+                            <span class="text-base font-bold text-blue-600">₱{{ total_cost|default:"0"|floatformat:2|intcomma }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 text-gray-400">
+                        <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-sm">No cost entries recorded</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %} 
