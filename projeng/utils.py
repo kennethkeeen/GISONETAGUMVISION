@@ -136,8 +136,9 @@ def notify_head_engineer_about_budget_concern(project, sender_user, message=None
         )
     
     # Notify all Head Engineers
+    # Use check_duplicates=False for manual alerts to ensure they always go through
     logger.info(f"Sending budget concern notification for project: {project.name} (ID: {project.id}) from {sender_name}")
-    notification_count = notify_head_engineers(notification_message, check_duplicates=True)
+    notification_count = notify_head_engineers(notification_message, check_duplicates=False)
     logger.info(f"Budget concern notification sent to {notification_count} Head Engineer(s)")
     return notification_count
 
