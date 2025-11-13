@@ -280,6 +280,7 @@ def finance_project_detail(request, project_id):
         'total_spent': total_spent_float,
         'remaining': remaining,
         'budget_utilization': budget_utilization,
+        'project_budget': project_budget,
         'cost_by_type': dict(cost_by_type),
     }
     return render(request, 'finance_manager/finance_project_detail.html', context) 
