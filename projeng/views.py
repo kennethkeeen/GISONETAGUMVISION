@@ -2449,7 +2449,7 @@ def send_budget_alert(request, project_id):
                 recent_notifications = Notification.objects.filter(
                     recipient__in=head_engineers,
                     message__icontains=project.name,
-                    created_at__gte=django_timezone.now() - timedelta(seconds=5)
+                    created_at__gte=timezone.now() - timedelta(seconds=5)
                 ).count()
                 
                 if recent_notifications > 0:
