@@ -1105,6 +1105,8 @@ def export_project_timeline_pdf(request, pk):
 @login_required
 def export_reports_csv(request):
     """Export monitoring reports as CSV"""
+    from django.db.models import Q
+    
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         projects = Project.objects.all()
@@ -1112,6 +1114,47 @@ def export_reports_csv(request):
         projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters from request parameters
+    barangay_filter = request.GET.get('barangay', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    start_date_filter = request.GET.get('start_date', '').strip()
+    end_date_filter = request.GET.get('end_date', '').strip()
+    
+    # Filter by barangay
+    if barangay_filter:
+        projects = projects.filter(barangay=barangay_filter)
+    
+    # Filter by status
+    if status_filter:
+        if status_filter == 'completed':
+            projects = projects.filter(status='completed')
+        elif status_filter in ['in_progress', 'ongoing']:
+            projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        elif status_filter in ['planned', 'pending']:
+            projects = projects.filter(Q(status='planned') | Q(status='pending'))
+        elif status_filter == 'delayed':
+            projects = projects.filter(status='delayed')
+        else:
+            projects = projects.filter(status=status_filter)
+    
+    # Filter by start date
+    if start_date_filter:
+        try:
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            projects = projects.filter(start_date__gte=start_date)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, ignore filter
+    
+    # Filter by end date
+    if end_date_filter:
+        try:
+            from datetime import datetime
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+            projects = projects.filter(end_date__lte=end_date)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, ignore filter
     
     # Create the HttpResponse object with the appropriate CSV header
     response = HttpResponse(content_type='text/csv')
@@ -1141,6 +1184,8 @@ def export_reports_csv(request):
 @login_required
 def export_reports_excel(request):
     """Export monitoring reports as Excel"""
+    from django.db.models import Q
+    
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         projects = Project.objects.all()
@@ -1148,6 +1193,47 @@ def export_reports_excel(request):
         projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters from request parameters
+    barangay_filter = request.GET.get('barangay', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    start_date_filter = request.GET.get('start_date', '').strip()
+    end_date_filter = request.GET.get('end_date', '').strip()
+    
+    # Filter by barangay
+    if barangay_filter:
+        projects = projects.filter(barangay=barangay_filter)
+    
+    # Filter by status
+    if status_filter:
+        if status_filter == 'completed':
+            projects = projects.filter(status='completed')
+        elif status_filter in ['in_progress', 'ongoing']:
+            projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        elif status_filter in ['planned', 'pending']:
+            projects = projects.filter(Q(status='planned') | Q(status='pending'))
+        elif status_filter == 'delayed':
+            projects = projects.filter(status='delayed')
+        else:
+            projects = projects.filter(status=status_filter)
+    
+    # Filter by start date
+    if start_date_filter:
+        try:
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            projects = projects.filter(start_date__gte=start_date)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, ignore filter
+    
+    # Filter by end date
+    if end_date_filter:
+        try:
+            from datetime import datetime
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+            projects = projects.filter(end_date__lte=end_date)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, ignore filter
     
     # Create a new workbook and select the active sheet
     workbook = openpyxl.Workbook()
@@ -1188,6 +1274,7 @@ def export_reports_excel(request):
 def export_reports_pdf(request):
     """Export monitoring reports as PDF"""
     from collections import defaultdict
+    from django.db.models import Q
     
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
@@ -1196,6 +1283,47 @@ def export_reports_pdf(request):
         projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters from request parameters
+    barangay_filter = request.GET.get('barangay', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    start_date_filter = request.GET.get('start_date', '').strip()
+    end_date_filter = request.GET.get('end_date', '').strip()
+    
+    # Filter by barangay
+    if barangay_filter:
+        projects = projects.filter(barangay=barangay_filter)
+    
+    # Filter by status
+    if status_filter:
+        if status_filter == 'completed':
+            projects = projects.filter(status='completed')
+        elif status_filter in ['in_progress', 'ongoing']:
+            projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        elif status_filter in ['planned', 'pending']:
+            projects = projects.filter(Q(status='planned') | Q(status='pending'))
+        elif status_filter == 'delayed':
+            projects = projects.filter(status='delayed')
+        else:
+            projects = projects.filter(status=status_filter)
+    
+    # Filter by start date
+    if start_date_filter:
+        try:
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            projects = projects.filter(start_date__gte=start_date)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, ignore filter
+    
+    # Filter by end date
+    if end_date_filter:
+        try:
+            from datetime import datetime
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+            projects = projects.filter(end_date__lte=end_date)
+        except (ValueError, TypeError):
+            pass  # Invalid date format, ignore filter
     
     # Calculate summary statistics
     total_projects = projects.count()

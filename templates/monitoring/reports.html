@@ -454,10 +454,30 @@ function normalizeStatus(status) {
     if (exportCsv) {
         exportCsv.addEventListener('click', function(e) {
             e.preventDefault();
-            const selectedBarangay = modalBarangayFilter ? modalBarangayFilter.value : '';
-            let exportUrl = this.href;
+            // Get all current filter values from the main filter form
+            const selectedBarangay = barangayFilter ? barangayFilter.value : '';
+            const selectedStatus = statusFilter ? statusFilter.value : '';
+            const selectedStartDate = startDateFilter ? startDateFilter.value : '';
+            const selectedEndDate = endDateFilter ? endDateFilter.value : '';
+            
+            // Build query string with all filters
+            const params = new URLSearchParams();
             if (selectedBarangay) {
-                exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
+                params.append('barangay', selectedBarangay);
+            }
+            if (selectedStatus) {
+                params.append('status', selectedStatus);
+            }
+            if (selectedStartDate) {
+                params.append('start_date', selectedStartDate);
+            }
+            if (selectedEndDate) {
+                params.append('end_date', selectedEndDate);
+            }
+            
+            let exportUrl = this.href;
+            if (params.toString()) {
+                exportUrl = `${exportUrl}?${params.toString()}`;
             }
             window.location.href = exportUrl;
             closeExportModal();
@@ -467,10 +487,30 @@ function normalizeStatus(status) {
     if (exportExcel) {
         exportExcel.addEventListener('click', function(e) {
             e.preventDefault();
-            const selectedBarangay = modalBarangayFilter ? modalBarangayFilter.value : '';
-            let exportUrl = this.href;
+            // Get all current filter values from the main filter form
+            const selectedBarangay = barangayFilter ? barangayFilter.value : '';
+            const selectedStatus = statusFilter ? statusFilter.value : '';
+            const selectedStartDate = startDateFilter ? startDateFilter.value : '';
+            const selectedEndDate = endDateFilter ? endDateFilter.value : '';
+            
+            // Build query string with all filters
+            const params = new URLSearchParams();
             if (selectedBarangay) {
-                exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
+                params.append('barangay', selectedBarangay);
+            }
+            if (selectedStatus) {
+                params.append('status', selectedStatus);
+            }
+            if (selectedStartDate) {
+                params.append('start_date', selectedStartDate);
+            }
+            if (selectedEndDate) {
+                params.append('end_date', selectedEndDate);
+            }
+            
+            let exportUrl = this.href;
+            if (params.toString()) {
+                exportUrl = `${exportUrl}?${params.toString()}`;
             }
             window.location.href = exportUrl;
             closeExportModal();
@@ -480,10 +520,30 @@ function normalizeStatus(status) {
     if (exportPdf) {
         exportPdf.addEventListener('click', function(e) {
             e.preventDefault();
-            const selectedBarangay = modalBarangayFilter ? modalBarangayFilter.value : '';
-            let exportUrl = this.href;
+            // Get all current filter values from the main filter form
+            const selectedBarangay = barangayFilter ? barangayFilter.value : '';
+            const selectedStatus = statusFilter ? statusFilter.value : '';
+            const selectedStartDate = startDateFilter ? startDateFilter.value : '';
+            const selectedEndDate = endDateFilter ? endDateFilter.value : '';
+            
+            // Build query string with all filters
+            const params = new URLSearchParams();
             if (selectedBarangay) {
-                exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
+                params.append('barangay', selectedBarangay);
+            }
+            if (selectedStatus) {
+                params.append('status', selectedStatus);
+            }
+            if (selectedStartDate) {
+                params.append('start_date', selectedStartDate);
+            }
+            if (selectedEndDate) {
+                params.append('end_date', selectedEndDate);
+            }
+            
+            let exportUrl = this.href;
+            if (params.toString()) {
+                exportUrl = `${exportUrl}?${params.toString()}`;
             }
             // Open PDF in a new window
             window.open(exportUrl, '_blank');
