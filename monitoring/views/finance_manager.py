@@ -279,25 +279,43 @@ def finance_notifications(request):
 @login_required
 @finance_manager_required
 def finance_project_detail(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
-    costs = ProjectCost.objects.filter(project=project).order_by('-date')
-    total_spent = costs.aggregate(total=Sum('amount'))['total'] or 0
-    project_budget = float(project.project_cost) if project.project_cost else 0
-    total_spent_float = float(total_spent)
-    remaining = project_budget - total_spent_float
-    budget_utilization = (total_spent_float / project_budget * 100) if project_budget > 0 else 0
+    import logging
+    logger = logging.getLogger(__name__)
     
-    cost_by_type = defaultdict(float)
-    for cost in costs:
-        cost_by_type[cost.get_cost_type_display()] += float(cost.amount)
+    try:
+        # Try to get project from projeng model first
+        project = get_object_or_404(Project, id=project_id)
+        logger.info(f"Finance project detail: Found project {project_id} in projeng model")
+    except Exception as e:
+        logger.error(f"Finance project detail: Error getting project {project_id}: {str(e)}", exc_info=True)
+        from django.http import Http404
+        raise Http404("Project not found")
     
-    context = {
-        'project': project,
-        'costs': costs,
-        'total_spent': total_spent_float,
-        'remaining': remaining,
-        'budget_utilization': budget_utilization,
-        'project_budget': project_budget,
-        'cost_by_type': dict(cost_by_type),
-    }
-    return render(request, 'finance_manager/finance_project_detail.html', context) 
+    try:
+        costs = ProjectCost.objects.filter(project=project).order_by('-date')
+        total_spent = costs.aggregate(total=Sum('amount'))['total'] or 0
+        project_budget = float(project.project_cost) if project.project_cost else 0
+        total_spent_float = float(total_spent)
+        remaining = project_budget - total_spent_float
+        budget_utilization = (total_spent_float / project_budget * 100) if project_budget > 0 else 0
+        
+        cost_by_type = defaultdict(float)
+        for cost in costs:
+            cost_by_type[cost.get_cost_type_display()] += float(cost.amount)
+        
+        context = {
+            'project': project,
+            'costs': costs,
+            'total_spent': total_spent_float,
+            'remaining': remaining,
+            'budget_utilization': budget_utilization,
+            'project_budget': project_budget,
+            'cost_by_type': dict(cost_by_type),
+        }
+        return render(request, 'finance_manager/finance_project_detail.html', context)
+    except Exception as e:
+        logger.error(f"Finance project detail: Error processing project {project_id}: {str(e)}", exc_info=True)
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.error(request, f"Error loading project details: {str(e)}")
+        return redirect('finance_projects') 
