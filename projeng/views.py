@@ -2481,12 +2481,18 @@ def send_budget_alert(request, project_id):
             return redirect('projeng:projeng_project_detail', pk=project_id)
         
         # GET request - show form (or handle via AJAX)
+        print(f"send_budget_alert: GET request received, redirecting", file=sys.stderr)
         messages.error(request, "Invalid request method.")
         return redirect('projeng:projeng_project_detail', pk=project_id)
     except Project.DoesNotExist:
+        print(f"send_budget_alert: Project.DoesNotExist exception", file=sys.stderr)
         messages.error(request, "Project not found.")
         return redirect('projeng:projeng_dashboard')
     except Exception as e:
+        import sys
+        print(f"send_budget_alert: EXCEPTION occurred: {str(e)}", file=sys.stderr)
+        import traceback
+        print(f"send_budget_alert: Traceback: {traceback.format_exc()}", file=sys.stderr)
         logging.error(f"Error in send_budget_alert: {str(e)}", exc_info=True)
         messages.error(request, f"An error occurred while sending the budget alert: {str(e)}")
         return redirect('projeng:projeng_project_detail', pk=project_id) 
