@@ -2436,31 +2436,23 @@ def send_budget_alert(request, project_id):
             
             # Send notification
             try:
-                logging.info(f"Attempting to send budget alert for project {project.id} by user {request.user.username}")
                 notification_count = notify_head_engineer_about_budget_concern(
                     project=project,
                     sender_user=request.user,
                     message=custom_message if custom_message else None
                 )
                 
-                logging.info(f"Budget alert function returned notification_count: {notification_count} (type: {type(notification_count)})")
-                
-                # Check if Head Engineers exist first
+                # Check if Head Engineers exist
                 from django.contrib.auth.models import User
                 head_engineers = User.objects.filter(groups__name='Head Engineer').distinct()
                 head_engineer_count = head_engineers.count()
-                logging.info(f"Found {head_engineer_count} Head Engineer(s) in system")
-                
-                if notification_count is None:
-                    logging.warning("notification_count is None - this should not happen")
-                    notification_count = 0
                 
                 if notification_count > 0:
                     messages.success(request, f"Budget alert sent to {notification_count} Head Engineer(s) for project '{project.name}'.")
                 elif head_engineer_count == 0:
                     messages.warning(request, f"No Head Engineers found in the system. Please ensure at least one user is in the 'Head Engineer' group.")
                 else:
-                    messages.warning(request, f"Budget alert submitted, but no notifications were created. Please check system logs. (Found {head_engineer_count} Head Engineer(s) in system)")
+                    messages.warning(request, f"Budget alert submitted, but no notifications were created. Please check system logs.")
                 
             except Exception as e:
                 logging.error(f"Error sending budget alert notification: {str(e)}", exc_info=True)
