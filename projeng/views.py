@@ -2432,30 +2432,38 @@ def send_budget_alert(request, project_id):
             return redirect('projeng:projeng_dashboard')
         
         if request.method == 'POST':
+            logging.info(f"send_budget_alert: POST request received for project {project_id} by user {request.user.username}")
             custom_message = request.POST.get('message', '').strip()
+            logging.info(f"send_budget_alert: Custom message: '{custom_message}'")
             
             # Send notification
             try:
+                logging.info(f"send_budget_alert: Calling notify_head_engineer_about_budget_concern")
                 notification_count = notify_head_engineer_about_budget_concern(
                     project=project,
                     sender_user=request.user,
                     message=custom_message if custom_message else None
                 )
+                logging.info(f"send_budget_alert: Function returned notification_count: {notification_count}")
                 
                 # Check if Head Engineers exist
                 from django.contrib.auth.models import User
                 head_engineers = User.objects.filter(groups__name='Head Engineer').distinct()
                 head_engineer_count = head_engineers.count()
+                logging.info(f"send_budget_alert: Found {head_engineer_count} Head Engineer(s) in system")
                 
                 if notification_count > 0:
                     messages.success(request, f"Budget alert sent to {notification_count} Head Engineer(s) for project '{project.name}'.")
+                    logging.info(f"send_budget_alert: Success message set")
                 elif head_engineer_count == 0:
                     messages.warning(request, f"No Head Engineers found in the system. Please ensure at least one user is in the 'Head Engineer' group.")
+                    logging.warning(f"send_budget_alert: No Head Engineers found")
                 else:
                     messages.warning(request, f"Budget alert submitted, but no notifications were created. Please check system logs.")
+                    logging.warning(f"send_budget_alert: No notifications created despite {head_engineer_count} Head Engineers existing")
                 
             except Exception as e:
-                logging.error(f"Error sending budget alert notification: {str(e)}", exc_info=True)
+                logging.error(f"send_budget_alert: Exception occurred: {str(e)}", exc_info=True)
                 messages.error(request, f"Error sending budget alert: {str(e)}")
             
             return redirect('projeng:projeng_project_detail', pk=project_id)
