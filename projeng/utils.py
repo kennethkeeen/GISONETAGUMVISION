@@ -539,46 +539,63 @@ def get_project_from_notification(notification_message):
     # This pattern handles both formats:
     # - "📋 Budget Concern: ProjectName (PRN: ...) - message..."
     # - "📋 Budget Concern: ProjectName (PRN: ...) is at X%..."
-    match = re.search(r"📋\s*Budget Concern:\s*([^(]+?)\s*\(PRN:\s*([^)]+)\)", notification_message)
+    # Also handle without emoji prefix for robustness
+    patterns = [
+        r"📋\s*Budget Concern:\s*([^(]+?)\s*\(PRN:\s*([^)]+)\)",
+        r"Budget Concern:\s*([^(]+?)\s*\(PRN:\s*([^)]+)\)",  # Without emoji
+    ]
+    
+    match = None
+    for pattern in patterns:
+        match = re.search(pattern, notification_message)
+        if match:
+            break
+    
     if match:
         project_text = match.group(1).strip()
         prn = match.group(2).strip()
         prn_normalized = re.sub(r'\s+', ' ', prn).strip()
         
-        # Try both models
-        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
-            if ProjectModel is None:
-                try:
-                    from monitoring.models import Project as MonitoringProject
-                    ProjectModel = MonitoringProject
-                except:
-                    continue
-            
-            try:
-                project = ProjectModel.objects.get(prn__iexact=prn_normalized)
-                logger.info(f"[{model_name}] Found project by PRN (Budget Concern): {project.id} - {project.name}")
+        logger.info(f"Budget Concern: Extracted PRN='{prn_normalized}', project_text='{project_text}'")
+        
+        # Try projeng model first (since Budget Concern notifications come from projeng)
+        try:
+            project = ProjengProject.objects.get(prn__iexact=prn_normalized)
+            logger.info(f"[projeng] Found project by PRN (Budget Concern): {project.id} - {project.name}")
+            return project.id
+        except ProjengProject.DoesNotExist:
+            pass
+        except ProjengProject.MultipleObjectsReturned:
+            project = ProjengProject.objects.filter(prn__iexact=prn_normalized).order_by('-created_at').first()
+            if project:
+                logger.info(f"[projeng] Found project by PRN (Budget Concern, multiple): {project.id} - {project.name}")
                 return project.id
-            except ProjectModel.DoesNotExist:
-                pass
-            except ProjectModel.MultipleObjectsReturned:
-                project = ProjectModel.objects.filter(prn__iexact=prn_normalized).order_by('-created_at').first()
-                if project:
-                    logger.info(f"[{model_name}] Found project by PRN (Budget Concern, multiple): {project.id} - {project.name}")
-                    return project.id
-            
-            # Fallback to project name
-            project_name = re.sub(r'\s*\(PRN:[^)]+\)', '', project_text).strip()
-            try:
-                project = ProjectModel.objects.get(name__iexact=project_name)
-                logger.info(f"[{model_name}] Found project by name (Budget Concern): {project.id} - {project.name}")
+        
+        # Fallback to project name in projeng model
+        project_name = project_text.strip()
+        try:
+            project = ProjengProject.objects.get(name__iexact=project_name)
+            logger.info(f"[projeng] Found project by name (Budget Concern): {project.id} - {project.name}")
+            return project.id
+        except ProjengProject.DoesNotExist:
+            pass
+        except ProjengProject.MultipleObjectsReturned:
+            project = ProjengProject.objects.filter(name__iexact=project_name).order_by('-created_at').first()
+            if project:
+                logger.info(f"[projeng] Found project by name (Budget Concern, multiple): {project.id} - {project.name}")
                 return project.id
-            except ProjectModel.DoesNotExist:
+        
+        # Try monitoring model as last resort
+        try:
+            from monitoring.models import Project as MonitoringProject
+            try:
+                project = MonitoringProject.objects.get(prn__iexact=prn_normalized)
+                logger.info(f"[monitoring] Found project by PRN (Budget Concern): {project.id} - {project.name}")
+                return project.id
+            except MonitoringProject.DoesNotExist:
                 pass
-            except ProjectModel.MultipleObjectsReturned:
-                project = ProjectModel.objects.filter(name__iexact=project_name).order_by('-created_at').first()
-                if project:
-                    logger.info(f"[{model_name}] Found project by name (Budget Concern, multiple): {project.id} - {project.name}")
-                    return project.id
+        except:
+            pass
     
     # Pattern 10: Budget Review Request - "💰 Budget Review Request: ProjectName (PRN: ...)"
     match = re.search(r"💰\s*Budget Review Request:\s*([^(]+)\s*\(PRN:\s*([^)]+)\)", notification_message)
