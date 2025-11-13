@@ -178,13 +178,13 @@
     <table class="w-full min-w-[1200px] divide-y divide-gray-200 text-sm">
       <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
         <tr>
+          <th class="px-4 py-4 text-center font-bold text-gray-700 uppercase tracking-wider text-xs">#</th>
           <th class="px-4 py-4 text-left font-bold text-gray-700 uppercase tracking-wider text-xs">PRN #</th>
           <th class="px-4 py-4 text-left font-bold text-gray-700 uppercase tracking-wider text-xs">Project</th>
           <th class="px-4 py-4 text-left font-bold text-gray-700 uppercase tracking-wider text-xs">Barangay</th>
           <th class="px-4 py-4 text-left font-bold text-gray-700 uppercase tracking-wider text-xs">Assigned Engineers</th>
           <th class="px-4 py-4 text-right font-bold text-gray-700 uppercase tracking-wider text-xs">Budget</th>
           <th class="px-4 py-4 text-right font-bold text-gray-700 uppercase tracking-wider text-xs">Spent</th>
-          <th class="px-4 py-4 text-right font-bold text-gray-700 uppercase tracking-wider text-xs">Remaining</th>
           <th class="px-4 py-4 text-center font-bold text-gray-700 uppercase tracking-wider text-xs">Utilization</th>
           <th class="px-4 py-4 text-center font-bold text-gray-700 uppercase tracking-wider text-xs">Over/Under</th>
           <th class="px-4 py-4 text-center font-bold text-gray-700 uppercase tracking-wider text-xs">Status</th>
@@ -194,6 +194,9 @@
       <tbody class="bg-white divide-y divide-gray-200">
         {% for p in project_data %}
         <tr class="hover:bg-blue-50 transition-colors duration-150">
+          <td class="px-4 py-4 text-center whitespace-nowrap">
+            <span class="text-gray-600 font-medium">{{ page_obj.start_index|add:forloop.counter0 }}</span>
+          </td>
           <td class="px-4 py-4 whitespace-nowrap">
             <span class="text-gray-700 font-medium">{{ p.prn|default:"—" }}</span>
           </td>
@@ -222,17 +225,10 @@
             {% endif %}
           </td>
           <td class="px-4 py-4 text-right whitespace-nowrap">
-            <span class="font-semibold text-gray-900">₱{{ p.budget|floatformat:2 }}</span>
+            <span class="font-semibold text-gray-900">₱{{ p.budget|floatformat:2|intcomma }}</span>
           </td>
           <td class="px-4 py-4 text-right whitespace-nowrap">
-            <span class="font-semibold text-orange-600">₱{{ p.spent|floatformat:2 }}</span>
-          </td>
-          <td class="px-4 py-4 text-right whitespace-nowrap">
-            {% if p.remaining < 0 %}
-              <span class="font-semibold text-red-600">₱{{ p.remaining|floatformat:2 }}</span>
-            {% else %}
-              <span class="font-semibold text-green-600">₱{{ p.remaining|floatformat:2 }}</span>
-            {% endif %}
+            <span class="font-semibold text-orange-600">₱{{ p.spent|floatformat:2|intcomma }}</span>
           </td>
           <td class="px-4 py-4 text-center">
             <div class="flex flex-col items-center">
@@ -268,7 +264,7 @@
           </td>
           <td class="px-4 py-4 text-center">
             <button onclick="showCostBreakdownModal({{ forloop.counter0 }})" 
-                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors">
+                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors cursor-pointer">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
@@ -278,7 +274,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="11" class="text-center py-12 text-gray-400">
+          <td colspan="10" class="text-center py-12 text-gray-400">
             <div class="flex flex-col items-center">
               <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -468,13 +464,25 @@
       });
     }
 
-    // Cost Breakdown Modal Functions
+    // Cost Breakdown Modal Functions - Make globally accessible
     const projectData = {{ project_data_json|safe }};
     
-    function showCostBreakdownModal(index) {
+    // Make function globally accessible
+    window.showCostBreakdownModal = function(index) {
+      if (!projectData || !projectData[index]) {
+        console.error('Project data not found for index:', index);
+        alert('Project data not available. Please refresh the page.');
+        return;
+      }
+      
       const project = projectData[index];
       const modal = document.getElementById('costBreakdownModal');
       const modalContent = document.getElementById('costBreakdownContent');
+      
+      if (!modal || !modalContent) {
+        console.error('Modal elements not found');
+        return;
+      }
       
       // Build modal content
       let html = `
@@ -537,8 +545,12 @@
       modal.classList.remove('hidden');
     }
 
-    function hideCostBreakdownModal() {
-      document.getElementById('costBreakdownModal').classList.add('hidden');
+    // Make hide function globally accessible
+    window.hideCostBreakdownModal = function() {
+      const modal = document.getElementById('costBreakdownModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
     }
 
     // Close modal when clicking outside
