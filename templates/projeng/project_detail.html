@@ -582,28 +582,46 @@
         }
     });
     
-    // Budget Alert Modal Functions
-    function showBudgetAlertModal() {
-        document.getElementById('budgetAlertModal').classList.remove('hidden');
-    }
+    // Budget Alert Modal Functions - Make them globally accessible
+    window.showBudgetAlertModal = function() {
+        const modal = document.getElementById('budgetAlertModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex'; // Ensure flex display for centering
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        } else {
+            console.error('Budget alert modal not found!');
+        }
+    };
 
-    function hideBudgetAlertModal() {
-        document.getElementById('budgetAlertModal').classList.add('hidden');
-    }
+    window.hideBudgetAlertModal = function() {
+        const modal = document.getElementById('budgetAlertModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        } else {
+            console.error('Budget alert modal not found!');
+        }
+    };
 
-    // Close modal when clicking outside
-    const budgetModal = document.getElementById('budgetAlertModal');
-    if (budgetModal) {
-        budgetModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideBudgetAlertModal();
-            }
-        });
-    }
+    // Close modal when clicking outside - wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const budgetModal = document.getElementById('budgetAlertModal');
+        if (budgetModal) {
+            budgetModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    window.hideBudgetAlertModal();
+                }
+            });
+        } else {
+            console.warn('Budget alert modal element not found in DOM');
+        }
+    });
 </script>
 
 <!-- Budget Alert Modal -->
-<div id="budgetAlertModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+<div id="budgetAlertModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-semibold">Send Budget Alert</h3>
