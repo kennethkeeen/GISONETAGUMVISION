@@ -1266,7 +1266,8 @@ def export_reports_pdf(request):
     
     # Create a PDF
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="projects_report_{timezone.now().strftime("%Y%m%d")}.pdf"'
+    # Use 'inline' to display in browser, 'attachment' to force download
+    response['Content-Disposition'] = f'inline; filename="projects_report_{timezone.now().strftime("%Y%m%d")}.pdf"'
     
     # Create a file-like object to write the PDF data to
     buffer = io.BytesIO()

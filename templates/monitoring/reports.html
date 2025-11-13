@@ -485,7 +485,8 @@ function normalizeStatus(status) {
             if (selectedBarangay) {
                 exportUrl = `${exportUrl}?barangay=${selectedBarangay}`;
             }
-            window.location.href = exportUrl;
+            // Open PDF in a new window
+            window.open(exportUrl, '_blank');
             closeExportModal();
         });
     }

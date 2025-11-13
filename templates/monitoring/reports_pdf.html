@@ -8,40 +8,49 @@
         /* === Long Bond Paper (8.5" x 13") === */
         @page {
             size: 8.5in 13in; /* Long bond paper */
-            margin: 15mm;
+            margin: 12mm 15mm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         html, body {
             margin: 0;
             padding: 0;
-            width: 8.5in;      /* Long bond width */
-            min-height: 13in;   /* Long bond height */
+            width: 100%;
             background: #fff;
             font-family: "Times New Roman", serif;
             font-size: 10pt;
+            line-height: 1.3;
+            color: #000;
         }
 
         #report {
             width: 100%;
-            margin: auto;
-            padding: 5mm 0;
+            margin: 0 auto;
+            padding: 0;
         }
 
         /* === Official Header Section === */
-        .header {
-            text-align: center;
-            border-bottom: 2px solid black;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+        .header-container {
             position: relative;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2.5px solid #000;
         }
 
         .header-logo {
             position: absolute;
             left: 0;
             top: 0;
-            width: 80px;
-            height: 80px;
+            width: 75px;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .header-logo img {
@@ -50,124 +59,244 @@
             object-fit: contain;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 11pt;
-            font-weight: normal;
-            line-height: 1.3;
+        .header-content {
+            text-align: center;
+            padding-left: 85px;
+            padding-right: 10px;
         }
 
-        .header h2 {
-            margin: 2px 0;
-            font-size: 14pt;
+        .header-line {
+            font-size: 9.5pt;
+            font-weight: normal;
+            line-height: 1.4;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .header-line.republic {
+            font-size: 9pt;
+            margin-bottom: 2px;
+        }
+
+        .header-line.province {
+            font-size: 9pt;
+            margin-bottom: 2px;
+        }
+
+        .header-line.city {
+            font-size: 13pt;
             font-weight: bold;
+            margin: 3px 0;
             letter-spacing: 1px;
         }
 
-        .header h3 {
-            margin: 2px 0;
+        .header-line.office {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 2px 0 4px 0;
+        }
+
+        .header-title {
             font-size: 12pt;
             font-weight: bold;
+            margin: 4px 0 2px 0;
+            letter-spacing: 0.5px;
         }
 
-        .header h4 {
-            margin: 3px 0;
-            font-size: 11pt;
-            font-weight: normal;
-        }
-
-        .header-subtitle {
-            margin-top: 5px;
+        .header-date {
             font-size: 10pt;
-            font-weight: bold;
+            font-weight: normal;
+            margin-top: 3px;
+            font-style: italic;
         }
 
         /* === Report Metadata === */
         .report-meta {
             text-align: center;
-            margin-bottom: 8px;
-            font-size: 10pt;
+            margin: 8px 0 10px 0;
+            font-size: 9pt;
+            color: #333;
         }
 
         .report-meta strong {
             font-weight: bold;
         }
 
+        /* === Table Container === */
+        .table-container {
+            width: 100%;
+            margin: 0;
+            overflow: visible;
+        }
+
         /* === Table Styling === */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
-            font-size: 9pt;
+            margin: 0;
+            font-size: 8.5pt;
+            table-layout: fixed;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tbody {
+            display: table-row-group;
         }
 
         th, td {
-            border: 1px solid black;
-            padding: 4px;
-            text-align: center;
+            border: 1px solid #000;
+            padding: 5px 4px;
             vertical-align: middle;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         th {
-            background-color: black;
-            color: white;
+            background-color: #000;
+            color: #fff;
             font-weight: bold;
-            font-size: 8.5pt;
+            font-size: 8pt;
+            padding: 6px 4px;
+            line-height: 1.2;
         }
 
         td {
-            word-wrap: break-word;
             font-size: 8.5pt;
+            background-color: #fff;
         }
 
-        td.text-left {
+        /* Column alignments */
+        .col-no {
+            width: 3.5%;
+            text-align: center;
+        }
+
+        .col-prn {
+            width: 7%;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .col-name {
+            width: 18%;
             text-align: left;
+            padding-left: 6px;
         }
 
-        td.text-right {
+        .col-location {
+            width: 9%;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .col-cost {
+            width: 9%;
             text-align: right;
+            padding-right: 6px;
+            font-size: 8pt;
         }
 
-        /* Column widths for better layout */
-        .col-no { width: 3%; }
-        .col-prn { width: 8%; }
-        .col-name { width: 20%; }
-        .col-location { width: 10%; }
-        .col-cost { width: 10%; }
-        .col-desc { width: 15%; }
-        .col-date-start { width: 7%; }
-        .col-date-target { width: 7%; }
-        .col-date-complete { width: 7%; }
-        .col-accomplishment { width: 6%; }
-        .col-remarks { width: 10%; }
+        .col-desc {
+            width: 14%;
+            text-align: left;
+            padding-left: 5px;
+            font-size: 8pt;
+        }
+
+        .col-date {
+            width: 6.5%;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .col-accomplishment {
+            width: 5.5%;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .col-remarks {
+            width: 10%;
+            text-align: left;
+            padding-left: 5px;
+            font-size: 8pt;
+        }
+
+        /* Table row styling */
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Nested header row */
+        .sub-header-row th {
+            background-color: #000;
+            color: #fff;
+            font-size: 7.5pt;
+            padding: 4px 3px;
+        }
+
+        /* Bold project names */
+        .project-name {
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* Status styling */
+        .status-completed {
+            color: #000;
+            font-weight: normal;
+        }
+
+        .status-ongoing {
+            color: #000;
+            font-weight: normal;
+        }
 
         /* === Footer Section === */
         .signature-section {
-            margin-top: 20px;
+            margin-top: 25px;
             width: 100%;
-            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid;
         }
 
         .signature {
-            width: 45%;
-            display: inline-block;
-            vertical-align: top;
+            width: 48%;
             text-align: center;
             font-size: 10pt;
-            margin-top: 15px;
         }
 
         .signature-line {
-            border-top: 1px solid black;
-            margin: 30px auto 5px auto;
-            width: 80%;
+            border-top: 1.5px solid #000;
+            margin: 35px auto 8px auto;
+            width: 75%;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .signature-title {
+            font-size: 9pt;
+            font-style: italic;
         }
 
         .footer-note {
             text-align: right;
             font-style: italic;
             font-size: 9pt;
-            margin-top: 10px;
+            margin-top: 15px;
+            color: #333;
         }
 
         /* Page break controls */
@@ -175,10 +304,34 @@
             page-break-inside: avoid;
         }
 
+        .page-break-before {
+            page-break-before: always;
+        }
+
+        /* Empty state */
+        .empty-row {
+            text-align: center;
+            padding: 20px !important;
+            color: #666;
+        }
+
         @media print {
             body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+            
+            .table-container {
+                page-break-inside: auto;
+            }
+            
+            tbody tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            thead {
+                display: table-header-group;
             }
         }
     </style>
@@ -186,16 +339,18 @@
 <body>
     <div id="report">
         <!-- === Official Header === -->
-        <div class="header">
+        <div class="header-container no-break">
             <div class="header-logo">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a8/Tagum_City_Seal.png" alt="Tagum Logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a8/Tagum_City_Seal.png" alt="Tagum City Seal" onerror="this.style.display='none'">
             </div>
-            <h1>REPUBLIC OF THE PHILIPPINES</h1>
-            <h1>PROVINCE OF DAVAO DEL NORTE</h1>
-            <h2>CITY OF TAGUM</h2>
-            <h3>OFFICE OF THE CITY ENGINEER</h3>
-            <h4>LIST OF INFRASTRUCTURE PROJECTS</h4>
-            <div class="header-subtitle">As of {{ generated_at|date:"M d, Y" }}</div>
+            <div class="header-content">
+                <p class="header-line republic">REPUBLIC OF THE PHILIPPINES</p>
+                <p class="header-line province">PROVINCE OF DAVAO DEL NORTE</p>
+                <p class="header-line city">CITY OF TAGUM</p>
+                <p class="header-line office">OFFICE OF THE CITY ENGINEER</p>
+                <p class="header-title">LIST OF INFRASTRUCTURE PROJECTS</p>
+                <p class="header-date">As of {{ generated_at|date:"M d, Y" }}</p>
+            </div>
         </div>
 
         <div class="report-meta">
@@ -203,96 +358,90 @@
         </div>
 
         <!-- === Table === -->
-        <table class="no-break">
-            <thead>
-                <tr>
-                    <th class="col-no">Item No.</th>
-                    <th class="col-prn">PRN</th>
-                    <th class="col-name">Name of Project</th>
-                    <th class="col-location">Location</th>
-                    <th class="col-cost">Project Cost</th>
-                    <th class="col-desc">Project Description</th>
-                    <th colspan="4">Project Implementation Status</th>
-                    <th class="col-remarks">REMARKS</th>
-                </tr>
-                <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th class="col-date-start">Date Started</th>
-                    <th class="col-date-target">Target Date of Completion</th>
-                    <th class="col-date-complete">Date of Completion</th>
-                    <th class="col-accomplishment">% Accomplishment</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for project in projects %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ project.prn|default:"N/A" }}</td>
-                    <td class="text-left"><strong>{{ project.name|default:"Unnamed Project" }}</strong></td>
-                    <td>{{ project.barangay|default:"N/A" }}</td>
-                    <td class="text-right">₱{{ project.project_cost|default:0|floatformat:2 }}</td>
-                    <td class="text-left">{{ project.description|default:"-"|truncatewords:10 }}</td>
-                    <td>{{ project.start_date|date:"d-M-y"|default:"-" }}</td>
-                    <td>{{ project.end_date|date:"d-M-y"|default:"-" }}</td>
-                    <td>
-                        {% if project.status == 'completed' %}
-                            {{ project.end_date|date:"d-M-y"|default:"-" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if project.status == 'completed' %}
-                            100.00%
-                        {% elif project.status == 'in_progress' or project.status == 'ongoing' %}
-                            {% comment %} Calculate progress if available {% endcomment %}
-                            -
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="text-left">
-                        {% if project.status == 'completed' %}
-                            100% Completed
-                        {% elif project.status == 'in_progress' or project.status == 'ongoing' %}
-                            On Going
-                        {% elif project.status == 'planned' or project.status == 'pending' %}
-                            For Implementation
-                        {% elif project.status == 'delayed' %}
-                            On Going
-                        {% else %}
-                            For Pre-Engineering
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="11" style="text-align: center; padding: 20px;">
-                        No projects found in the system.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-no" rowspan="2">Item No.</th>
+                        <th class="col-prn" rowspan="2">PRN</th>
+                        <th class="col-name" rowspan="2">Name of Project</th>
+                        <th class="col-location" rowspan="2">Location</th>
+                        <th class="col-cost" rowspan="2">Project Cost</th>
+                        <th class="col-desc" rowspan="2">Project Description</th>
+                        <th colspan="4">Project Implementation Status</th>
+                        <th class="col-remarks" rowspan="2">REMARKS</th>
+                    </tr>
+                    <tr class="sub-header-row">
+                        <th class="col-date">Date Started</th>
+                        <th class="col-date">Target Date of Completion</th>
+                        <th class="col-date">Date of Completion</th>
+                        <th class="col-accomplishment">% Accomplishment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <td class="col-no">{{ forloop.counter }}</td>
+                        <td class="col-prn">{{ project.prn|default:"-" }}</td>
+                        <td class="col-name project-name">{{ project.name|default:"Unnamed Project" }}</td>
+                        <td class="col-location">{{ project.barangay|default:"-" }}</td>
+                        <td class="col-cost">₱{{ project.project_cost|default:0|floatformat:2 }}</td>
+                        <td class="col-desc">{{ project.description|default:"-"|truncatewords:12 }}</td>
+                        <td class="col-date">{{ project.start_date|date:"d-M-y"|default:"-" }}</td>
+                        <td class="col-date">{{ project.end_date|date:"d-M-y"|default:"-" }}</td>
+                        <td class="col-date">
+                            {% if project.status == 'completed' %}
+                                {{ project.end_date|date:"d-M-y"|default:"-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="col-accomplishment">
+                            {% if project.status == 'completed' %}
+                                100.00%
+                            {% elif project.status == 'in_progress' or project.status == 'ongoing' %}
+                                -
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="col-remarks">
+                            {% if project.status == 'completed' %}
+                                100% Completed
+                            {% elif project.status == 'in_progress' or project.status == 'ongoing' %}
+                                On Going
+                            {% elif project.status == 'planned' or project.status == 'pending' %}
+                                For Implementation
+                            {% elif project.status == 'delayed' %}
+                                On Going
+                            {% else %}
+                                For Pre-Engineering
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="empty-row">
+                            No projects found in the system.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <!-- === Footer Signatures === -->
-        <div class="signature-section">
+        <div class="signature-section no-break">
             <div class="signature">
                 <div class="signature-line"></div>
-                <strong>Engr. Juan Dela Cruz</strong><br>
-                City Engineer
+                <div class="signature-name">Engr. Juan Dela Cruz</div>
+                <div class="signature-title">City Engineer</div>
             </div>
 
-            <div class="signature" style="float: right;">
+            <div class="signature">
                 <div class="signature-line"></div>
-                <strong>Engr. Maria Santos</strong><br>
-                Project Monitoring Head
+                <div class="signature-name">Engr. Maria Santos</div>
+                <div class="signature-title">Project Monitoring Head</div>
             </div>
         </div>
 
