@@ -55,10 +55,12 @@ def finance_dashboard(request):
         cumulative.append(running)
     # Doughnut Chart: Budget utilization
     utilization_data = [float(total_spent), float(remaining)]
+    utilization_percentage = (float(total_spent) / float(total_budget) * 100) if total_budget > 0 else 0
     context = {
         'total_budget': total_budget,
         'total_spent': total_spent,
         'remaining': remaining,
+        'utilization_percentage': utilization_percentage,
         'project_names': project_names,
         'project_budgets': project_budgets,
         'project_spent': project_spent,

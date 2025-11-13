@@ -1,96 +1,210 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block content %}
-<div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">Finance Management</h1>
-    <!-- Summary Analytics -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow p-6">
-            <div class="text-gray-600">Total Projects</div>
-            <div class="text-2xl font-bold text-blue-700">{{ total_projects|default:'0' }}</div>
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Finance Management</h1>
+        <p class="text-gray-600">Monitor and manage project budgets and spending</p>
+    </div>
+
+    <!-- Summary Analytics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium mb-1">Total Projects</p>
+                    <p class="text-3xl font-bold">{{ total_projects|default:'0' }}</p>
+                </div>
+                <div class="bg-blue-400 bg-opacity-30 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow p-6">
-            <div class="text-gray-600">Over Budget</div>
-            <div class="text-2xl font-bold text-red-700">{{ over_budget_count|default:'0' }}</div>
+
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm font-medium mb-1">Over Budget</p>
+                    <p class="text-3xl font-bold">{{ over_budget_count|default:'0' }}</p>
+                </div>
+                <div class="bg-red-400 bg-opacity-30 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow p-6">
-            <div class="text-gray-600">Within Budget</div>
-            <div class="text-2xl font-bold text-green-700">{{ within_budget_count|default:'0' }}</div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium mb-1">Within Budget</p>
+                    <p class="text-3xl font-bold">{{ within_budget_count|default:'0' }}</p>
+                </div>
+                <div class="bg-green-400 bg-opacity-30 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow p-6">
-            <div class="text-gray-600">Under Budget</div>
-            <div class="text-2xl font-bold text-yellow-600">{{ under_budget_count|default:'0' }}</div>
+
+        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100 text-sm font-medium mb-1">Under Budget</p>
+                    <p class="text-3xl font-bold">{{ under_budget_count|default:'0' }}</p>
+                </div>
+                <div class="bg-yellow-400 bg-opacity-30 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
         </div>
     </div>
+
     <!-- Filters -->
-    <form method="get" class="flex flex-col md:flex-row gap-4 mb-6">
-        <div>
-            <label for="prn" class="block text-sm font-medium text-gray-700">PRN ID No#</label>
-            <input type="text" name="prn" id="prn" class="rounded border-gray-300 px-3 py-2" placeholder="Enter PRN ID No#" value="{{ selected_prn }}">
-        </div>
-        <div>
-            <label for="barangay" class="block text-sm font-medium text-gray-700">Barangay</label>
-            <select name="barangay" id="barangay" class="rounded border-gray-300 px-3 py-2">
-                <option value="">All</option>
-                {% for b in all_barangays %}
-                <option value="{{ b }}" {% if selected_barangay == b %}selected{% endif %}>{{ b }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="budget_status" class="block text-sm font-medium text-gray-700">Budget Status</label>
-            <select name="budget_status" id="budget_status" class="rounded border-gray-300 px-3 py-2">
-                <option value="">All</option>
-                <option value="over" {% if selected_budget_status == 'over' %}selected{% endif %}>Over Budget</option>
-                <option value="within" {% if selected_budget_status == 'within' %}selected{% endif %}>Within Budget</option>
-                <option value="under" {% if selected_budget_status == 'under' %}selected{% endif %}>Under Budget</option>
-            </select>
-        </div>
-        <div class="flex items-end">
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Filter</button>
-        </div>
-    </form>
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
+        <form method="get" class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-1">
+                <label for="prn" class="block text-sm font-medium text-gray-700 mb-2">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                    </svg>
+                    PRN ID No#
+                </label>
+                <input type="text" name="prn" id="prn" class="w-full rounded-lg border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Enter PRN ID No#" value="{{ selected_prn }}">
+            </div>
+            <div class="flex-1">
+                <label for="barangay" class="block text-sm font-medium text-gray-700 mb-2">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Barangay
+                </label>
+                <select name="barangay" id="barangay" class="w-full rounded-lg border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="">All Barangays</option>
+                    {% for b in all_barangays %}
+                    <option value="{{ b }}" {% if selected_barangay == b %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1">
+                <label for="budget_status" class="block text-sm font-medium text-gray-700 mb-2">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Budget Status
+                </label>
+                <select name="budget_status" id="budget_status" class="w-full rounded-lg border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="">All Statuses</option>
+                    <option value="over" {% if selected_budget_status == 'over' %}selected{% endif %}>Over Budget</option>
+                    <option value="within" {% if selected_budget_status == 'within' %}selected{% endif %}>Within Budget</option>
+                    <option value="under" {% if selected_budget_status == 'under' %}selected{% endif %}>Under Budget</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Project Financial Overview Table -->
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white rounded shadow">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2">Project</th>
-                    <th class="px-4 py-2">Barangay</th>
-                    <th class="px-4 py-2">Approved Budget</th>
-                    <th class="px-4 py-2">Total Spent</th>
-                    <th class="px-4 py-2">Remaining</th>
-                    <th class="px-4 py-2">Status</th>
-                    <th class="px-4 py-2">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for proj in project_financials %}
-                <tr>
-                    <td class="px-4 py-2">{{ proj.name }}</td>
-                    <td class="px-4 py-2">{{ proj.barangay }}</td>
-                    <td class="px-4 py-2">₱{{ proj.budget|floatformat:2 }}</td>
-                    <td class="px-4 py-2">₱{{ proj.spent|floatformat:2 }}</td>
-                    <td class="px-4 py-2">₱{{ proj.remaining|floatformat:2 }}</td>
-                    <td class="px-4 py-2">
-                        {% if proj.budget_status == 'over' %}
-                            <span class="text-red-700 font-bold">Over Budget</span>
-                        {% elif proj.budget_status == 'within' %}
-                            <span class="text-green-700 font-bold">Within Budget</span>
-                        {% elif proj.budget_status == 'under' %}
-                            <span class="text-yellow-600 font-bold">Under Budget</span>
-                        {% else %}
-                            <span class="text-gray-500">N/A</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-2">
-                        <a href="{% url 'finance_project_detail' proj.id %}" class="text-blue-600 underline">View Details</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="7" class="text-center py-4 text-gray-400">No projects found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
+            <h2 class="text-xl font-semibold text-white flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Project Budget Details
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangay</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved Budget</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for proj in project_financials %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ proj.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-600">{{ proj.barangay|default:"N/A" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-blue-700">₱{{ proj.budget|floatformat:2|intcomma }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-green-700">₱{{ proj.spent|floatformat:2|intcomma }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold {% if proj.remaining < 0 %}text-red-700{% elif proj.remaining < proj.budget|mul:0.2 %}text-yellow-600{% else %}text-green-700{% endif %}">
+                                ₱{{ proj.remaining|floatformat:2|intcomma }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if proj.budget_status == 'over' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    Over Budget
+                                </span>
+                            {% elif proj.budget_status == 'within' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Within Budget
+                                </span>
+                            {% elif proj.budget_status == 'under' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Under Budget
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    N/A
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'finance_project_detail' proj.id %}" class="text-blue-600 hover:text-blue-900 font-semibold transition-colors flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
+                            <p class="mt-1 text-sm text-gray-500">Try adjusting your filters.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

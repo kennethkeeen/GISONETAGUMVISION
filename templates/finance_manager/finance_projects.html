@@ -1,55 +1,115 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block content %}
-<div class="container mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">Projects</h1>
-    <form method="get" class="flex flex-col md:flex-row gap-4 mb-6">
-        <div>
-            <label for="barangay" class="block text-sm font-medium text-gray-700">Barangay</label>
-            <select name="barangay" id="barangay" class="rounded border-gray-300 px-3 py-2" onchange="this.form.submit()">
-                <option value="">All</option>
-                {% for b in all_barangays %}
-                <option value="{{ b }}" {% if selected_barangay == b %}selected{% endif %}>{{ b }}</option>
-                {% endfor %}
-            </select>
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Projects</h1>
+        <p class="text-gray-600">View and manage project financial information</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
+        <form method="get" class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex-1">
+                <label for="barangay" class="block text-sm font-medium text-gray-700 mb-2">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Barangay
+                </label>
+                <select name="barangay" id="barangay" class="w-full rounded-lg border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" onchange="this.form.submit()">
+                    <option value="">All Barangays</option>
+                    {% for b in all_barangays %}
+                    <option value="{{ b }}" {% if selected_barangay == b %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1">
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    Status
+                </label>
+                <select name="status" id="status" class="w-full rounded-lg border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for s in all_statuses %}
+                    <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Project Financials Table -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
+            <h2 class="text-xl font-semibold text-white flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Project Financials
+            </h2>
         </div>
-        <div>
-            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-            <select name="status" id="status" class="rounded border-gray-300 px-3 py-2" onchange="this.form.submit()">
-                <option value="">All</option>
-                {% for s in all_statuses %}
-                <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s|title }}</option>
-                {% endfor %}
-            </select>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangay</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spent</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for proj in project_financials %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ proj.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-600">{{ proj.barangay|default:"N/A" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-blue-700">₱{{ proj.budget|floatformat:2|intcomma }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-green-700">₱{{ proj.spent|floatformat:2|intcomma }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold {% if proj.remaining < 0 %}text-red-700{% elif proj.remaining < proj.budget|mul:0.2 %}text-yellow-600{% else %}text-green-700{% endif %}">
+                                ₱{{ proj.remaining|floatformat:2|intcomma }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if proj.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif proj.status == 'in_progress' or proj.status == 'ongoing' %}bg-blue-100 text-blue-800
+                                {% elif proj.status == 'planned' %}bg-gray-100 text-gray-800
+                                {% elif proj.status == 'delayed' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ proj.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
+                            <p class="mt-1 text-sm text-gray-500">Try adjusting your filters.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </form>
-    <h2 class="text-xl font-semibold mb-4">Project Financials</h2>
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white rounded shadow">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2">Project</th>
-                    <th class="px-4 py-2">Barangay</th>
-                    <th class="px-4 py-2">Budget</th>
-                    <th class="px-4 py-2">Spent</th>
-                    <th class="px-4 py-2">Remaining</th>
-                    <th class="px-4 py-2">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for proj in project_financials %}
-                <tr>
-                    <td class="px-4 py-2">{{ proj.name }}</td>
-                    <td class="px-4 py-2">{{ proj.barangay }}</td>
-                    <td class="px-4 py-2">₱{{ proj.budget|floatformat:2 }}</td>
-                    <td class="px-4 py-2">₱{{ proj.spent|floatformat:2 }}</td>
-                    <td class="px-4 py-2">₱{{ proj.remaining|floatformat:2 }}</td>
-                    <td class="px-4 py-2">{{ proj.status|title }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="6" class="text-center py-4 text-gray-400">No projects found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
