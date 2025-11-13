@@ -181,76 +181,79 @@ class SimpleChoropleth {
         this.legend.onAdd = (map) => {
             const div = L.DomUtil.create('div', 'info legend');
             div.style.backgroundColor = 'white';
-            div.style.padding = '10px';
+            div.style.padding = '14px 16px';
             div.style.border = '2px solid #ccc';
-            div.style.borderRadius = '5px';
-            div.style.fontSize = '11px';
-            div.style.minWidth = '180px';
-            div.style.maxHeight = 'none';
-            div.style.overflowY = 'visible';
+            div.style.borderRadius = '8px';
+            div.style.fontSize = '13px';
+            div.style.minWidth = '220px';
+            div.style.maxWidth = '280px';
+            div.style.maxHeight = '500px';
+            div.style.overflowY = 'auto';
+            div.style.overflowX = 'hidden';
+            div.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
             
             // Show different legend based on current view
             if (this.currentView === 'urban_rural') {
-                div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Urban / Rural</h4>';
+                div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Urban / Rural</h4>';
                 div.innerHTML += `
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #ef4444; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Urban</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #ef4444; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Urban</span>
                     </div>
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #fbbf24; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Rural</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #fbbf24; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Rural</span>
                     </div>
                 `;
             } else if (this.currentView === 'economic') {
-                div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Economic Classification</h4>';
+                div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Economic Classification</h4>';
                 div.innerHTML += `
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #3b82f6; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Growth Center</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #3b82f6; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Growth Center</span>
                     </div>
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #10b981; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Emerging</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #10b981; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Emerging</span>
                     </div>
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #fbbf24; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Satellite</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #fbbf24; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Satellite</span>
                     </div>
                 `;
             } else if (this.currentView === 'elevation') {
-                div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Elevation Type</h4>';
+                div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Elevation Type</h4>';
                 div.innerHTML += `
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #8b5cf6; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Highland</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #8b5cf6; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Highland</span>
                     </div>
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #84cc16; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Plains</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #84cc16; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Plains</span>
                     </div>
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: #06b6d4; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>Coastal</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: #06b6d4; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">Coastal</span>
                     </div>
                 `;
             } else if (this.currentView === 'zone_type') {
                 // Phase 5: Zone type legend
-                div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Zone Types</h4>';
+                div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Zone Types</h4>';
                 const zoneTypes = ['R-1', 'R-2', 'R-3', 'SHZ', 'C-1', 'C-2', 'I-1', 'I-2', 'AGRO', 'INS-1', 'PARKS', 'AGRICULTURAL', 'ECO-TOURISM', 'SPECIAL'];
                 zoneTypes.forEach(zoneType => {
                     const color = this.getZoneTypeColor(zoneType);
                     const displayName = this.getZoneTypeDisplayName(zoneType);
                     div.innerHTML += `
-                        <div style="margin: 2px 0; display: flex; align-items: center;">
-                            <i style="background: ${color}; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                            <span style="font-size: 11px;">${zoneType}: ${displayName}</span>
+                        <div style="margin: 4px 0; display: flex; align-items: center;">
+                            <i style="background: ${color}; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                            <span style="font-size: 13px;">${zoneType}: ${displayName}</span>
                         </div>
                     `;
                 });
             } else {
                 // Default: show barangay list
-            div.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">Tagum City Barangays</h4>';
+            div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Tagum City Barangays</h4>';
             
             // Get unique barangays with their colors
             const uniqueBarangays = new Map();
@@ -267,9 +270,9 @@ class SimpleChoropleth {
 
             sortedBarangays.forEach(([name, color]) => {
                 div.innerHTML += `
-                    <div style="margin: 2px 0; display: flex; align-items: center;">
-                        <i style="background: ${color}; width: 16px; height: 16px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0;"></i>
-                        <span>${name}</span>
+                    <div style="margin: 4px 0; display: flex; align-items: center;">
+                        <i style="background: ${color}; width: 20px; height: 20px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                        <span style="font-size: 13px;">${name}</span>
                     </div>
                 `;
             });
