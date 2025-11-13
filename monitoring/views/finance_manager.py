@@ -129,14 +129,36 @@ def finance_projects(request):
             'Magugpo West', 'Mankilam', 'New Balamban', 'Nueva Fuerza', 'Pagsabangan', 'Pandapan',
             'San Agustin', 'San Isidro', 'San Miguel', 'Visayan Village'
         ]
-        all_statuses = [s[0] for s in Project.STATUS_CHOICES if s[0] != 'cancelled']
+        try:
+            all_statuses = [s[0] for s in Project.STATUS_CHOICES if s[0] != 'cancelled']
+        except Exception as e:
+            logger.error(f"Error getting STATUS_CHOICES: {str(e)}", exc_info=True)
+            all_statuses = ['planned', 'in_progress', 'completed', 'delayed']
+        
+        # Convert to JSON for JavaScript (if needed by template)
+        import json
+        try:
+            project_names_json = json.dumps(project_names)
+            project_budgets_json = json.dumps(project_budgets)
+            project_spent_json = json.dumps(project_spent)
+            cost_by_type_json = json.dumps(dict(cost_by_type))
+        except Exception as e:
+            logger.error(f"Error converting to JSON: {str(e)}", exc_info=True)
+            project_names_json = '[]'
+            project_budgets_json = '[]'
+            project_spent_json = '[]'
+            cost_by_type_json = '{}'
         
         context = {
             'project_financials': project_financials,
             'project_names': project_names,
+            'project_names_json': project_names_json,
             'project_budgets': project_budgets,
+            'project_budgets_json': project_budgets_json,
             'project_spent': project_spent,
+            'project_spent_json': project_spent_json,
             'cost_by_type': dict(cost_by_type),
+            'cost_by_type_json': cost_by_type_json,
             'all_barangays': all_barangays,
             'all_statuses': all_statuses,
             'selected_barangay': barangay_filter or '',
