@@ -264,13 +264,23 @@
         .signature-section {
             margin-top: 20px;
             width: 100%;
-            display: flex;
-            justify-content: space-between;
             page-break-inside: avoid;
         }
 
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .signature-table td {
+            width: 50%;
+            padding: 0;
+            border: none;
+            vertical-align: top;
+        }
+
         .signature {
-            width: 48%;
+            width: 100%;
             text-align: center;
             font-size: 10pt;
         }
@@ -432,17 +442,24 @@
 
         <!-- === Footer Signatures === -->
         <div class="signature-section no-break">
-            <div class="signature">
-                <div class="signature-line"></div>
-                <div class="signature-name">Engr. Juan Dela Cruz</div>
-                <div class="signature-title">City Engineer</div>
-            </div>
-
-            <div class="signature">
-                <div class="signature-line"></div>
-                <div class="signature-name">Engr. Maria Santos</div>
-                <div class="signature-title">Project Monitoring Head</div>
-            </div>
+            <table class="signature-table">
+                <tr>
+                    <td>
+                        <div class="signature">
+                            <div class="signature-line"></div>
+                            <div class="signature-name">Engr. Juan Dela Cruz</div>
+                            <div class="signature-title">City Engineer</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="signature">
+                            <div class="signature-line"></div>
+                            <div class="signature-name">Engr. Maria Santos</div>
+                            <div class="signature-title">Project Monitoring Head</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <div class="footer-note">
