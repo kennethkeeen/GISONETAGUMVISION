@@ -598,11 +598,17 @@ def get_project_from_notification(notification_message):
             pass
     
     # Pattern 10: Budget Review Request - "💰 Budget Review Request: ProjectName (PRN: ...)"
-    match = re.search(r"💰\s*Budget Review Request:\s*([^(]+)\s*\(PRN:\s*([^)]+)\)", notification_message)
+    # Handle both formats:
+    # 1. "💰 Budget Review Request: ProjectName (PRN: ...) (Utilization: ...)"
+    # 2. "💰 Budget Review Request: ProjectName (PRN: ...)"
+    # Extract PRN from anywhere in the message
+    match = re.search(r"💰\s*Budget Review Request:\s*([^(]+?)\s*\(PRN:\s*([^)]+)\)", notification_message)
     if match:
         project_text = match.group(1).strip()
         prn = match.group(2).strip()
         prn_normalized = re.sub(r'\s+', ' ', prn).strip()
+        
+        logger.info(f"Budget Review Request: Extracted PRN '{prn_normalized}' from project text '{project_text}'")
         
         # Try both models
         for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
@@ -618,6 +624,7 @@ def get_project_from_notification(notification_message):
                 logger.info(f"[{model_name}] Found project by PRN (Budget Review Request): {project.id} - {project.name}")
                 return project.id
             except ProjectModel.DoesNotExist:
+                logger.debug(f"[{model_name}] Project with PRN '{prn_normalized}' not found")
                 pass
             except ProjectModel.MultipleObjectsReturned:
                 project = ProjectModel.objects.filter(prn__iexact=prn_normalized).order_by('-created_at').first()
@@ -625,19 +632,24 @@ def get_project_from_notification(notification_message):
                     logger.info(f"[{model_name}] Found project by PRN (Budget Review Request, multiple): {project.id} - {project.name}")
                     return project.id
             
-            # Fallback to project name
-            project_name = re.sub(r'\s*\(PRN:[^)]+\)', '', project_text).strip()
+            # Fallback to project name (extract name before any parentheses)
+            project_name = project_text.strip()
+            # Remove any trailing spaces or special characters
+            project_name = re.sub(r'\s+', ' ', project_name).strip()
             try:
                 project = ProjectModel.objects.get(name__iexact=project_name)
                 logger.info(f"[{model_name}] Found project by name (Budget Review Request): {project.id} - {project.name}")
                 return project.id
             except ProjectModel.DoesNotExist:
+                logger.debug(f"[{model_name}] Project with name '{project_name}' not found")
                 pass
             except ProjectModel.MultipleObjectsReturned:
                 project = ProjectModel.objects.filter(name__iexact=project_name).order_by('-created_at').first()
                 if project:
                     logger.info(f"[{model_name}] Found project by name (Budget Review Request, multiple): {project.id} - {project.name}")
                     return project.id
+        
+        logger.warning(f"Budget Review Request: Could not find project with PRN '{prn_normalized}' or name '{project_name}'")
     
     # Pattern 11: Generic budget notification - "ProjectName (PRN: ...) is at X% of budget"
     match = re.search(r"([^(]+)\s*\(PRN:\s*([^)]+)\)\s+is\s+(?:at|OVER)\s+.*budget", notification_message, re.IGNORECASE)

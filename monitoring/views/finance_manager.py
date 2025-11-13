@@ -243,9 +243,24 @@ def finance_notifications(request):
     unread_count = notifications.filter(is_read=False).count()
     
     # Extract project IDs for clickable notifications
+    import logging
+    logger = logging.getLogger(__name__)
     notifications_with_projects = []
     for notification in notifications:
-        project_id = get_project_from_notification(notification.message)
+        project_id = None
+        try:
+            if notification.message:
+                # Log for debugging
+                if 'Budget Review Request' in notification.message:
+                    logger.info(f"Processing Budget Review Request notification {notification.id}: {notification.message[:100]}")
+                project_id = get_project_from_notification(notification.message)
+                if project_id:
+                    logger.info(f"Extracted project_id={project_id} for notification {notification.id}")
+                else:
+                    if 'Budget Review Request' in notification.message:
+                        logger.warning(f"Failed to extract project_id for Budget Review Request notification {notification.id}")
+        except Exception as e:
+            logger.error(f"Error getting project from notification {notification.id}: {str(e)}", exc_info=True)
         notifications_with_projects.append({
             'notification': notification,
             'project_id': project_id,
