@@ -194,13 +194,23 @@
                             </select>
                         </div>
                         
-                        <!-- Status Filters -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
-                            <div class="flex gap-2">
-                                <button id="btn-completed" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-all text-sm">Completed</button>
-                                <button id="btn-ongoing" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all text-sm">Ongoing</button>
-                                <button id="btn-planned" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-300 transition-all text-sm">Planned</button>
+                        <!-- Status Filters and Add Project Button -->
+                        <div class="flex flex-col gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1.5">Status</label>
+                                <div class="flex gap-2">
+                                    <button id="btn-completed" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-300 transition-all text-sm">Completed</button>
+                                    <button id="btn-ongoing" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all text-sm">Ongoing</button>
+                                    <button id="btn-planned" class="flex-1 px-3 py-2.5 rounded-lg font-semibold border-2 border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-300 transition-all text-sm">Planned</button>
+                                </div>
+                            </div>
+                            <div class="mt-auto">
+                                <button id="add-project-btn" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg text-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Add Project
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1341,6 +1351,354 @@ function formatDate(dateStr) {
     const date = new Date(dateStr);
     if (isNaN(date)) return dateStr;
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+</script>
+
+<!-- Add/Edit Project Modal -->
+<div id="project-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 opacity-0 pointer-events-none" style="z-index: 20000;">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-7xl p-0 relative mx-4 my-4 max-h-[95vh] overflow-y-auto animate-modal-scale">
+        <button id="close-modal" class="absolute top-6 right-6 z-30 w-12 h-12 flex items-center justify-center bg-blue-700 text-white text-3xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
+        <form id="project-form" method="post" enctype="multipart/form-data" action="{% url 'project_list' %}" class="w-full p-8 md:p-10">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+                <!-- Column 1: Basic Information -->
+                <div class="flex flex-col gap-4">
+                    <label class="font-semibold text-gray-700">PRN</label>
+                    <input type="text" name="prn" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                    <label class="font-semibold text-gray-700">Name</label>
+                    <input type="text" name="name" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                    <label class="font-semibold text-gray-700">Description</label>
+                    <textarea name="description" rows="3" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none resize-none" required></textarea>
+                    <label class="font-semibold text-gray-700">Barangay</label>
+                    <select name="barangay" id="modal-barangay-select" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required>
+                        <option value="">---------</option>
+                        <option value="Apokon">Apokon</option>
+                        <option value="Bincungan">Bincungan</option>
+                        <option value="Busaon">Busaon</option>
+                        <option value="Canocotan">Canocotan</option>
+                        <option value="Cuambogan">Cuambogan</option>
+                        <option value="La Filipina">La Filipina</option>
+                        <option value="Liboganon">Liboganon</option>
+                        <option value="Madaum">Madaum</option>
+                        <option value="Magdum">Magdum</option>
+                        <option value="Magugpo East">Magugpo East</option>
+                        <option value="Magugpo North">Magugpo North</option>
+                        <option value="Magugpo Poblacion">Magugpo Poblacion</option>
+                        <option value="Magugpo South">Magugpo South</option>
+                        <option value="Magugpo West">Magugpo West</option>
+                        <option value="Mankilam">Mankilam</option>
+                        <option value="New Balamban">New Balamban</option>
+                        <option value="Nueva Fuerza">Nueva Fuerza</option>
+                        <option value="Pagsabangan">Pagsabangan</option>
+                        <option value="Pandapan">Pandapan</option>
+                        <option value="San Agustin">San Agustin</option>
+                        <option value="San Isidro">San Isidro</option>
+                        <option value="San Miguel">San Miguel</option>
+                        <option value="Visayan Village">Visayan Village</option>
+                    </select>
+                </div>
+                
+                <!-- Column 2: Financial & Status -->
+                <div class="flex flex-col gap-4">
+                    <label class="font-semibold text-gray-700">Project Cost</label>
+                    <input type="number" step="0.01" name="project_cost" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                    <label class="font-semibold text-gray-700">Source of Funds</label>
+                    <input type="text" name="source_of_funds" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                    <label class="font-semibold text-gray-700">Status</label>
+                    <select name="status" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required>
+                        <option value="">---------</option>
+                        <option value="planned">Planned</option>
+                        <option value="in_progress">Ongoing</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <label class="font-semibold text-gray-700">Assigned Engineers</label>
+                    <select name="assigned_engineers" id="assigned-engineers-select" class="rounded-lg border border-gray-300 px-4 py-2.5 w-full" multiple required style="height: 110px; min-width: 180px;">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <!-- Column 3: Location, Dates & Image -->
+                <div class="flex flex-col gap-4">
+                    <label class="font-semibold text-gray-700">Latitude</label>
+                    <input type="number" step="any" name="latitude" id="latitude-input" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                    <label class="font-semibold text-gray-700">Longitude</label>
+                    <input type="number" step="any" name="longitude" id="longitude-input" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                    <button type="button" id="map-fullscreen-btn" class="mt-2 mb-1 w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2.5 rounded-lg shadow transition flex items-center justify-center gap-2" title="Set map location">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" /></svg>
+                        Set Map Location
+                    </button>
+                    <label class="font-semibold text-gray-700">Start Date</label>
+                    {% if request.user.is_superuser or request.user.groups.all.0.name == 'Head Engineer' %}
+                    <input type="date" name="start_date" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                    {% else %}
+                    <input type="date" name="start_date" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required disabled />
+                    {% endif %}
+                    <label class="font-semibold text-gray-700">End Date</label>
+                    {% if request.user.is_superuser or request.user.groups.all.0.name == 'Head Engineer' %}
+                    <input type="date" name="end_date" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required />
+                    {% else %}
+                    <input type="date" name="end_date" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" required disabled />
+                    {% endif %}
+                    <label class="font-semibold text-gray-700">Image</label>
+                    <input type="file" name="image" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none cursor-pointer" id="image-input" />
+                </div>
+            </div>
+            <div class="flex justify-end gap-4 pt-8 mt-6 border-t border-gray-100">
+                <button type="button" onclick="closeProjectModal()" class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Cancel</button>
+                <button type="submit" class="px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    Save Project
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Popup Map Modal for Setting Location -->
+<div id="map-popup-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 hidden" style="z-index: 20001;">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-0 relative mx-4 my-8 max-h-[90vh] flex flex-col">
+        <button type="button" id="close-map-popup" class="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center bg-blue-700 text-white text-2xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
+        <div id="popup-map" style="min-height:300px; height:60vh; background:#eee;" class="rounded-lg border border-gray-300 w-full"></div>
+        <div class="flex justify-end gap-4 p-4">
+            <button type="button" id="close-map-popup-btn" class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div id="success-toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 hidden transition-all duration-300" style="z-index: 20002;"></div>
+
+<script>
+// Project Modal JavaScript
+window.currentUsername = "{{ request.user.username|escapejs }}";
+const barangayCoordinates = {
+    'Apokon': [7.4237747, 125.8259557],
+    'Bincungan': [7.3788027, 125.7547817],
+    'Busaon': [7.3599983, 125.7535189],
+    'Canocotan': [7.4001209, 125.7740386],
+    'Cuambogan': [7.4912804, 125.7927462],
+    'La Filipina': [7.4764565, 125.8053029],
+    'Liboganon': [7.3464940, 125.7767654],
+    'Madaum': [7.3826395, 125.8087180],
+    'Magdum': [7.4692173, 125.8347371],
+    'Magugpo East': [7.4493737, 125.8196061],
+    'Magugpo North': [7.4596946, 125.8161767],
+    'Magugpo Poblacion': [7.4472333, 125.8043897],
+    'Magugpo South': [7.4472497, 125.7950305],
+    'Magugpo West': [7.4567492, 125.8031452],
+    'Mankilam': [7.4607703, 125.7848619],
+    'New Balamban': [7.4952507, 125.8452198],
+    'Nueva Fuerza': [7.4993765, 125.8186816],
+    'Pagsabangan': [7.4825329, 125.7518306],
+    'Pandapan': [7.4826495, 125.8758813],
+    'San Agustin': [7.4920504, 125.8259339],
+    'San Isidro': [7.3939060, 125.7854038],
+    'San Miguel': [7.4422203, 125.7761364],
+    'Visayan Village': [7.4318430, 125.8037910],
+};
+
+let editProjectId = null;
+const projectModal = document.getElementById('project-modal');
+const projectForm = document.getElementById('project-form');
+const addProjectBtn = document.getElementById('add-project-btn');
+const closeModal = document.getElementById('close-modal');
+const cancelBtn = document.querySelector('button[type="button"][onclick="closeProjectModal()"]');
+const imageInput = document.getElementById('image-input');
+const modalBarangaySelect = document.getElementById('modal-barangay-select');
+const assignedEngineersSelect = document.getElementById('assigned-engineers-select');
+const successToast = document.getElementById('success-toast');
+
+function showToast(message) {
+    if (successToast) {
+        successToast.textContent = message;
+        successToast.classList.remove('hidden');
+        setTimeout(() => {
+            successToast.classList.add('hidden');
+        }, 2000);
+    }
+}
+
+function showModal() {
+    if (projectModal) {
+        projectModal.classList.remove('opacity-0', 'pointer-events-none');
+        setTimeout(() => projectModal.classList.add('opacity-100'), 10);
+    }
+}
+
+function hideModal() {
+    if (projectModal) {
+        projectModal.classList.remove('opacity-100');
+        setTimeout(() => projectModal.classList.add('opacity-0', 'pointer-events-none'), 300);
+    }
+    if (projectForm) projectForm.reset();
+    editProjectId = null;
+    if (projectForm) projectForm.setAttribute('data-mode', 'add');
+    if (assignedEngineersSelect) assignedEngineersSelect.innerHTML = '';
+}
+
+window.closeProjectModal = hideModal;
+
+function populateEngineers() {
+    fetch('/projeng/api/engineers/')
+        .then(response => response.json())
+        .then(engineers => {
+            if (assignedEngineersSelect) {
+                assignedEngineersSelect.innerHTML = '';
+                if (engineers.error) {
+                    const option = document.createElement('option');
+                    option.textContent = 'No engineers available or not authorized';
+                    assignedEngineersSelect.appendChild(option);
+                    assignedEngineersSelect.disabled = true;
+                    return;
+                }
+                assignedEngineersSelect.disabled = false;
+                const currentUsername = (window.currentUsername || '').trim().toLowerCase();
+                engineers.forEach(engineer => {
+                    const engineerUsername = (engineer.username || '').trim().toLowerCase();
+                    if (engineerUsername === currentUsername) return;
+                    const option = document.createElement('option');
+                    option.value = engineer.id;
+                    option.textContent = engineer.full_name || engineer.username;
+                    assignedEngineersSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Failed to fetch engineers:', err);
+        });
+}
+
+if (addProjectBtn) {
+    addProjectBtn.addEventListener('click', function() {
+        editProjectId = null;
+        if (projectForm) projectForm.setAttribute('data-mode', 'add');
+        if (imageInput) imageInput.required = true;
+        populateEngineers();
+        showModal();
+    });
+}
+
+if (closeModal) closeModal.addEventListener('click', hideModal);
+if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+
+// Popup Map Modal Logic
+let popupMap = null;
+let popupMarker = null;
+const mapPopupModal = document.getElementById('map-popup-modal');
+const popupMapDiv = document.getElementById('popup-map');
+const closeMapPopup = document.getElementById('close-map-popup');
+const closeMapPopupBtn = document.getElementById('close-map-popup-btn');
+const mapFullscreenBtn = document.getElementById('map-fullscreen-btn');
+const latInput = document.getElementById('latitude-input');
+const lngInput = document.getElementById('longitude-input');
+
+function showPopupMap() {
+    if (mapPopupModal) {
+        mapPopupModal.classList.remove('hidden');
+        setTimeout(() => {
+            let lat = parseFloat(latInput.value) || 7.4475;
+            let lng = parseFloat(lngInput.value) || 125.8078;
+            let zoom = 13;
+
+            const selectedBarangay = modalBarangaySelect ? modalBarangaySelect.value : '';
+            if (selectedBarangay && barangayCoordinates[selectedBarangay]) {
+                [lat, lng] = barangayCoordinates[selectedBarangay];
+                zoom = 14;
+            } else if (latInput.value && lngInput.value) {
+                lat = parseFloat(latInput.value);
+                lng = parseFloat(lngInput.value);
+                zoom = 14;
+            }
+
+            if (!popupMap) {
+                if (L.DomUtil.get('popup-map')) {
+                    L.DomUtil.get('popup-map')._leaflet_id = null;
+                }
+                popupMap = L.map('popup-map').setView([lat, lng], zoom);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(popupMap);
+                popupMap.on('click', function(e) {
+                    const clickedLat = e.latlng.lat;
+                    const clickedLng = e.latlng.lng;
+                    if (latInput) latInput.value = clickedLat;
+                    if (lngInput) lngInput.value = clickedLng;
+                    if (popupMarker) { popupMarker.setLatLng([clickedLat, clickedLng]); }
+                    else { popupMarker = L.marker([clickedLat, clickedLng]).addTo(popupMap); }
+                });
+            } else {
+                popupMap.setView([lat, lng], zoom);
+            }
+
+            if (popupMarker) {
+                popupMap.removeLayer(popupMarker);
+                popupMarker = null;
+            }
+
+            if (lat && lng) {
+                popupMarker = L.marker([lat, lng]).addTo(popupMap);
+            }
+
+            setTimeout(() => { if (popupMap) popupMap.invalidateSize(); }, 350);
+        }, 100);
+    }
+}
+
+function hidePopupMap() {
+    if (mapPopupModal) {
+        mapPopupModal.classList.add('hidden');
+    }
+}
+
+if (mapFullscreenBtn) {
+    mapFullscreenBtn.addEventListener('click', showPopupMap);
+}
+if (closeMapPopup) closeMapPopup.addEventListener('click', hidePopupMap);
+if (closeMapPopupBtn) closeMapPopupBtn.addEventListener('click', hidePopupMap);
+
+if (mapPopupModal) {
+    mapPopupModal.addEventListener('mousedown', function(e) {
+        if (e.target === mapPopupModal) {
+            hidePopupMap();
+        }
+    });
+}
+
+// Form submission handler
+if (projectForm) {
+    projectForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(projectForm);
+        const csrftoken = document.cookie.split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+
+        fetch(projectForm.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast('Project created successfully!');
+                hideModal();
+                // Reload the page to show the new project on the map
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                return response.text().then(text => {
+                    throw new Error('Failed to create project');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while creating the project: ' + (error.message || 'Unknown error'));
+        });
+    });
 }
 </script>
 {% endblock %} 
