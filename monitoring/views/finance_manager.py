@@ -194,6 +194,7 @@ def finance_cost_management(request):
 def finance_notifications(request):
     """View for Finance Managers and Head Engineers to manage their notifications"""
     from projeng.models import Notification
+    from projeng.utils import get_project_from_notification
     from django.contrib import messages
     from django.shortcuts import redirect
     from django.http import JsonResponse
@@ -240,9 +241,20 @@ def finance_notifications(request):
                 return redirect('finance_notifications')
 
     unread_count = notifications.filter(is_read=False).count()
+    
+    # Extract project IDs for clickable notifications
+    notifications_with_projects = []
+    for notification in notifications:
+        project_id = get_project_from_notification(notification.message)
+        notifications_with_projects.append({
+            'notification': notification,
+            'project_id': project_id,
+            'is_clickable': project_id is not None
+        })
 
     context = {
         'notifications': notifications,
+        'notifications_with_projects': notifications_with_projects,
         'unread_count': unread_count,
     }
     return render(request, 'finance_manager/finance_notifications.html', context)

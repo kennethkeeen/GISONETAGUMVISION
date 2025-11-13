@@ -48,28 +48,37 @@
     {% if notifications %}
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="divide-y divide-gray-200">
-                {% for notification in notifications %}
-                {% comment %} Check if notification is about a project {% endcomment %}
-                {% with is_project_notification=False %}
-                    {% if "cost entry" in notification.message|lower or "progress for project" in notification.message|lower or "new project created" in notification.message|lower %}
-                        {% with is_project_notification=True %}{% endwith %}
-                    {% endif %}
-                {% endwith %}
-                <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %} notification-item" 
+                {% for item in notifications_with_projects %}
+                {% with notification=item.notification project_id=item.project_id is_clickable=item.is_clickable %}
+                <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %} notification-item {% if is_clickable %}cursor-pointer{% endif %}" 
                      data-notification-id="{{ notification.id }}"
                      data-notification-message="{{ notification.message|escapejs }}"
-                     data-is-project-notification="{% if 'cost entry' in notification.message|lower or 'progress for project' in notification.message|lower or 'new project created' in notification.message|lower %}true{% else %}false{% endif %}">
+                     data-project-id="{{ project_id|default:'' }}"
+                     data-is-clickable="{{ is_clickable|yesno:'true,false' }}"
+                     {% if is_clickable and project_id %}onclick="redirectToProject({{ project_id }}, {{ notification.id }})"{% endif %}>
                     <div class="flex justify-between items-start">
                         <div class="flex-1 notification-content">
-                            <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %}">
-                                {{ notification.message }}
-                            </p>
-                            <p class="text-sm text-gray-500 mt-1">
-                                {{ notification.created_at|date:"M d, Y g:i A" }}
-                            </p>
+                            <div class="flex items-start gap-2">
+                                {% if is_clickable %}
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                                {% endif %}
+                                <div class="flex-1">
+                                    <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %} {% if is_clickable %}hover:text-blue-600{% endif %}">
+                                        {{ notification.message }}
+                                        {% if is_clickable %}
+                                        <span class="text-xs text-blue-500 ml-2">→ Click to view project</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        {{ notification.created_at|date:"M d, Y g:i A" }}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
-                            {% if not notification.is_read %}
+                            {% if not notification.is_read and not is_clickable %}
                             <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium" 
                                     data-notification-id="{{ notification.id }}">
                                 Mark Read
@@ -82,6 +91,7 @@
                         </div>
                     </div>
                 </div>
+                {% endwith %}
                 {% endfor %}
             </div>
         </div>
@@ -310,11 +320,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Extract project ID from notification message
-        // Make notifications clickable if they mention projects
+        // Make notifications clickable if they mention projects or budget reviews
         const hasProjectLink = notificationData.message && (
             notificationData.message.includes('Cost entry') || 
             notificationData.message.includes('Progress for project') ||
-            notificationData.message.includes('New project created')
+            notificationData.message.includes('New project created') ||
+            notificationData.message.includes('Budget Review Request') ||
+            notificationData.message.includes('Budget Concern') ||
+            notificationData.message.includes('WARNING') ||
+            notificationData.message.includes('CRITICAL') ||
+            notificationData.message.includes('URGENT')
         );
         
         // Format date
@@ -511,20 +526,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup after a short delay to ensure realtimeManager is initialized
     setTimeout(setupNotificationListUpdates, 500);
     
-    // Make existing notifications clickable
+    // Function to redirect to project detail page
+    function redirectToProject(projectId, notificationId) {
+        if (projectId) {
+            // Mark notification as read when clicked
+            if (notificationId) {
+                const formData = new FormData();
+                formData.append('action', 'mark_read');
+                formData.append('notification_id', notificationId);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                fetch('{% url "finance_notifications" %}', {
+                    method: 'POST',
+                    body: formData
+                }).catch(err => console.error('Error marking notification as read:', err));
+            }
+            // Redirect to project detail page for Finance Managers
+            window.location.href = `/dashboard/finance/project/${projectId}/`;
+        }
+    }
+    
+    // Make existing notifications clickable (fallback for notifications without project_id in data attribute)
     document.querySelectorAll('.notification-item').forEach(item => {
-        const isProjectNotification = item.dataset.isProjectNotification === 'true';
-        if (isProjectNotification) {
-            const notificationMessage = item.dataset.notificationMessage;
+        const isClickable = item.dataset.isClickable === 'true';
+        const projectId = item.dataset.projectId;
+        if (isClickable && projectId) {
             const notificationId = item.dataset.notificationId;
             const contentDiv = item.querySelector('.notification-content');
-            if (contentDiv) {
-                contentDiv.style.cursor = 'pointer';
-                contentDiv.classList.add('hover:text-blue-600');
-                contentDiv.addEventListener('click', function() {
-                    fetchProjectIdAndRedirect(notificationMessage, notificationId);
+            if (contentDiv && !item.onclick) {
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on buttons
+                    if (e.target.closest('.mark-read-btn, .delete-notification-btn')) {
+                        return;
+                    }
+                    redirectToProject(projectId, notificationId);
                 });
-                // Hide "Mark Read" button for clickable notifications
+                // Hide "Mark Read" button for clickable notifications (will be auto-read when clicked)
                 const markReadBtn = item.querySelector('.mark-read-btn');
                 if (markReadBtn) {
                     markReadBtn.style.display = 'none';
@@ -533,25 +570,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Function to fetch project ID from notification message and redirect
+    // Function to fetch project ID from notification message and redirect (fallback for real-time notifications)
     async function fetchProjectIdAndRedirect(notificationMessage, notificationId) {
         try {
             const response = await fetch(`/projeng/api/get-project-from-notification/?message=${encodeURIComponent(notificationMessage)}`);
             const data = await response.json();
             if (data.project_id) {
-                // Mark notification as read when clicked
-                if (notificationId) {
-                    const formData = new FormData();
-                    formData.append('action', 'mark_read');
-                    formData.append('notification_id', notificationId);
-                    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                    fetch('{% url "finance_notifications" %}', {
-                        method: 'POST',
-                        body: formData
-                    }).catch(err => console.error('Error marking notification as read:', err));
-                }
-                // Redirect to project detail page for Finance Managers
-                window.location.href = `/dashboard/finance/project/${data.project_id}/`;
+                redirectToProject(data.project_id, notificationId);
             } else {
                 console.log('No project ID found for notification');
             }
