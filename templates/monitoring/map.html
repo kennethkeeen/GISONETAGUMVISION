@@ -275,49 +275,105 @@
 
 <!-- View Details Modal (Initially hidden) -->
 <div id="details-modal" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-40" style="opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out; position: fixed; z-index: 10000;">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl p-0 relative mx-4 my-8 max-h-[90vh] overflow-y-auto animate-modal-scale" style="position: relative; z-index: 10000; pointer-events: auto;">
-        <button id="close-details-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
-        <div class="flex flex-col items-center px-8 pt-8 pb-4">
-            <img id="details-image" class="w-40 h-40 object-cover object-center rounded-2xl mb-4 bg-gray-100 border-2 border-gray-200 shadow aspect-square" alt="Project image" />
-            <div class="w-full">
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="text-2xl font-extrabold text-blue-900" id="details-title">Project Details</span>
-                    <span id="details-status"></span>
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative mx-4 my-8 max-h-[90vh] overflow-y-auto" style="position: relative; z-index: 10000; pointer-events: auto;">
+        <!-- Header with Gradient -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl px-6 py-5 relative">
+            <button id="close-details-modal" class="absolute top-4 right-4 text-white hover:text-gray-200 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20 transition-all">&times;</button>
+            <div class="flex items-start gap-4">
+                <img id="details-image" class="w-20 h-20 object-cover object-center rounded-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 shadow-lg flex-shrink-0" alt="Project image" style="display: none;" />
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                        <h2 class="text-2xl font-bold text-white" id="details-title">Project Details</h2>
+                        <span id="details-status"></span>
+                    </div>
+                    <div class="text-lg font-semibold text-white mb-1" id="details-name"></div>
+                    <div class="text-sm text-blue-100 font-mono" id="details-prn"></div>
                 </div>
-                <div class="text-lg font-bold text-gray-800 mb-1" id="details-name"></div>
-                <div class="text-sm text-gray-500 mb-2" id="details-prn"></div>
             </div>
         </div>
-        <div class="px-8 pb-8">
-            <div>
-            <div class="mb-4">
-                <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Project Info</div>
-                <div class="mb-2"><span class="font-semibold">Description:</span> <span id="details-description"></span></div>
-            </div>
-            <div class="mb-4">
-                <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Location</div>
-                <div class="mb-2"><span class="font-semibold">Barangay:</span> <span id="details-barangay"></span></div>
-                <div class="mb-2 flex gap-4"><span class="font-semibold">Latitude:</span> <span id="details-latitude"></span> <span class="font-semibold">Longitude:</span> <span id="details-longitude"></span></div>
-                <div class="mb-2"><div id="details-map" class="w-full h-40 rounded-lg border border-gray-200 leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" tabindex="0"></div></div>
-            </div>
-            <div class="mb-4">
-                <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Financial</div>
-                <div class="mb-2"><span class="font-semibold">Project Cost:</span> <span id="details-cost"></span></div>
-                <div class="mb-2"><span class="font-semibold">Source of Funds:</span> <span id="details-funds"></span></div>
-            </div>
-            <!-- Project Progress (Visible only for Ongoing projects with progress) -->
-            <div id="details-progress-section" class="mb-4 hidden">
-                <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Progress</div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                    <div id="details-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+        
+        <!-- Content -->
+        <div class="p-6 space-y-4">
+            <!-- Project Info Card -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">ℹ️</div>
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Project Info</h3>
                 </div>
-                <div id="details-progress-text" class="text-sm text-gray-600 mt-1">0%</div>
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <div class="text-xs text-gray-500 uppercase mb-1">Description</div>
+                    <div class="text-sm font-medium text-gray-800" id="details-description">No description</div>
+                </div>
             </div>
-            <!-- Assigned Engineers -->
-            <div class="mb-4">
-                <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Assigned Engineer(s)</div>
-                <div id="details-assigned-engineers" class="text-sm text-gray-600"></div>
+            
+            <!-- Location Card -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-l-4 border-green-500">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">📍</div>
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Location</h3>
+                </div>
+                <div class="space-y-3">
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase mb-1">Barangay</div>
+                        <div class="text-sm font-semibold text-gray-800" id="details-barangay">—</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Latitude</div>
+                            <div class="text-xs font-mono text-gray-700" id="details-latitude">—</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Longitude</div>
+                            <div class="text-xs font-mono text-gray-700" id="details-longitude">—</div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg overflow-hidden shadow-sm">
+                        <div id="details-map" class="w-full h-48 rounded-lg"></div>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Financial Card -->
+            <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4 border-l-4 border-yellow-500">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">💰</div>
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Financial</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase mb-1">Project Cost</div>
+                        <div class="text-sm font-semibold text-gray-800" id="details-cost">—</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase mb-1">Source of Funds</div>
+                        <div class="text-sm font-semibold text-gray-800" id="details-funds">—</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Card (Conditional) -->
+            <div id="details-progress-section" class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border-l-4 border-purple-500 hidden">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">📈</div>
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Progress</h3>
+                </div>
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+                        <div id="details-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div id="details-progress-text" class="text-sm font-semibold text-gray-700 text-center">0% Complete</div>
+                </div>
+            </div>
+            
+            <!-- Assigned Engineers Card -->
+            <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-4 border-l-4 border-gray-400">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-8 h-8 bg-gray-400 rounded-lg flex items-center justify-center text-white font-bold text-sm">👷</div>
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Assigned Engineer(s)</h3>
+                </div>
+                <div class="bg-white rounded-lg p-3 shadow-sm">
+                    <div id="details-assigned-engineers" class="text-sm text-gray-700">None assigned</div>
+                </div>
             </div>
         </div>
     </div>
