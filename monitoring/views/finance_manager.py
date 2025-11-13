@@ -96,6 +96,9 @@ def finance_projects(request):
                 budget_float = float(project.project_cost) if project.project_cost else 0
                 remaining_proj = budget_float - spent_float
                 
+                # Calculate threshold (20% of budget) for color coding
+                threshold = budget_float * 0.2
+                
                 project_financials.append({
                     'name': project.name,
                     'barangay': project.barangay or '',
@@ -103,6 +106,7 @@ def finance_projects(request):
                     'spent': spent_float,
                     'remaining': remaining_proj,
                     'status': project.status or 'planned',
+                    'threshold': threshold,
                 })
             except Exception as e:
                 logger.error(f"Error processing project {project.id}: {str(e)}", exc_info=True)
@@ -216,6 +220,9 @@ def finance_cost_management(request):
                     budget_status = 'under'
                     under_budget_count += 1
                 
+                # Calculate threshold (20% of budget) for color coding
+                threshold = budget_float * 0.2
+                
                 project_financials.append({
                     'id': project.id,
                     'prn': project.prn or '',
@@ -225,6 +232,7 @@ def finance_cost_management(request):
                     'spent': spent_float,
                     'remaining': remaining,
                     'budget_status': budget_status,
+                    'threshold': threshold,
                 })
             except Exception as e:
                 logger.error(f"Error processing project {project.id}: {str(e)}", exc_info=True)
