@@ -1266,10 +1266,10 @@ window.openDetailsModal = function(id) {
         if (detailsImage) {
             if (project.image) {
                 detailsImage.src = project.image;
-                detailsImage.classList.remove('hidden');
+                detailsImage.style.display = 'block';
             } else {
                 detailsImage.src = '';
-                detailsImage.classList.add('hidden');
+                detailsImage.style.display = 'none';
             }
         }
 
