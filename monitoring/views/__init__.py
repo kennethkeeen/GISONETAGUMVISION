@@ -1503,6 +1503,7 @@ def export_budget_reports_csv(request):
     """Export budget reports as CSV"""
     from projeng.models import ProjectCost
     from collections import defaultdict
+    from django.db.models import Q
     
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
@@ -1511,6 +1512,27 @@ def export_budget_reports_csv(request):
         projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters (same as budget_reports view)
+    selected_barangay = request.GET.get('barangay', '')
+    selected_status = request.GET.get('status', '')
+    selected_start_date = request.GET.get('start_date', '')
+    selected_end_date = request.GET.get('end_date', '')
+    
+    if selected_barangay:
+        projects = projects.filter(barangay=selected_barangay)
+    
+    if selected_status:
+        if selected_status == 'in_progress':
+            projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        else:
+            projects = projects.filter(status=selected_status)
+    
+    if selected_start_date:
+        projects = projects.filter(start_date__gte=selected_start_date)
+    
+    if selected_end_date:
+        projects = projects.filter(end_date__lte=selected_end_date)
     
     # Create the HttpResponse object with the appropriate CSV header
     response = HttpResponse(content_type='text/csv')
@@ -1548,6 +1570,7 @@ def export_budget_reports_csv(request):
 def export_budget_reports_excel(request):
     """Export budget reports as Excel"""
     from projeng.models import ProjectCost
+    from django.db.models import Q
     
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
@@ -1556,6 +1579,27 @@ def export_budget_reports_excel(request):
         projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters (same as budget_reports view)
+    selected_barangay = request.GET.get('barangay', '')
+    selected_status = request.GET.get('status', '')
+    selected_start_date = request.GET.get('start_date', '')
+    selected_end_date = request.GET.get('end_date', '')
+    
+    if selected_barangay:
+        projects = projects.filter(barangay=selected_barangay)
+    
+    if selected_status:
+        if selected_status == 'in_progress':
+            projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        else:
+            projects = projects.filter(status=selected_status)
+    
+    if selected_start_date:
+        projects = projects.filter(start_date__gte=selected_start_date)
+    
+    if selected_end_date:
+        projects = projects.filter(end_date__lte=selected_end_date)
     
     # Create a new workbook and select the active sheet
     workbook = openpyxl.Workbook()
@@ -1604,6 +1648,7 @@ def export_budget_reports_pdf(request):
     """Export budget reports as PDF"""
     from projeng.models import ProjectCost
     from collections import defaultdict
+    from django.db.models import Q
     
     # Role-based queryset
     if is_head_engineer(request.user) or is_finance_manager(request.user):
@@ -1612,6 +1657,27 @@ def export_budget_reports_pdf(request):
         projects = Project.objects.filter(assigned_engineers=request.user)
     else:
         projects = Project.objects.none()
+    
+    # Apply filters (same as budget_reports view)
+    selected_barangay = request.GET.get('barangay', '')
+    selected_status = request.GET.get('status', '')
+    selected_start_date = request.GET.get('start_date', '')
+    selected_end_date = request.GET.get('end_date', '')
+    
+    if selected_barangay:
+        projects = projects.filter(barangay=selected_barangay)
+    
+    if selected_status:
+        if selected_status == 'in_progress':
+            projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        else:
+            projects = projects.filter(status=selected_status)
+    
+    if selected_start_date:
+        projects = projects.filter(start_date__gte=selected_start_date)
+    
+    if selected_end_date:
+        projects = projects.filter(end_date__lte=selected_end_date)
     
     # Prepare project data
     project_data = []

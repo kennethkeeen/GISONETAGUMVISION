@@ -28,9 +28,9 @@
         </button>
         <div id="export-dropdown-menu" class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-50" role="menu" aria-orientation="vertical" aria-labelledby="export-dropdown-btn">
           <div class="py-1" role="none">
-            <a href="{% url 'export_budget_reports_pdf' %}" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📄 Export to PDF</a>
-            <a href="{% url 'export_budget_reports_excel' %}" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📊 Export to Excel</a>
-            <a href="{% url 'export_budget_reports_csv' %}" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📋 Export to CSV</a>
+            <a href="{% url 'export_budget_reports_pdf' %}" id="export-pdf-link" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📄 Export to PDF</a>
+            <a href="{% url 'export_budget_reports_excel' %}" id="export-excel-link" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📊 Export to Excel</a>
+            <a href="{% url 'export_budget_reports_csv' %}" id="export-csv-link" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📋 Export to CSV</a>
             <button onclick="window.print()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">🖨️ Print Report</button>
           </div>
         </div>
@@ -420,6 +420,59 @@
     document.addEventListener('click', function() {
       menu.classList.add('hidden');
     });
+
+    // Build query string from current filters
+    function buildFilterQueryString() {
+      const params = new URLSearchParams();
+      const barangay = document.getElementById('barangay-filter')?.value;
+      const status = document.getElementById('status-filter')?.value;
+      const startDate = document.getElementById('start-date-filter')?.value;
+      const endDate = document.getElementById('end-date-filter')?.value;
+      
+      if (barangay) params.append('barangay', barangay);
+      if (status) params.append('status', status);
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      
+      return params.toString();
+    }
+
+    // Update export links with current filter parameters
+    function updateExportLinks() {
+      const queryString = buildFilterQueryString();
+      const separator = queryString ? '?' : '';
+      
+      const pdfLink = document.getElementById('export-pdf-link');
+      const excelLink = document.getElementById('export-excel-link');
+      const csvLink = document.getElementById('export-csv-link');
+      
+      if (pdfLink) {
+        pdfLink.href = pdfLink.getAttribute('data-base-url') + separator + queryString;
+      }
+      if (excelLink) {
+        excelLink.href = excelLink.getAttribute('data-base-url') + separator + queryString;
+      }
+      if (csvLink) {
+        csvLink.href = csvLink.getAttribute('data-base-url') + separator + queryString;
+      }
+    }
+
+    // Store base URLs
+    document.getElementById('export-pdf-link').setAttribute('data-base-url', '{% url "export_budget_reports_pdf" %}');
+    document.getElementById('export-excel-link').setAttribute('data-base-url', '{% url "export_budget_reports_excel" %}');
+    document.getElementById('export-csv-link').setAttribute('data-base-url', '{% url "export_budget_reports_csv" %}');
+
+    // Update export links when filters change
+    const filterInputs = ['barangay-filter', 'status-filter', 'start-date-filter', 'end-date-filter'];
+    filterInputs.forEach(function(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.addEventListener('change', updateExportLinks);
+      }
+    });
+
+    // Initial update
+    updateExportLinks();
 
     // Auto-submit form when filters change
     const filterForm = document.getElementById('filter-form');
