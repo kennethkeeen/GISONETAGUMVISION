@@ -1219,7 +1219,7 @@ window.openDetailsModal = function(id) {
 
     if (project) {
         // Populate modal content
-        if (detailsTitle) detailsTitle.textContent = project.name || '';
+        if (detailsTitle) detailsTitle.textContent = 'Project Details';
         let delayedBadge = '';
         // Use project.progress for delayed badge check
         const currentProgress = project.progress !== undefined ? parseInt(project.progress, 10) : 0; // Use project.progress here
@@ -1230,7 +1230,7 @@ window.openDetailsModal = function(id) {
         }
         if (detailsStatus) detailsStatus.innerHTML = getStatusBadge(project.status || '') + delayedBadge;
         if (detailsName) detailsName.textContent = project.name || '';
-        if (detailsPrn) detailsPrn.textContent = `PRN#: ${project.prn || ''}`;
+        if (detailsPrn) detailsPrn.textContent = `PRN#: ${project.prn || 'N/A'}`;
         if (detailsBarangay) detailsBarangay.textContent = project.barangay || '';
         if (detailsCost) detailsCost.textContent = project.project_cost || '';
         if (detailsFunds) detailsFunds.textContent = project.source_of_funds || '';
