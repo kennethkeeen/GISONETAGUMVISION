@@ -1,3 +1,4 @@
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +9,7 @@
         /* === Long Bond Paper (8.5" x 13") === */
         @page {
             size: 8.5in 13in; /* Long bond paper */
-            margin: 12mm 10mm; /* Reduced left/right margins */
+            margin: 12mm 5mm; /* Reduced left/right margins to 5mm */
         }
 
         * {
@@ -213,12 +214,6 @@
             font-size: 8pt;
         }
 
-        .col-accomplishment {
-            width: 5.5%;
-            text-align: center;
-            font-size: 8pt;
-        }
-
         .col-remarks {
             width: 10%;
             text-align: left;
@@ -378,14 +373,12 @@
                         <th class="col-location" rowspan="2">Location</th>
                         <th class="col-cost" rowspan="2">Project Cost</th>
                         <th class="col-desc" rowspan="2">Project Description</th>
-                        <th colspan="4">Project Implementation Status</th>
+                        <th colspan="2">Project Implementation Status</th>
                         <th class="col-remarks" rowspan="2">REMARKS</th>
                     </tr>
                     <tr class="sub-header-row">
                         <th class="col-date">Date Started</th>
                         <th class="col-date">Target Date of Completion</th>
-                        <th class="col-date">Date of Completion</th>
-                        <th class="col-accomplishment">% Accomplishment</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -395,26 +388,10 @@
                         <td class="col-prn">{{ project.prn|default:"-" }}</td>
                         <td class="col-name project-name">{{ project.name|default:"Unnamed Project" }}</td>
                         <td class="col-location">{{ project.barangay|default:"-" }}</td>
-                        <td class="col-cost">₱{{ project.project_cost|default:0|floatformat:2 }}</td>
+                        <td class="col-cost">{{ project.project_cost|default:0|floatformat:2|intcomma }}</td>
                         <td class="col-desc">{{ project.description|default:"-"|truncatewords:12 }}</td>
                         <td class="col-date">{{ project.start_date|date:"d-M-y"|default:"-" }}</td>
                         <td class="col-date">{{ project.end_date|date:"d-M-y"|default:"-" }}</td>
-                        <td class="col-date">
-                            {% if project.status == 'completed' %}
-                                {{ project.end_date|date:"d-M-y"|default:"-" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="col-accomplishment">
-                            {% if project.status == 'completed' %}
-                                100.00%
-                            {% elif project.status == 'in_progress' or project.status == 'ongoing' %}
-                                -
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
                         <td class="col-remarks">
                             {% if project.status == 'completed' %}
                                 100% Completed
@@ -431,7 +408,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11" class="empty-row">
+                        <td colspan="9" class="empty-row">
                             No projects found in the system.
                         </td>
                     </tr>
