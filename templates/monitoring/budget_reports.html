@@ -163,10 +163,7 @@
           <label for="end-date-filter" class="block text-sm font-medium text-gray-700 mb-1">End Date:</label>
           <input type="date" id="end-date-filter" name="end_date" value="{{ selected_end_date|default:'' }}" class="w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
         </div>
-        <div class="flex gap-2">
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-            Apply Filters
-          </button>
+        <div>
           <button type="button" id="clear-filters-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:ring-gray-500 focus:border-gray-500 transition-colors">
             Clear
           </button>
@@ -430,15 +427,46 @@
       menu.classList.add('hidden');
     });
 
+    // Auto-submit form when filters change
+    const filterForm = document.getElementById('filter-form');
+    const barangayFilter = document.getElementById('barangay-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const startDateFilter = document.getElementById('start-date-filter');
+    const endDateFilter = document.getElementById('end-date-filter');
+    
+    if (barangayFilter) {
+      barangayFilter.addEventListener('change', function() {
+        filterForm.submit();
+      });
+    }
+    
+    if (statusFilter) {
+      statusFilter.addEventListener('change', function() {
+        filterForm.submit();
+      });
+    }
+    
+    if (startDateFilter) {
+      startDateFilter.addEventListener('change', function() {
+        filterForm.submit();
+      });
+    }
+    
+    if (endDateFilter) {
+      endDateFilter.addEventListener('change', function() {
+        filterForm.submit();
+      });
+    }
+
     // Clear Filters Button
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     if (clearFiltersBtn) {
       clearFiltersBtn.addEventListener('click', function() {
-        document.getElementById('barangay-filter').value = '';
-        document.getElementById('status-filter').value = '';
-        document.getElementById('start-date-filter').value = '';
-        document.getElementById('end-date-filter').value = '';
-        document.getElementById('filter-form').submit();
+        barangayFilter.value = '';
+        statusFilter.value = '';
+        startDateFilter.value = '';
+        endDateFilter.value = '';
+        filterForm.submit();
       });
     }
 
