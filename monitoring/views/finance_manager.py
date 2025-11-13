@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import Http404
 from projeng.models import Project, ProjectCost
 from django.db.models import Sum
 from collections import defaultdict
@@ -366,13 +367,16 @@ def finance_project_detail(request, project_id):
     import logging
     logger = logging.getLogger(__name__)
     
+    # Try to get project from projeng model first
     try:
-        # Try to get project from projeng model first
         project = get_object_or_404(Project, id=project_id)
         logger.info(f"Finance project detail: Found project {project_id} in projeng model")
+    except Http404:
+        # Re-raise Http404 so Django can handle it properly
+        logger.warning(f"Finance project detail: Project {project_id} not found")
+        raise
     except Exception as e:
         logger.error(f"Finance project detail: Error getting project {project_id}: {str(e)}", exc_info=True)
-        from django.http import Http404
         raise Http404("Project not found")
     
     try:
