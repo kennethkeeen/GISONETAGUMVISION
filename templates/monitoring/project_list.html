@@ -640,12 +640,17 @@ window.openDetailsModal = function(id) {
             document.getElementById('details-longitude').textContent = project.longitude || '';
             document.getElementById('details-start-date').textContent = formatDate(project.start_date) || '';
             document.getElementById('details-end-date').textContent = formatDate(project.end_date) || '';
-            if (project.image) {
+            // Handle project image
+            if (project.image && project.image.trim() !== '') {
                 detailsImage.src = project.image;
                 detailsImage.classList.remove('hidden');
+                detailsImage.style.display = 'block';
+                console.log('Setting project image:', project.image);
             } else {
                 detailsImage.src = '';
                 detailsImage.classList.add('hidden');
+                detailsImage.style.display = 'none';
+                console.log('No image for project:', project.id);
             }
             setTimeout(() => {
                 if (window.detailsMap) {
