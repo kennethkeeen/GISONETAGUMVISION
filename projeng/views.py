@@ -2776,9 +2776,23 @@ def project_types_api(request):
     logger = logging.getLogger(__name__)
     
     try:
+        # Debug: Log user and request info
+        logger.info(f"project_types_api called by user: {request.user.username}")
+        
+        # Get all project types
         project_types = ProjectType.objects.all().order_by('name')
         count = project_types.count()
         logger.info(f"Found {count} project types in database")
+        
+        # Debug: Log first few project types
+        if count > 0:
+            first_few = list(project_types[:5])
+            logger.info(f"First few project types: {[pt.name for pt in first_few]}")
+        else:
+            logger.warning("No project types found in database!")
+            # Try to see if there are any at all
+            all_types = ProjectType.objects.all()
+            logger.warning(f"Direct query count: {all_types.count()}")
         
         data = [
             {
@@ -2793,9 +2807,16 @@ def project_types_api(request):
         
         logger.info(f"Serialized {len(data)} project types for API response")
         response_data = {'project_types': data}
+        
+        # Debug: Log response data structure
+        logger.info(f"Response data keys: {list(response_data.keys())}")
+        logger.info(f"Response project_types length: {len(response_data['project_types'])}")
+        
         return JsonResponse(response_data)
     except Exception as e:
         logger.error(f"Error getting project types: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return JsonResponse({
             'error': str(e)
         }, status=500)
