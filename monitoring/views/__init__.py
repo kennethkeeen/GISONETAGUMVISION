@@ -275,68 +275,69 @@ def project_list(request):
             # Phase 4: Auto-detect zone before saving
             zone_type, confidence = project.detect_and_set_zone(save=False)
             
-            # Log image upload info for debugging
-            import logging
-            logger = logging.getLogger(__name__)
-            
+            # Log image upload info for debugging (use print() so it shows in runtime logs)
             if 'image' in request.FILES:
-                logger.info(f"📤 Uploading image: {request.FILES['image'].name}, size: {request.FILES['image'].size} bytes")
-                logger.info(f"   Content type: {request.FILES['image'].content_type}")
+                print(f"📤 Uploading image: {request.FILES['image'].name}, size: {request.FILES['image'].size} bytes")
+                print(f"   Content type: {request.FILES['image'].content_type}")
             
             try:
                 # Test storage connection before saving
                 from django.core.files.storage import default_storage
                 from django.conf import settings
                 
-                logger.info(f"Storage backend: {default_storage.__class__.__name__}")
+                print(f"Storage backend: {default_storage.__class__.__name__}")
                 if hasattr(settings, 'DEFAULT_FILE_STORAGE'):
-                    logger.info(f"DEFAULT_FILE_STORAGE: {settings.DEFAULT_FILE_STORAGE}")
+                    print(f"DEFAULT_FILE_STORAGE: {settings.DEFAULT_FILE_STORAGE}")
                 
                 # Save the project (this should trigger file upload to Spaces)
-                logger.info("Saving project...")
+                print("Saving project...")
                 project.save()
-                logger.info("Project saved, saving many-to-many relationships...")
+                print("Project saved, saving many-to-many relationships...")
                 form.save_m2m()  # Save assigned engineers
-                logger.info("✅ Project and relationships saved successfully!")
+                print("✅ Project and relationships saved successfully!")
                 
                 # Log successful save and image URL
                 if project.image:
-                    logger.info(f"   Image field value: {project.image}")
-                    logger.info(f"   Image name: {project.image.name}")
+                    print(f"   Image field value: {project.image}")
+                    print(f"   Image name: {project.image.name}")
                     try:
                         image_url = project.image.url
-                        logger.info(f"   Image URL: {image_url}")
+                        print(f"   Image URL: {image_url}")
                         
                         # Try to verify the file exists in storage
-                        logger.info(f"   Checking if file exists in storage: {project.image.name}")
+                        print(f"   Checking if file exists in storage: {project.image.name}")
                         if default_storage.exists(project.image.name):
-                            logger.info(f"   ✅ File exists in storage: {project.image.name}")
+                            print(f"   ✅ File exists in storage: {project.image.name}")
                             
                             # Try to get file size
                             try:
                                 file_size = default_storage.size(project.image.name)
-                                logger.info(f"   File size: {file_size} bytes")
+                                print(f"   File size: {file_size} bytes")
                             except Exception as size_error:
-                                logger.warning(f"   Could not get file size: {str(size_error)}")
+                                print(f"   ⚠️  Could not get file size: {str(size_error)}")
                         else:
-                            logger.error(f"   ❌ File does NOT exist in storage: {project.image.name}")
-                            logger.error(f"   This means the upload to Spaces failed!")
+                            print(f"   ❌ File does NOT exist in storage: {project.image.name}")
+                            print(f"   This means the upload to Spaces failed!")
                             
                             # Try to check storage connection
                             try:
-                                logger.info("   Testing storage connection...")
+                                print("   Testing storage connection...")
                                 # Try to list files (this will test the connection)
-                                logger.info(f"   Storage class: {default_storage.__class__}")
+                                print(f"   Storage class: {default_storage.__class__}")
                             except Exception as conn_error:
-                                logger.error(f"   ❌ Storage connection error: {str(conn_error)}", exc_info=True)
+                                print(f"   ❌ Storage connection error: {str(conn_error)}")
+                                import traceback
+                                print(f"   Traceback: {traceback.format_exc()}")
                     except Exception as url_error:
-                        logger.error(f"   ❌ Error getting image URL: {str(url_error)}", exc_info=True)
+                        print(f"   ❌ Error getting image URL: {str(url_error)}")
+                        import traceback
+                        print(f"   Traceback: {traceback.format_exc()}")
                 else:
-                    logger.warning("⚠️  No image field set after save")
+                    print("⚠️  No image field set after save")
             except Exception as e:
-                logger.error(f"❌ Error saving project: {str(e)}", exc_info=True)
+                print(f"❌ Error saving project: {str(e)}")
                 import traceback
-                logger.error(f"Full traceback: {traceback.format_exc()}")
+                print(f"Full traceback: {traceback.format_exc()}")
                 raise
             
             # Log zone detection result (optional, for debugging)
