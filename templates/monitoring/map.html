@@ -842,12 +842,44 @@ document.addEventListener('DOMContentLoaded', function() {
         window.projects = [];
     }
 
+    // Helper function to get suitability color (backward compatible)
+    function getSuitabilityColor(score) {
+        if (score === null || score === undefined) return null;
+        if (score >= 80) return '#10b981'; // Green - Highly Suitable
+        if (score >= 60) return '#eab308'; // Yellow - Suitable
+        if (score >= 40) return '#f97316'; // Orange - Moderate
+        return '#ef4444'; // Red - Not Suitable
+    }
+    
+    // Helper function to get suitability category display
+    function getSuitabilityCategoryDisplay(category) {
+        const categoryMap = {
+            'highly_suitable': 'Highly Suitable',
+            'suitable': 'Suitable',
+            'moderately_suitable': 'Moderately Suitable',
+            'marginally_suitable': 'Marginally Suitable',
+            'not_suitable': 'Not Suitable'
+        };
+        return categoryMap[category] || category || 'Not Analyzed';
+    }
+
     // Function to create modern custom marker icon with shadow
-    function createMarkerIcon(status) {
-        // Define colors based on status
+    // Enhanced to optionally show suitability badge
+    function createMarkerIcon(status, suitabilityScore = null) {
+        // Define colors based on status (default behavior)
         let color = '#f59e0b'; // Planned - amber
         if (status === 'completed') color = '#10b981'; // Completed - green
         else if (status === 'ongoing' || status === 'in_progress') color = '#3b82f6'; // Ongoing - blue
+        
+        // If suitability data is available, add a small badge indicator
+        let suitabilityBadge = '';
+        if (suitabilityScore !== null && suitabilityScore !== undefined) {
+            const suitColor = getSuitabilityColor(suitabilityScore);
+            if (suitColor) {
+                // Add a small colored ring or dot to indicate suitability
+                suitabilityBadge = `<circle cx="24" cy="8" r="4" fill="${suitColor}" stroke="white" stroke-width="1.5"/>`;
+            }
+        }
         
         // Generate unique filter ID to avoid conflicts
         const filterId = 'shadow-' + Math.random().toString(36).substr(2, 9);
@@ -873,6 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       filter="url(#${filterId})"/>
                 <circle cx="16" cy="16" r="8" fill="white" opacity="0.9"/>
                 <circle cx="16" cy="16" r="5" fill="${color}"/>
+                ${suitabilityBadge}
             </svg>
         `;
         
@@ -937,13 +970,57 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Project', project.id, 'Filters - StatusMatch:', statusMatch, 'BarangayMatch:', barangayMatch, 'DateMatch:', dateMatch, 'HasValidCoords:', hasValidCoords);
 
             if (statusMatch && barangayMatch && dateMatch && hasValidCoords && project.status) {
+                // Get suitability score for marker icon (backward compatible)
+                const suitabilityScore = project.suitability_score !== undefined ? project.suitability_score : null;
+                
                 const marker = L.marker([parseFloat(project.latitude), parseFloat(project.longitude)], {
-                    icon: createMarkerIcon(project.status)
+                    icon: createMarkerIcon(project.status, suitabilityScore)
                 });
-                console.log('Adding marker for project ID:', project.id);
+                console.log('Adding marker for project ID:', project.id, 'Suitability:', suitabilityScore);
                 
                 // Use project.total_progress for the popup progress bar
                 const displayProgress = project.progress !== undefined ? project.progress : 0; // Use project.progress as updated in the view
+                
+                // Build suitability display section (only if data is available)
+                let suitabilitySection = '';
+                if (suitabilityScore !== null && suitabilityScore !== undefined) {
+                    const suitColor = getSuitabilityColor(suitabilityScore);
+                    const suitCategory = getSuitabilityCategoryDisplay(project.suitability_category);
+                    const suitDisplay = Math.round(suitabilityScore);
+                    
+                    suitabilitySection = `
+                        <div class="mb-3 p-2 bg-gradient-to-r ${suitColor === '#10b981' ? 'from-green-50 to-emerald-50' : 
+                            suitColor === '#eab308' ? 'from-yellow-50 to-amber-50' : 
+                            suitColor === '#f97316' ? 'from-orange-50 to-amber-50' : 
+                            'from-red-50 to-rose-50'} rounded-lg border ${suitColor === '#10b981' ? 'border-green-200' : 
+                            suitColor === '#eab308' ? 'border-yellow-200' : 
+                            suitColor === '#f97316' ? 'border-orange-200' : 
+                            'border-red-200'}">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-semibold text-gray-700">Land Suitability</span>
+                                <span class="text-xs font-bold ${suitColor === '#10b981' ? 'text-green-700' : 
+                                    suitColor === '#eab308' ? 'text-yellow-700' : 
+                                    suitColor === '#f97316' ? 'text-orange-700' : 
+                                    'text-red-700'}">${suitDisplay}/100</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 bg-white rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-full rounded-full transition-all duration-300" style="width: ${suitDisplay}%; background-color: ${suitColor}"></div>
+                                </div>
+                                <span class="text-xs font-medium ${suitColor === '#10b981' ? 'text-green-700' : 
+                                    suitColor === '#eab308' ? 'text-yellow-700' : 
+                                    suitColor === '#f97316' ? 'text-orange-700' : 
+                                    'text-red-700'}">${suitCategory}</span>
+                            </div>
+                            ${project.has_flood_risk || project.has_zoning_conflict ? `
+                                <div class="mt-1.5 flex flex-wrap gap-1">
+                                    ${project.has_flood_risk ? '<span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">⚠️ Flood Risk</span>' : ''}
+                                    ${project.has_zoning_conflict ? '<span class="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded-full">⚠️ Zoning Conflict</span>' : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
 
                 marker.bindPopup(`
                     <div class="p-4 min-w-[260px] bg-white">
@@ -971,6 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </svg>
                             <span>${project.barangay || 'Unknown location'}</span>
                         </div>
+                        ${suitabilitySection}
                         ${displayProgress !== undefined && displayProgress !== null && !isNaN(parseInt(displayProgress, 10)) && parseInt(displayProgress, 10) >= 0 && parseInt(displayProgress, 10) <= 100 ? `
                         <div class="mb-3">
                             <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
