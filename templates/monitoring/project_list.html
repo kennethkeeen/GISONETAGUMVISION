@@ -414,18 +414,39 @@
 window.currentUsername = "{{ request.user.username|escapejs }}";
 </script>
 <script>
+// Initialize window.projects as an array
+window.projects = [];
+
 var projectsDataElement = document.getElementById('projects-data');
 if (projectsDataElement) {
     try {
-        window.projects = JSON.parse(projectsDataElement.textContent);
+        const parsed = JSON.parse(projectsDataElement.textContent);
+        // Ensure it's an array
+        if (Array.isArray(parsed)) {
+            window.projects = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+            // If it's an object, try to convert to array
+            window.projects = Object.values(parsed);
+        } else {
+            console.warn('projects-data is not an array:', typeof parsed, parsed);
+            window.projects = [];
+        }
     } catch (e) {
         console.error('Error parsing projects-data JSON:', e, projectsDataElement.textContent);
         window.projects = [];
     }
 } else {
+    console.warn('projects-data element not found');
     window.projects = [];
 }
-console.log('window.projects:', window.projects, 'Type:', typeof window.projects, 'IsArray:', Array.isArray(window.projects));
+
+// Ensure window.projects is always an array
+if (!Array.isArray(window.projects)) {
+    console.warn('window.projects is not an array, converting...', typeof window.projects);
+    window.projects = [];
+}
+
+console.log('window.projects initialized:', window.projects.length, 'projects, Type:', typeof window.projects, 'IsArray:', Array.isArray(window.projects));
 const barangayCoordinates = {
     'Apokon': [7.4237747, 125.8259557],
     'Bincungan': [7.3788027, 125.7547817],
@@ -550,6 +571,12 @@ function formatDate(dateStr) {
 }
 
 window.openDetailsModal = function(id) {
+    // Ensure window.projects is an array
+    if (!Array.isArray(window.projects)) {
+        console.error('window.projects is not an array:', typeof window.projects);
+        window.projects = [];
+    }
+    
     const detailsModal = document.getElementById('details-modal');
     const detailsImage = document.getElementById('details-image');
     if (detailsModal && detailsImage) {
@@ -830,6 +857,14 @@ function renumberProjectRows() {
 }
 
 window.openEditModal = function(id) {
+    // Ensure window.projects is an array
+    if (!Array.isArray(window.projects)) {
+        console.error('window.projects is not an array in openEditModal:', typeof window.projects);
+        window.projects = [];
+        alert('Project data not available. Please refresh the page.');
+        return;
+    }
+    
     const project = window.projects.find(p => p.id == id || p.id === id || String(p.id) === String(id));
     if (!project) {
         alert('Project data not found for id: ' + id);
@@ -859,6 +894,11 @@ window.openEditModal = function(id) {
     }
     // Populate assigned engineers options for the edit modal
     assignedEngineersSelect.innerHTML = ''; // Clear existing options
+    // Ensure window.projects is an array before using map
+    if (!Array.isArray(window.projects)) {
+        console.error('window.projects is not an array when getting engineers:', typeof window.projects);
+        window.projects = [];
+    }
     const engineers = window.projects.map(p => p.assigned_engineers || []).flat();
     const uniqueEngineers = [...new Set(engineers)];
     uniqueEngineers.forEach(engineer => {
