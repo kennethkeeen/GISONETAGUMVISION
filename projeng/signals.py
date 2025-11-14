@@ -6,6 +6,14 @@ from .models import Project, ProjectProgress, ProjectCost, ProjectDocument, Noti
 from monitoring.models import Project as MonitoringProject
 from .utils import notify_head_engineers, notify_admins, notify_finance_managers, notify_head_engineers_and_finance
 
+# Import suitability analyzer (optional - fail gracefully if not available)
+try:
+    from .land_suitability import LandSuitabilityAnalyzer
+    SUITABILITY_ANALYSIS_AVAILABLE = True
+except ImportError:
+    SUITABILITY_ANALYSIS_AVAILABLE = False
+    print("WARNING: Land suitability analysis not available")
+
 # Phase 3: Import WebSocket broadcasting utilities (parallel to SSE)
 try:
     from .channels_utils import (
@@ -167,6 +175,18 @@ def notify_project_updates(sender, instance, created, **kwargs):
                 broadcast_project_created(instance)
             except Exception as e:
                 print(f"WARNING:  WebSocket broadcast failed (SSE still works): {e}")
+        
+        # Auto-analyze project suitability when created or updated
+        if SUITABILITY_ANALYSIS_AVAILABLE:
+            try:
+                # Only analyze if project has location and barangay
+                if instance.latitude and instance.longitude and instance.barangay:
+                    analyzer = LandSuitabilityAnalyzer()
+                    result = analyzer.analyze_project(instance)
+                    analyzer.save_analysis(instance, result)
+            except Exception as e:
+                # Fail gracefully - don't break project creation if analysis fails
+                print(f"WARNING: Suitability analysis failed for project {instance.id}: {e}")
     else:
         # Project updated - check if it's a significant update
         old_state = _old_project_state.pop(instance.pk, None) if instance.pk else None
@@ -268,6 +288,16 @@ def notify_project_updates(sender, instance, created, **kwargs):
                 message = f"Project information updated: {project_display} - {', '.join(changes)} by {updater_name}"
                 notify_head_engineers(message)
                 notify_admins(message)
+                
+                # Re-analyze suitability if location/barangay changed
+                if SUITABILITY_ANALYSIS_AVAILABLE and old_state.get('barangay') != instance.barangay:
+                    try:
+                        if instance.latitude and instance.longitude and instance.barangay:
+                            analyzer = LandSuitabilityAnalyzer()
+                            result = analyzer.analyze_project(instance)
+                            analyzer.save_analysis(instance, result)
+                    except Exception as e:
+                        print(f"WARNING: Suitability re-analysis failed for project {instance.id}: {e}")
         # If explicit notification flag is set, notify
         elif hasattr(instance, '_notify_update') and instance._notify_update:
             updater_name = getattr(instance, '_updated_by_username', None)

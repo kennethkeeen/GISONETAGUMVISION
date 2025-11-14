@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 import json
 # from django.contrib.gis.geos import GEOSGeometry  # Temporarily disabled
-from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument, Notification, BarangayMetadata, ZoningZone
+from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument, Notification, BarangayMetadata, ZoningZone, LandSuitabilityAnalysis
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
 from django.db.models import Sum, Avg, Count, Max
@@ -1048,6 +1048,24 @@ def project_analytics(request, pk):
             'expected_progress_data_json': expected_progress_data_json,
             'actual_progress_aligned_json': actual_progress_aligned_json,
         }
+        
+        # Get suitability analysis if available
+        suitability = None
+        try:
+            suitability = project.suitability_analysis
+        except LandSuitabilityAnalysis.DoesNotExist:
+            # Try to perform analysis on the fly if project has location
+            try:
+                if project.latitude and project.longitude and project.barangay:
+                    from .land_suitability import LandSuitabilityAnalyzer
+                    analyzer = LandSuitabilityAnalyzer()
+                    result = analyzer.analyze_project(project)
+                    suitability = analyzer.save_analysis(project, result)
+            except Exception as e:
+                # Fail gracefully - don't break the view if analysis fails
+                print(f"WARNING: Suitability analysis failed: {e}")
+        
+        context['suitability'] = suitability  # Add suitability analysis to context
         return render(request, 'projeng/project_detail.html', context)
     except Project.DoesNotExist:
         raise Http404("Project does not exist or you are not assigned to it.")
