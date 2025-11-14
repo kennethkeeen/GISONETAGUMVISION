@@ -569,7 +569,7 @@ def map_view(request):
                 continue
         
         # Pass user context for template permission checks
-        from gistagum.access_control import is_head_engineer
+        # is_head_engineer is already imported at the top of the file
         context = {
             'projects_data': projects_data,
             'is_head_engineer': is_head_engineer(request.user),
