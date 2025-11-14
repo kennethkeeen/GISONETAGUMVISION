@@ -1396,6 +1396,12 @@ function formatDate(dateStr) {
                         <option value="San Miguel">San Miguel</option>
                         <option value="Visayan Village">Visayan Village</option>
                     </select>
+                    <label class="font-semibold text-gray-700">Project Type</label>
+                    <select name="project_type" id="project-type-select" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none">
+                        <option value="">---------</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <small class="text-xs text-gray-500 -mt-2">Select project type to get zone recommendations</small>
                 </div>
                 
                 <!-- Column 2: Financial & Status -->
@@ -1411,6 +1417,23 @@ function formatDate(dateStr) {
                         <option value="in_progress">Ongoing</option>
                         <option value="completed">Completed</option>
                     </select>
+                    <label class="font-semibold text-gray-700">Zone Type</label>
+                    <select name="zone_type" id="zone-type-select" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none">
+                        <option value="">---------</option>
+                        <option value="R1">R1 - Low Density Residential</option>
+                        <option value="R2">R2 - Medium Density Residential</option>
+                        <option value="R3">R3 - High Density Residential</option>
+                        <option value="SHZ">SHZ - Socialized Housing Zone</option>
+                        <option value="C1">C1 - Major Commercial Zone</option>
+                        <option value="C2">C2 - Minor Commercial Zone</option>
+                        <option value="I1">I1 - Heavy Industrial Zone</option>
+                        <option value="I2">I2 - Light and Medium Industrial Zone</option>
+                        <option value="Al">Al - Agro-Industrial</option>
+                        <option value="In">In - Institutional</option>
+                        <option value="Ag">Ag - Agricultural</option>
+                        <option value="Cu">Cu - Cultural</option>
+                    </select>
+                    <small class="text-xs text-gray-500 -mt-2">Zone recommendations will appear below</small>
                     <label class="font-semibold text-gray-700">Assigned Engineers</label>
                     <select name="assigned_engineers" id="assigned-engineers-select" class="rounded-lg border border-gray-300 px-4 py-2.5 w-full" multiple required style="height: 110px; min-width: 180px;">
                         <!-- Options will be populated by JavaScript -->
@@ -1443,6 +1466,29 @@ function formatDate(dateStr) {
                     <input type="file" name="image" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none cursor-pointer" id="image-input" />
                 </div>
             </div>
+            
+            <!-- Zone Recommendation Section -->
+            <div id="zone-recommendation-section" class="hidden mt-6 pt-6 border-t border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Zone Compatibility Recommendations
+                </h3>
+                
+                <!-- Selected Zone Validation -->
+                <div id="zone-validation-alert" class="hidden mb-4 p-4 rounded-lg border-2"></div>
+                
+                <!-- Loading State -->
+                <div id="zone-recommendation-loading" class="hidden text-center py-8 text-gray-500">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2">Analyzing zone compatibility...</p>
+                </div>
+                
+                <!-- Recommendations List -->
+                <div id="zone-recommendations-list" class="space-y-3"></div>
+            </div>
+            
             <div class="flex justify-end gap-4 pt-8 mt-6 border-t border-gray-100">
                 <button type="button" onclick="closeProjectModal()" class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Cancel</button>
                 <button type="submit" class="px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2">
@@ -1568,12 +1614,238 @@ function populateEngineers() {
         });
 }
 
+// Populate Project Types
+function populateProjectTypes() {
+    const projectTypeSelect = document.getElementById('project-type-select');
+    if (!projectTypeSelect) return;
+    
+    fetch('{% url "projeng:project_types_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.project_types) {
+                projectTypeSelect.innerHTML = '<option value="">---------</option>';
+                data.project_types.forEach(pt => {
+                    const option = document.createElement('option');
+                    option.value = pt.code;
+                    option.textContent = pt.name;
+                    projectTypeSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Failed to fetch project types:', err);
+        });
+}
+
+// Fetch and display zone recommendations
+function fetchZoneRecommendations() {
+    const projectTypeSelect = document.getElementById('project-type-select');
+    const zoneTypeSelect = document.getElementById('zone-type-select');
+    const barangaySelect = document.getElementById('modal-barangay-select');
+    const recommendationSection = document.getElementById('zone-recommendation-section');
+    const loadingDiv = document.getElementById('zone-recommendation-loading');
+    const recommendationsList = document.getElementById('zone-recommendations-list');
+    const validationAlert = document.getElementById('zone-validation-alert');
+    
+    if (!projectTypeSelect || !barangaySelect || !recommendationSection) return;
+    
+    const projectTypeCode = projectTypeSelect.value;
+    const selectedZone = zoneTypeSelect ? zoneTypeSelect.value : '';
+    const barangay = barangaySelect.value;
+    
+    // Hide section if no project type selected
+    if (!projectTypeCode) {
+        recommendationSection.classList.add('hidden');
+        return;
+    }
+    
+    // Show loading state
+    recommendationSection.classList.remove('hidden');
+    loadingDiv.classList.remove('hidden');
+    recommendationsList.innerHTML = '';
+    validationAlert.classList.add('hidden');
+    
+    // Build API URL
+    let apiUrl = `{% url "projeng:zone_recommendation_api" %}?project_type_code=${encodeURIComponent(projectTypeCode)}&limit=5`;
+    if (selectedZone) {
+        apiUrl += `&selected_zone=${encodeURIComponent(selectedZone)}`;
+    }
+    if (barangay) {
+        apiUrl += `&barangay=${encodeURIComponent(barangay)}`;
+    }
+    
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            loadingDiv.classList.add('hidden');
+            
+            // Show validation alert if zone is selected
+            if (selectedZone && data.selected_zone_validation) {
+                const validation = data.selected_zone_validation;
+                validationAlert.classList.remove('hidden');
+                if (validation.is_allowed) {
+                    validationAlert.className = 'mb-4 p-4 rounded-lg border-2 border-green-500 bg-green-50';
+                    const message = validation.message || `Project type is allowed in ${selectedZone}`;
+                    const conditionalNote = validation.is_conditional ? '<p class="text-sm text-green-700 mt-1">Note: This is a conditional use and may require special permit.</p>' : '';
+                    validationAlert.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div>
+                                <p class="font-semibold text-green-800">${message}</p>
+                                ${conditionalNote}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    validationAlert.className = 'mb-4 p-4 rounded-lg border-2 border-red-500 bg-red-50';
+                    const message = validation.message || `Project type is NOT allowed in ${selectedZone}`;
+                    validationAlert.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div>
+                                <p class="font-semibold text-red-800">${message}</p>
+                                <p class="text-sm text-red-700 mt-1">Please select a recommended zone below.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                validationAlert.classList.add('hidden');
+            }
+            
+            // Display recommendations
+            if (data.recommendations && data.recommendations.length > 0) {
+                recommendationsList.innerHTML = '';
+                data.recommendations.forEach(rec => {
+                    const recCard = document.createElement('div');
+                    recCard.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 hover:shadow-md transition-all';
+                    
+                    const scoreColor = rec.overall_score >= 80 ? 'text-green-600' : 
+                                     rec.overall_score >= 60 ? 'text-blue-600' : 
+                                     rec.overall_score >= 40 ? 'text-yellow-600' : 'text-red-600';
+                    
+                    recCard.innerHTML = `
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded">#${rec.rank}</span>
+                                    <h4 class="font-bold text-gray-800">${rec.zone_name} (${rec.zone_type})</h4>
+                                    ${rec.is_primary ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">Primary Use</span>' : ''}
+                                    ${rec.is_conditional ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">Conditional</span>' : ''}
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2">${rec.reasoning}</p>
+                            </div>
+                            <div class="text-right ml-4">
+                                <div class="text-2xl font-bold ${scoreColor}">${rec.overall_score.toFixed(1)}</div>
+                                <div class="text-xs text-gray-500">Score</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-3 text-xs">
+                            <div><span class="font-semibold">Zoning:</span> ${rec.factor_scores.zoning_compliance.toFixed(0)}</div>
+                            <div><span class="font-semibold">Land:</span> ${rec.factor_scores.land_availability.toFixed(0)}</div>
+                            <div><span class="font-semibold">Access:</span> ${rec.factor_scores.accessibility.toFixed(0)}</div>
+                            <div><span class="font-semibold">Infra:</span> ${rec.factor_scores.infrastructure.toFixed(0)}</div>
+                        </div>
+                        ${rec.advantages && rec.advantages.length > 0 ? `
+                            <div class="mb-2">
+                                <p class="text-xs font-semibold text-green-700 mb-1">Advantages:</p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    ${rec.advantages.map(a => `<li class="flex items-start gap-1"><span class="text-green-500">•</span><span>${a}</span></li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        ${rec.constraints && rec.constraints.length > 0 ? `
+                            <div class="mb-2">
+                                <p class="text-xs font-semibold text-orange-700 mb-1">Constraints:</p>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    ${rec.constraints.map(c => `<li class="flex items-start gap-1"><span class="text-orange-500">•</span><span>${c}</span></li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        <button type="button" onclick="selectRecommendedZone('${rec.zone_type}')" 
+                                class="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                            Select This Zone
+                        </button>
+                    `;
+                    recommendationsList.appendChild(recCard);
+                });
+            } else {
+                recommendationsList.innerHTML = '<p class="text-center text-gray-500 py-4">No zone recommendations available.</p>';
+            }
+        })
+        .catch(err => {
+            loadingDiv.classList.add('hidden');
+            recommendationsList.innerHTML = `<p class="text-center text-red-500 py-4">Error loading recommendations: ${err.message}</p>`;
+            console.error('Failed to fetch zone recommendations:', err);
+        });
+}
+
+// Select recommended zone
+function selectRecommendedZone(zoneType) {
+    const zoneTypeSelect = document.getElementById('zone-type-select');
+    if (zoneTypeSelect) {
+        zoneTypeSelect.value = zoneType;
+        // Trigger change event to update validation
+        zoneTypeSelect.dispatchEvent(new Event('change'));
+    }
+}
+
+// Initialize project types and set up event listeners
+if (document.getElementById('project-type-select')) {
+    populateProjectTypes();
+    document.getElementById('project-type-select').addEventListener('change', fetchZoneRecommendations);
+}
+
+if (document.getElementById('zone-type-select')) {
+    document.getElementById('zone-type-select').addEventListener('change', fetchZoneRecommendations);
+}
+
+if (document.getElementById('modal-barangay-select')) {
+    document.getElementById('modal-barangay-select').addEventListener('change', fetchZoneRecommendations);
+}
+
+// Also fetch recommendations when location is set
+if (latInput && lngInput) {
+    const originalLatInput = latInput;
+    const originalLngInput = lngInput;
+    
+    // Create a MutationObserver to watch for value changes
+    const observer = new MutationObserver(() => {
+        if (document.getElementById('project-type-select')?.value) {
+            fetchZoneRecommendations();
+        }
+    });
+    
+    // Watch for input events
+    latInput.addEventListener('input', () => {
+        if (document.getElementById('project-type-select')?.value) {
+            setTimeout(fetchZoneRecommendations, 500); // Debounce
+        }
+    });
+    
+    lngInput.addEventListener('input', () => {
+        if (document.getElementById('project-type-select')?.value) {
+            setTimeout(fetchZoneRecommendations, 500); // Debounce
+        }
+    });
+}
+
 if (addProjectBtn) {
     addProjectBtn.addEventListener('click', function() {
         editProjectId = null;
         if (projectForm) projectForm.setAttribute('data-mode', 'add');
         if (imageInput) imageInput.required = true;
         populateEngineers();
+        populateProjectTypes();
+        // Hide recommendation section initially
+        const recommendationSection = document.getElementById('zone-recommendation-section');
+        if (recommendationSection) {
+            recommendationSection.classList.add('hidden');
+        }
         showModal();
     });
 }

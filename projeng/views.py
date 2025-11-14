@@ -2673,6 +2673,11 @@ def suitability_analysis_api(request, project_id):
         }
         
         return JsonResponse(response_data)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error in suitability_analysis_api: {str(e)}', exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 # ============================================================================

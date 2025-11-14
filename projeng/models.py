@@ -53,6 +53,16 @@ class Project(models.Model):
     last_update = models.DateField(blank=True, null=True)
     progress = models.PositiveIntegerField(default=0, help_text="Project progress in percentage (0-100)", blank=True, null=True)
 
+    # Project Type (for Zone Compatibility Recommendation)
+    project_type = models.ForeignKey(
+        'ProjectType',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='projects',
+        help_text="Type of project (e.g., Apartment Building, Hospital, Road)"
+    )
+    
     # Zoning classification (Phase 2: Simplified Zoning Integration)
     zone_type = models.CharField(
         max_length=20,

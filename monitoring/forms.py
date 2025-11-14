@@ -9,7 +9,7 @@ class ProjectForm(forms.ModelForm):
         model = Project
         fields = [
             'prn', 'name', 'description', 'barangay', 'project_cost', 'source_of_funds',
-            'status', 'latitude', 'longitude', 'start_date', 'end_date', 'image', 'assigned_engineers'
+            'status', 'project_type', 'zone_type', 'latitude', 'longitude', 'start_date', 'end_date', 'image', 'assigned_engineers'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -32,14 +32,19 @@ class ProjectForm(forms.ModelForm):
         self.fields['latitude'].widget.attrs['placeholder'] = 'Click map to set'
         self.fields['longitude'].widget.attrs['placeholder'] = 'Click map to set'
         
-        # Phase 4: Configure zone fields (if they exist in the form)
+        # Configure project_type field
+        if 'project_type' in self.fields:
+            from projeng.models import ProjectType
+            self.fields['project_type'].queryset = ProjectType.objects.all().order_by('name')
+            self.fields['project_type'].required = False
+            self.fields['project_type'].help_text = 'Select the type of project for zone compatibility recommendations'
+            self.fields['project_type'].widget.attrs['class'] = 'rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none'
+        
+        # Configure zone_type field
         if 'zone_type' in self.fields:
             self.fields['zone_type'].required = False
-            self.fields['zone_type'].help_text = 'Auto-detected based on project details. Can be manually adjusted.'
-        
-        if 'zone_validated' in self.fields:
-            self.fields['zone_validated'].required = False
-            self.fields['zone_validated'].help_text = 'Checked if zone has been validated against official zoning.'
+            self.fields['zone_type'].help_text = 'Recommended zone will be shown after selecting project type and location'
+            self.fields['zone_type'].widget.attrs['class'] = 'rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none'
 
     def clean(self):
         cleaned_data = super().clean()
