@@ -1795,19 +1795,42 @@ function populateEngineers() {
 // Populate Project Types
 function populateProjectTypes() {
     const projectTypeSelect = document.getElementById('project-type-select');
-    if (!projectTypeSelect) return;
+    if (!projectTypeSelect) {
+        console.error('Project type select element not found');
+        return;
+    }
+    
+    console.log('Fetching project types...');
     
     // Use absolute URL to avoid template tag issues
     const apiUrl = '/projeng/api/project-types/';
-    fetch(apiUrl)
+    
+    // Get CSRF token for the request
+    const csrftoken = document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken || '',
+        },
+        credentials: 'same-origin', // Include cookies for authentication
+    })
         .then(response => {
+            console.log('Project types API response status:', response.status);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                return response.text().then(text => {
+                    console.error('API error response:', text);
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                });
             }
             return response.json();
         })
         .then(data => {
-            if (data.project_types) {
+            console.log('Project types data received:', data);
+            if (data.project_types && Array.isArray(data.project_types)) {
                 projectTypeSelect.innerHTML = '<option value="">---------</option>';
                 data.project_types.forEach(pt => {
                     const option = document.createElement('option');
@@ -1815,13 +1838,20 @@ function populateProjectTypes() {
                     option.textContent = pt.name;
                     projectTypeSelect.appendChild(option);
                 });
+                console.log(`Loaded ${data.project_types.length} project types`);
+            } else if (data.error) {
+                console.error('API returned error:', data.error);
+                projectTypeSelect.innerHTML = '<option value="">Error: ' + data.error + '</option>';
+            } else {
+                console.error('Unexpected data format:', data);
+                projectTypeSelect.innerHTML = '<option value="">Error: Unexpected response format</option>';
             }
         })
         .catch(err => {
             console.error('Failed to fetch project types:', err);
             // Show error to user
             if (projectTypeSelect) {
-                projectTypeSelect.innerHTML = '<option value="">Error loading project types</option>';
+                projectTypeSelect.innerHTML = '<option value="">Error loading project types. Please refresh the page.</option>';
             }
         });
 }
