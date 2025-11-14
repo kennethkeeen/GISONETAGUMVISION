@@ -2673,9 +2673,9 @@ function initializeMapPopupElements() {
     lngInput = document.getElementById('longitude-input');
 }
 
-// Make showPopupMap globally available
+// Make showPopupMap globally available - replace placeholder with full implementation
 window.showPopupMap = function() {
-    console.log('showPopupMap called');
+    console.log('showPopupMap called (full implementation)');
     
     // Always initialize elements to get fresh references
     if (typeof initializeMapPopupElements === 'function') {
