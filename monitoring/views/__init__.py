@@ -552,7 +552,13 @@ def map_view(request):
             'progress': progress_value,
             'assigned_engineers': assigned_engineers,
         })
-    return render(request, 'monitoring/map.html', {'projects_data': projects_data})
+    # Pass user context for template permission checks
+    from gistagum.access_control import is_head_engineer
+    context = {
+        'projects_data': projects_data,
+        'is_head_engineer': is_head_engineer(request.user),
+    }
+    return render(request, 'monitoring/map.html', context)
 
 @login_required
 @prevent_project_engineer_access

@@ -203,12 +203,14 @@
                                     <button id="btn-ongoing" class="flex-1 px-4 py-3 rounded-lg font-semibold border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all text-base h-[45px] whitespace-nowrap">In Progress</button>
                                     <button id="btn-planned" class="flex-1 px-4 py-3 rounded-lg font-semibold border-2 border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-300 transition-all text-base h-[45px] whitespace-nowrap">Planned</button>
                                 </div>
+                                {% if is_head_engineer %}
                                 <button id="add-project-btn" class="inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 hover:shadow-lg text-base h-[45px] flex-shrink-0 whitespace-nowrap">
                                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                     </svg>
                                     <span>Add Project</span>
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
