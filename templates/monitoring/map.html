@@ -2348,24 +2348,24 @@ function setupMapPopupButtons() {
 
 // Set up map popup modal click-outside-to-close
 function setupMapPopupModal() {
-    if (!mapPopupModal) {
-        initializeMapPopupElements();
-    }
-    if (mapPopupModal) {
+    const mapPopupModalEl = document.getElementById('map-popup-modal');
+    if (mapPopupModalEl) {
         // Remove existing listener if any by cloning
-        const newModal = mapPopupModal.cloneNode(true);
-        mapPopupModal.parentNode.replaceChild(newModal, mapPopupModal);
-        mapPopupModal = newModal;
+        const newModal = mapPopupModalEl.cloneNode(true);
+        mapPopupModalEl.parentNode.replaceChild(newModal, mapPopupModalEl);
         
-        mapPopupModal.addEventListener('mousedown', function(e) {
-            if (e.target === mapPopupModal) {
+        newModal.addEventListener('mousedown', function(e) {
+            if (e.target === newModal) {
                 console.log('Clicked outside map popup - closing');
                 hidePopupMap();
             }
         });
+        console.log('Map popup modal click-outside handler initialized');
         
         // Also set up buttons
         setupMapPopupButtons();
+    } else {
+        console.error('Map popup modal element not found');
     }
 }
 
