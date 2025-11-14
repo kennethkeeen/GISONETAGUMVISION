@@ -307,12 +307,22 @@
             }
             
             // Initialize and populate (if functions exist)
-            if (typeof populateEngineers === 'function') {
-                populateEngineers();
-            }
-            if (typeof populateProjectTypes === 'function') {
-                populateProjectTypes();
-            }
+            // Use setTimeout to ensure DOM is fully ready
+            setTimeout(() => {
+                if (typeof populateEngineers === 'function') {
+                    console.log('Calling populateEngineers...');
+                    populateEngineers();
+                } else {
+                    console.warn('populateEngineers function not found');
+                }
+                
+                if (typeof populateProjectTypes === 'function') {
+                    console.log('Calling populateProjectTypes...');
+                    populateProjectTypes();
+                } else {
+                    console.warn('populateProjectTypes function not found');
+                }
+            }, 100);
             
             // Set up event listeners for recommendations
             if (typeof setupRecommendationEventListeners === 'function') {
@@ -1997,9 +2007,18 @@ function initializeModalButtons() {
 }
 
 function populateEngineers() {
+    // Get fresh reference to element
     const engineersSelect = document.getElementById('assigned-engineers-select');
     if (!engineersSelect) {
         console.error('Assigned engineers select element not found');
+        // Retry after a short delay
+        setTimeout(() => {
+            const retrySelect = document.getElementById('assigned-engineers-select');
+            if (retrySelect) {
+                console.log('Retrying populateEngineers after delay...');
+                populateEngineers();
+            }
+        }, 200);
         return;
     }
     
@@ -2009,6 +2028,10 @@ function populateEngineers() {
     const csrftoken = document.cookie.split('; ')
         .find(row => row.startsWith('csrftoken='))
         ?.split('=')[1];
+    
+    if (!csrftoken) {
+        console.warn('CSRF token not found, but continuing with request');
+    }
     
     fetch('/projeng/api/engineers/', {
         method: 'GET',
@@ -2021,6 +2044,9 @@ function populateEngineers() {
         .then(response => {
             console.log('Engineers API response status:', response.status);
             if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('Access denied. You may not have permission to view engineers.');
+                }
                 return response.text().then(text => {
                     console.error('API error response:', text);
                     throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
@@ -2031,25 +2057,32 @@ function populateEngineers() {
         .then(engineers => {
             console.log('Engineers data received:', engineers);
             
-            engineersSelect.innerHTML = '';
+            // Get fresh reference again (in case DOM changed)
+            const selectEl = document.getElementById('assigned-engineers-select');
+            if (!selectEl) {
+                console.error('Engineers select element not found after fetch');
+                return;
+            }
+            
+            selectEl.innerHTML = '';
             
             // Check if response is an error object
             if (engineers && engineers.error) {
                 console.error('API returned error:', engineers.error);
-                    const option = document.createElement('option');
+                const option = document.createElement('option');
                 option.textContent = 'Error: ' + engineers.error;
-                engineersSelect.appendChild(option);
-                engineersSelect.disabled = true;
-                    return;
-                }
+                selectEl.appendChild(option);
+                selectEl.disabled = true;
+                return;
+            }
             
             // Check if engineers is an array
             if (!Array.isArray(engineers)) {
                 console.error('Unexpected engineers data format:', engineers);
                 const option = document.createElement('option');
                 option.textContent = 'Error: Unexpected response format';
-                engineersSelect.appendChild(option);
-                engineersSelect.disabled = true;
+                selectEl.appendChild(option);
+                selectEl.disabled = true;
                 return;
             }
             
@@ -2057,55 +2090,65 @@ function populateEngineers() {
                 console.warn('No engineers found');
                 const option = document.createElement('option');
                 option.textContent = 'No engineers available';
-                engineersSelect.appendChild(option);
-                engineersSelect.disabled = true;
+                selectEl.appendChild(option);
+                selectEl.disabled = true;
                 return;
             }
             
-            engineersSelect.disabled = false;
-                const currentUsername = (window.currentUsername || '').trim().toLowerCase();
+            selectEl.disabled = false;
+            const currentUsername = (window.currentUsername || '').trim().toLowerCase();
             
             let addedCount = 0;
-                engineers.forEach(engineer => {
-                    const engineerUsername = (engineer.username || '').trim().toLowerCase();
+            engineers.forEach(engineer => {
+                const engineerUsername = (engineer.username || '').trim().toLowerCase();
                 // Skip current user
                 if (engineerUsername === currentUsername) {
                     console.log('Skipping current user:', engineerUsername);
                     return;
                 }
                 
-                    const option = document.createElement('option');
-                    option.value = engineer.id;
-                    option.textContent = engineer.full_name || engineer.username;
-                engineersSelect.appendChild(option);
+                const option = document.createElement('option');
+                option.value = engineer.id;
+                option.textContent = engineer.full_name || engineer.username;
+                selectEl.appendChild(option);
                 addedCount++;
             });
             
-            console.log(`Loaded ${addedCount} engineers (${engineers.length} total, ${engineers.length - addedCount} skipped)`);
+            console.log(`[OK] Loaded ${addedCount} engineers (${engineers.length} total, ${engineers.length - addedCount} skipped)`);
             
             if (addedCount === 0) {
                 const option = document.createElement('option');
                 option.textContent = 'No other engineers available';
-                engineersSelect.appendChild(option);
+                selectEl.appendChild(option);
             }
         })
         .catch(err => {
             console.error('Failed to fetch engineers:', err);
-            if (engineersSelect) {
-                engineersSelect.innerHTML = '';
+            const selectEl = document.getElementById('assigned-engineers-select');
+            if (selectEl) {
+                selectEl.innerHTML = '';
                 const option = document.createElement('option');
-                option.textContent = 'Error loading engineers. Please refresh the page.';
-                engineersSelect.appendChild(option);
-                engineersSelect.disabled = true;
+                option.textContent = 'Error loading engineers: ' + (err.message || 'Unknown error');
+                selectEl.appendChild(option);
+                selectEl.disabled = true;
             }
         });
 }
 
 // Populate Project Types
 function populateProjectTypes() {
+    // Get fresh reference to element
     const projectTypeSelect = document.getElementById('project-type-select');
     if (!projectTypeSelect) {
         console.error('Project type select element not found');
+        // Retry after a short delay
+        setTimeout(() => {
+            const retrySelect = document.getElementById('project-type-select');
+            if (retrySelect) {
+                console.log('Retrying populateProjectTypes after delay...');
+                populateProjectTypes();
+            }
+        }, 200);
         return;
     }
     
@@ -2119,6 +2162,10 @@ function populateProjectTypes() {
         .find(row => row.startsWith('csrftoken='))
         ?.split('=')[1];
     
+    if (!csrftoken) {
+        console.warn('CSRF token not found, but continuing with request');
+    }
+    
     fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -2130,6 +2177,9 @@ function populateProjectTypes() {
         .then(response => {
             console.log('Project types API response status:', response.status);
             if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('Access denied. You may not have permission to view project types.');
+                }
                 return response.text().then(text => {
                     console.error('API error response:', text);
                     throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
@@ -2145,30 +2195,38 @@ function populateProjectTypes() {
             console.log('Is array?', Array.isArray(data.project_types));
             console.log('Length:', data.project_types ? data.project_types.length : 'N/A');
             
+            // Get fresh reference again (in case DOM changed)
+            const selectEl = document.getElementById('project-type-select');
+            if (!selectEl) {
+                console.error('Project type select element not found after fetch');
+                return;
+            }
+            
             if (data && data.project_types && Array.isArray(data.project_types)) {
-                projectTypeSelect.innerHTML = '<option value="">---------</option>';
+                selectEl.innerHTML = '<option value="">---------</option>';
                 data.project_types.forEach(pt => {
                     const option = document.createElement('option');
                     option.value = pt.code;
                     option.textContent = pt.name;
-                    projectTypeSelect.appendChild(option);
+                    selectEl.appendChild(option);
                 });
-                console.log(`Loaded ${data.project_types.length} project types`);
+                console.log(`[OK] Loaded ${data.project_types.length} project types`);
             } else if (data && data.error) {
                 console.error('API returned error:', data.error);
-                projectTypeSelect.innerHTML = '<option value="">Error: ' + data.error + '</option>';
+                selectEl.innerHTML = '<option value="">Error: ' + data.error + '</option>';
             } else {
                 console.error('Unexpected data format. Full data:', JSON.stringify(data, null, 2));
                 console.error('data.project_types value:', data.project_types);
                 console.error('data.project_types type:', typeof data.project_types);
-                projectTypeSelect.innerHTML = '<option value="">Error: Unexpected response format. Check console for details.</option>';
+                selectEl.innerHTML = '<option value="">Error: Unexpected response format. Check console for details.</option>';
             }
         })
         .catch(err => {
             console.error('Failed to fetch project types:', err);
             // Show error to user
-            if (projectTypeSelect) {
-                projectTypeSelect.innerHTML = '<option value="">Error loading project types. Please refresh the page.</option>';
+            const selectEl = document.getElementById('project-type-select');
+            if (selectEl) {
+                selectEl.innerHTML = '<option value="">Error loading project types: ' + (err.message || 'Unknown error') + '</option>';
             }
         });
 }
@@ -2466,9 +2524,15 @@ if (addProjectBtn) {
                 imageInput.required = true;
             }
             
-            // Populate dropdowns
-        populateEngineers();
-            populateProjectTypes();
+            // Populate dropdowns (with delay to ensure DOM is ready)
+            setTimeout(() => {
+                if (typeof populateEngineers === 'function') {
+                    populateEngineers();
+                }
+                if (typeof populateProjectTypes === 'function') {
+                    populateProjectTypes();
+                }
+            }, 100);
             
             // Hide recommendation section initially
             const recommendationSection = document.getElementById('zone-recommendation-section');

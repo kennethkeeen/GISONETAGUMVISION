@@ -2777,7 +2777,7 @@ def project_types_api(request):
     
     try:
         # Debug: Log user and request info
-        logger.info(f"project_types_api called by user: {request.user.username}")
+        logger.info(f"project_types_api called by user: {request.user.username if request.user.is_authenticated else 'Anonymous'}")
         
         # Get all project types
         project_types = ProjectType.objects.all().order_by('name')
