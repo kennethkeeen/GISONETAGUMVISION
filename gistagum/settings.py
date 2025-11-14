@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'projeng',
     'django_extensions',
     'channels',  # Django Channels for WebSocket support (Phase 1: Safe addition)
+    'storages',  # Django Storages for DigitalOcean Spaces (S3-compatible storage)
 ]
 
 # ASGI Application for WebSocket support (Phase 1: Safe addition)
@@ -184,8 +185,64 @@ TAILWIND_APP_NAME = 'onetagumvision'
 NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 # Media files (user uploaded files)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# ============================================================================
+# DigitalOcean Spaces Configuration (S3-compatible storage)
+# ============================================================================
+# If Spaces credentials are provided, use Spaces for media storage
+# Otherwise, fall back to local file storage
+USE_SPACES = os.environ.get('USE_SPACES', 'false').lower() == 'true'
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'sgp1')
+AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN', '')
+
+# Check if Spaces is configured (all required variables are set)
+SPACES_CONFIGURED = (
+    USE_SPACES and
+    AWS_ACCESS_KEY_ID and
+    AWS_SECRET_ACCESS_KEY and
+    AWS_STORAGE_BUCKET_NAME and
+    AWS_S3_ENDPOINT_URL
+)
+
+if SPACES_CONFIGURED:
+    # Use DigitalOcean Spaces for media storage
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    # Spaces-specific settings
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',  # Cache for 1 day
+    }
+    
+    # Use custom domain if provided (CDN endpoint), otherwise use endpoint URL
+    if AWS_S3_CUSTOM_DOMAIN:
+        AWS_S3_CUSTOM_DOMAIN = AWS_S3_CUSTOM_DOMAIN
+        MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    else:
+        # Use endpoint URL directly
+        MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+    
+    # Don't use query string authentication (Spaces doesn't need it)
+    AWS_QUERYSTRING_AUTH = False
+    
+    # Make files publicly accessible (or use signed URLs if you prefer)
+    AWS_DEFAULT_ACL = 'public-read'
+    
+    # Set MEDIA_ROOT to empty since we're using Spaces
+    MEDIA_ROOT = ''
+    
+    print("✅ DigitalOcean Spaces configured for media storage")
+else:
+    # Use local file storage (development or when Spaces is not configured)
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    
+    if USE_SPACES:
+        print("⚠️  WARNING: USE_SPACES is enabled but Spaces credentials are missing. Using local storage.")
+    else:
+        print("ℹ️  Using local file storage for media files")
 
 # Redirect after login
 LOGIN_REDIRECT_URL = '/dashboard/'
