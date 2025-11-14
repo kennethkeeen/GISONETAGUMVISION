@@ -260,10 +260,28 @@
 {% block extra_js %}
 {{ projects_data|json_script:"projects-data" }}
 
-<!-- Define openAddProjectModal function IMMEDIATELY, before anything else -->
+<!-- Define openAddProjectModal and closeProjectModal functions IMMEDIATELY, before anything else -->
 <script>
 (function() {
     'use strict';
+    
+    // Define closeProjectModal function first (used by inline onclick)
+    window.closeProjectModal = function() {
+        console.log('closeProjectModal called');
+        try {
+            const modal = document.getElementById('project-modal');
+            if (modal) {
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                modal.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        } catch (error) {
+            console.error('Error in closeProjectModal:', error);
+        }
+    };
     
     // Define the function immediately, even before DOM is ready
     window.openAddProjectModal = function() {
@@ -1749,7 +1767,21 @@ function hideModal() {
     }
 }
 
-window.closeProjectModal = hideModal;
+// closeProjectModal is already defined at the top of the script block
+// This ensures it's available when the inline onclick handler fires
+if (typeof window.closeProjectModal === 'undefined') {
+    window.closeProjectModal = hideModal;
+} else {
+    // Update the function to use hideModal if it exists
+    const originalClose = window.closeProjectModal;
+    window.closeProjectModal = function() {
+        if (typeof hideModal === 'function') {
+            hideModal();
+        } else {
+            originalClose();
+        }
+    };
+}
 
 // Global function to open modal (can be called from anywhere)
 window.openAddProjectModal = function() {
