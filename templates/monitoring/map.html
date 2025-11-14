@@ -359,6 +359,20 @@
     
     console.log('[OK] openAddProjectModal function defined globally (early)');
     
+    // Define hidePopupMap function early (used by inline onclick)
+    window.hidePopupMap = function() {
+        console.log('hidePopupMap called');
+        try {
+            const modal = document.getElementById('map-popup-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error in hidePopupMap:', error);
+        }
+    };
+    
     // Define showPopupMap placeholder early (will be replaced with full implementation later)
     window.showPopupMap = function() {
         console.log('showPopupMap placeholder called - full implementation will be available after page loads');
@@ -370,6 +384,7 @@
         }
     };
     
+    console.log('[OK] hidePopupMap function defined globally (early)');
     console.log('[OK] showPopupMap function defined globally (early placeholder)');
 })();
 </script>
@@ -1677,13 +1692,13 @@ function formatDate(dateStr) {
             <h3 class="text-lg font-bold text-gray-800">Select Project Location</h3>
             <p class="text-sm text-gray-600 mt-1">Click on the map to place a marker, or drag the marker to adjust the location</p>
         </div>
-        <button type="button" id="close-map-popup" class="absolute top-6 right-6 z-30 w-10 h-10 flex items-center justify-center bg-blue-700 text-white text-2xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
-        <div id="popup-map" style="min-height:400px; height:70vh; background:#eee;" class="w-full flex-1"></div>
+        <button type="button" id="close-map-popup" onclick="if(typeof window.hidePopupMap === 'function') { window.hidePopupMap(); } return false;" class="absolute top-6 right-6 z-30 w-10 h-10 flex items-center justify-center bg-blue-700 text-white text-2xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
+        <div id="popup-map" style="min-height:400px; height:70vh; width:100%; background:#eee; position:relative; z-index:1;" class="w-full flex-1"></div>
         <div class="flex justify-between items-center gap-4 p-4 border-t border-gray-200">
             <div class="text-sm text-gray-600">
                 <span class="font-semibold">Tip:</span> Click anywhere on the map to set the location, or drag the marker to fine-tune
             </div>
-            <button type="button" id="close-map-popup-btn" class="px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Done</button>
+            <button type="button" id="close-map-popup-btn" onclick="if(typeof window.hidePopupMap === 'function') { window.hidePopupMap(); } return false;" class="px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">Done</button>
         </div>
     </div>
 </div>
@@ -2698,6 +2713,14 @@ window.showPopupMap = function() {
     // Update global reference
     mapPopupModal = modalEl;
     
+    // Set up buttons immediately
+    if (typeof setupMapPopupButtons === 'function') {
+        setupMapPopupButtons();
+    }
+    if (typeof setupMapPopupModal === 'function') {
+        setupMapPopupModal();
+    }
+    
     // Wait a bit for modal to be visible before initializing map
     setTimeout(() => {
         // Get current inputs (fresh references)
@@ -2737,6 +2760,17 @@ window.showPopupMap = function() {
             return;
         }
         
+        // Ensure map div has dimensions
+        const rect = mapDiv.getBoundingClientRect();
+        console.log('Map div dimensions:', rect.width, 'x', rect.height);
+        if (rect.width === 0 || rect.height === 0) {
+            console.warn('Map div has zero dimensions, waiting...');
+            setTimeout(() => {
+                window.showPopupMap();
+            }, 100);
+            return;
+        }
+        
         // Clean up any existing map instance
         if (popupMap) {
             try {
@@ -2744,6 +2778,18 @@ window.showPopupMap = function() {
                 popupMap = null;
             } catch (e) {
                 console.log('Error removing existing map:', e);
+            }
+        }
+        
+        // Clean up any existing marker
+        if (popupMarker) {
+            try {
+                if (popupMap) {
+                    popupMap.removeLayer(popupMarker);
+                }
+                popupMarker = null;
+            } catch (e) {
+                console.log('Error removing existing marker:', e);
             }
         }
         
@@ -2760,14 +2806,68 @@ window.showPopupMap = function() {
             mapDiv._leaflet_id = null;
         }
         
-        console.log('Initializing new map');
-        popupMap = L.map('popup-map').setView([lat, lng], zoom);
+        console.log('Initializing new map at:', lat, lng, 'zoom:', zoom);
         
-        // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(popupMap);
+        // Ensure map div is visible and has dimensions
+        mapDiv.style.display = 'block';
+        mapDiv.style.visibility = 'visible';
+        mapDiv.style.opacity = '1';
+        
+        try {
+            popupMap = L.map('popup-map', {
+                center: [lat, lng],
+                zoom: zoom,
+                zoomControl: true,
+                attributionControl: true
+            });
+            
+            console.log('Map instance created:', popupMap);
+            
+            // Add tile layer
+            const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            });
+            
+            tileLayer.addTo(popupMap);
+            console.log('Tile layer added to map');
+            
+            // Force map to update
+            popupMap.invalidateSize();
+            console.log('Map size invalidated immediately');
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            alert('Error initializing map: ' + error.message);
+            return;
+        }
+        
+        // Add initial marker if coordinates are set
+        if (lat && lng) {
+            popupMarker = L.marker([lat, lng], {
+                draggable: true
+            }).addTo(popupMap);
+            
+            // Add drag handler for marker
+            popupMarker.on('dragend', function(e) {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                console.log('Marker dragged to:', position.lat, position.lng);
+                
+                // Update input fields
+                const latInput = document.getElementById('latitude-input');
+                const lngInput = document.getElementById('longitude-input');
+                if (latInput) {
+                    latInput.value = position.lat.toFixed(6);
+                    latInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                if (lngInput) {
+                    lngInput.value = position.lng.toFixed(6);
+                    lngInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+            
+            console.log('Initial marker added at:', lat, lng);
+        }
         
         // Add click handler to set location
         popupMap.on('click', function(e) {
@@ -2833,52 +2933,29 @@ window.showPopupMap = function() {
                 }, 500);
             }
         });
-    } else {
-        console.log('Updating existing map view');
-        popupMap.setView([lat, lng], zoom);
-    }
-
-    // Update marker - show existing location if coordinates are set
-    if (popupMarker) {
-        popupMap.removeLayer(popupMarker);
-        popupMarker = null;
-    }
-
-    if (lat && lng) {
-        popupMarker = L.marker([lat, lng], {
-            draggable: true
-        }).addTo(popupMap);
         
-        // Add drag handler for marker
-        popupMarker.on('dragend', function(e) {
-            const marker = e.target;
-            const position = marker.getLatLng();
-            console.log('Marker dragged to:', position.lat, position.lng);
-            
-            // Update input fields
-            const latInput = document.getElementById('latitude-input');
-            const lngInput = document.getElementById('longitude-input');
-            if (latInput) {
-                latInput.value = position.lat.toFixed(6);
-                latInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // Invalidate size multiple times to ensure map renders correctly after modal is fully visible
+        setTimeout(() => { 
+            if (popupMap) {
+                popupMap.invalidateSize();
+                console.log('Map size invalidated (first attempt)');
             }
-            if (lngInput) {
-                lngInput.value = position.lng.toFixed(6);
-                lngInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        });
+        }, 100);
         
-        console.log('Marker added at:', lat, lng);
-    }
-
-    // Invalidate size to ensure map renders correctly
-    setTimeout(() => { 
-        if (popupMap) {
-            popupMap.invalidateSize();
-            console.log('Map size invalidated');
-        }
-    }, 350);
-    }, 100);
+        setTimeout(() => { 
+            if (popupMap) {
+                popupMap.invalidateSize();
+                console.log('Map size invalidated (second attempt)');
+            }
+        }, 300);
+        
+        setTimeout(() => { 
+            if (popupMap) {
+                popupMap.invalidateSize();
+                console.log('Map size invalidated (third attempt)');
+            }
+        }, 500);
+    }, 200);
 };
 
 // Also define as regular function for backward compatibility
@@ -2889,13 +2966,27 @@ function showPopupMap() {
 }
 
 function hidePopupMap() {
-    if (!mapPopupModal) {
-        initializeMapPopupElements();
+    console.log('hidePopupMap function called');
+    try {
+        if (!mapPopupModal) {
+            initializeMapPopupElements();
+        }
+        const modal = mapPopupModal || document.getElementById('map-popup-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            console.log('Map popup modal hidden');
+        }
+    } catch (error) {
+        console.error('Error in hidePopupMap:', error);
     }
-    if (mapPopupModal) {
-        mapPopupModal.classList.add('hidden');
-        mapPopupModal.style.display = 'none';
-    }
+}
+
+// Make hidePopupMap globally available (update the early definition)
+if (typeof window.hidePopupMap !== 'undefined') {
+    window.hidePopupMap = hidePopupMap;
+} else {
+    window.hidePopupMap = hidePopupMap;
 }
 
 // Set up map popup buttons and modal handlers
