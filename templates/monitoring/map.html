@@ -1895,16 +1895,12 @@ function initializeModalButtons() {
     // Form submission handler
     const form = document.getElementById('project-form');
     if (form) {
-        // Remove existing submit handler
-        const newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
-        
-        newForm.addEventListener('submit', function(e) {
+        const handleSubmit = function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Form submitted');
             
-            const formData = new FormData(newForm);
+            const formData = new FormData(form);
             const csrftoken = document.cookie.split('; ')
                 .find(row => row.startsWith('csrftoken='))
                 ?.split('=')[1];
@@ -1915,13 +1911,14 @@ function initializeModalButtons() {
             }
 
             // Show loading state
-            const submitBtn = newForm.querySelector('button[type="submit"]');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Saving...';
+                submitBtn.innerHTML = 'Saving...';
             }
 
-            fetch(newForm.action, {
+            fetch(form.action, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrftoken
@@ -1930,7 +1927,9 @@ function initializeModalButtons() {
             })
             .then(response => {
                 if (response.ok) {
-                    showToast('Project created successfully!');
+                    if (typeof showToast === 'function') {
+                        showToast('Project created successfully!');
+                    }
                     hideModal();
                     // Reload the page to show the new project on the map
                     setTimeout(() => {
@@ -1948,13 +1947,23 @@ function initializeModalButtons() {
                 alert('An error occurred while creating the project: ' + (error.message || 'Unknown error'));
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Save Project';
+                    submitBtn.innerHTML = originalBtnContent;
                 }
             });
             
             return false;
-        });
+        };
+        
+        // Remove existing handlers by cloning
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        
+        newForm.onsubmit = handleSubmit;
+        newForm.addEventListener('submit', handleSubmit, false);
+        newForm.addEventListener('submit', handleSubmit, true);
         console.log('Form submission handler initialized');
+    } else {
+        console.warn('Form not found');
     }
     
     console.log('All modal buttons initialized');
