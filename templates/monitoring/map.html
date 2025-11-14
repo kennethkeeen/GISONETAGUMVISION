@@ -2825,10 +2825,10 @@ function showPopupMap() {
                 }, 500);
             }
         });
-        } else {
-            console.log('Updating existing map view');
-            popupMap.setView([lat, lng], zoom);
-        }
+    } else {
+        console.log('Updating existing map view');
+        popupMap.setView([lat, lng], zoom);
+    }
 
         // Update marker - show existing location if coordinates are set
         if (popupMarker) {
