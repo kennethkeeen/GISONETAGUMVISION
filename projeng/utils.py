@@ -399,17 +399,34 @@ def get_project_from_notification(notification_message):
         prn_match = re.search(r"\(PRN: ([^)]+)\)", notification_message)
         if prn_match:
             prn = prn_match.group(1).strip()
-            try:
-                project = Project.objects.get(prn=prn)
-                return project.id
-            except Project.DoesNotExist:
-                pass
+            # Try both models
+            for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+                if ProjectModel is None:
+                    try:
+                        from monitoring.models import Project as MonitoringProject
+                        ProjectModel = MonitoringProject
+                    except:
+                        continue
+                try:
+                    project = ProjectModel.objects.get(prn=prn)
+                    logger.info(f"[{model_name}] Found project by PRN (Pattern 3): {project.id} - {project.name}")
+                    return project.id
+                except ProjectModel.DoesNotExist:
+                    pass
         # Fallback to name
-        try:
-            project = Project.objects.get(name=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
+            try:
+                project = ProjectModel.objects.get(name=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 3): {project.id} - {project.name}")
+                return project.id
+            except ProjectModel.DoesNotExist:
+                pass
     
     # Pattern 4: "Project status updated: ProjectName (PRN: PRN123) ..."
     match = re.search(r"Project (?:status|budget|description|dates|information) updated: ([^(]+)", notification_message)
@@ -418,36 +435,72 @@ def get_project_from_notification(notification_message):
         prn_match = re.search(r"\(PRN: ([^)]+)\)", notification_message)
         if prn_match:
             prn = prn_match.group(1).strip()
+            # Try both models
+            for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+                if ProjectModel is None:
+                    try:
+                        from monitoring.models import Project as MonitoringProject
+                        ProjectModel = MonitoringProject
+                    except:
+                        continue
+                try:
+                    project = ProjectModel.objects.get(prn=prn)
+                    logger.info(f"[{model_name}] Found project by PRN (Pattern 4): {project.id} - {project.name}")
+                    return project.id
+                except ProjectModel.DoesNotExist:
+                    pass
+        # Try both models by name
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
             try:
-                project = Project.objects.get(prn=prn)
+                project = ProjectModel.objects.get(name=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 4): {project.id} - {project.name}")
                 return project.id
-            except Project.DoesNotExist:
+            except ProjectModel.DoesNotExist:
                 pass
-        try:
-            project = Project.objects.get(name=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
     
     # Pattern 5: "Cost entry deleted: ProjectName - ..."
     match = re.search(r"Cost entry deleted: ([^-]+) -", notification_message)
     if match:
         project_name = match.group(1).strip()
-        try:
-            project = Project.objects.get(name=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
+        # Try both models
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
+            try:
+                project = ProjectModel.objects.get(name=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 5): {project.id} - {project.name}")
+                return project.id
+            except ProjectModel.DoesNotExist:
+                pass
     
     # Pattern 6: "Progress update deleted: ProjectName - ..."
     match = re.search(r"Progress update deleted: ([^-]+) -", notification_message)
     if match:
         project_name = match.group(1).strip()
-        try:
-            project = Project.objects.get(name=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
+        # Try both models
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
+            try:
+                project = ProjectModel.objects.get(name=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 6): {project.id} - {project.name}")
+                return project.id
+            except ProjectModel.DoesNotExist:
+                pass
     
     # Pattern 7: "⚠️ Budget Over-Utilized: ProjectName (PRN: PRN123) has exceeded..."
     match = re.search(r"Budget Over-Utilized: ([^(]+)", notification_message)
@@ -458,27 +511,47 @@ def get_project_from_notification(notification_message):
         if prn_match:
             prn = prn_match.group(1).strip()
             prn_normalized = re.sub(r'\s+', ' ', prn).strip()
-            try:
-                project = Project.objects.get(prn=prn_normalized)
-                return project.id
-            except Project.DoesNotExist:
-                pass
-            except Project.MultipleObjectsReturned:
-                project = Project.objects.filter(prn=prn_normalized).order_by('-created_at').first()
-                if project:
+            # Try both models
+            for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+                if ProjectModel is None:
+                    try:
+                        from monitoring.models import Project as MonitoringProject
+                        ProjectModel = MonitoringProject
+                    except:
+                        continue
+                try:
+                    project = ProjectModel.objects.get(prn=prn_normalized)
+                    logger.info(f"[{model_name}] Found project by PRN (Pattern 7): {project.id} - {project.name}")
                     return project.id
+                except ProjectModel.DoesNotExist:
+                    pass
+                except ProjectModel.MultipleObjectsReturned:
+                    project = ProjectModel.objects.filter(prn=prn_normalized).order_by('-created_at').first()
+                    if project:
+                        logger.info(f"[{model_name}] Found project by PRN (Pattern 7, multiple): {project.id} - {project.name}")
+                        return project.id
         
         # Fallback to project name (remove PRN if present)
         project_name = re.sub(r'\s*\(PRN:[^)]+\)', '', project_text).strip()
-        try:
-            project = Project.objects.get(name__iexact=project_name)
-            return project.id
-        except Project.DoesNotExist:
-            pass
-        except Project.MultipleObjectsReturned:
-            project = Project.objects.filter(name__iexact=project_name).order_by('-created_at').first()
-            if project:
+        # Try both models
+        for ProjectModel, model_name in [(ProjengProject, "projeng"), (None, "monitoring")]:
+            if ProjectModel is None:
+                try:
+                    from monitoring.models import Project as MonitoringProject
+                    ProjectModel = MonitoringProject
+                except:
+                    continue
+            try:
+                project = ProjectModel.objects.get(name__iexact=project_name)
+                logger.info(f"[{model_name}] Found project by name (Pattern 7): {project.id} - {project.name}")
                 return project.id
+            except ProjectModel.DoesNotExist:
+                pass
+            except ProjectModel.MultipleObjectsReturned:
+                project = ProjectModel.objects.filter(name__iexact=project_name).order_by('-created_at').first()
+                if project:
+                    logger.info(f"[{model_name}] Found project by name (Pattern 7, multiple): {project.id} - {project.name}")
+                    return project.id
     
     # Pattern 8: Budget notifications - "WARNING:", "CRITICAL:", "URGENT:" with project name and PRN
     # Examples:

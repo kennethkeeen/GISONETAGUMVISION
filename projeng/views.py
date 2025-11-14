@@ -2753,7 +2753,6 @@ def suitability_stats_api(request):
 
 
 @login_required
-@user_passes_test(is_head_engineer, login_url='/accounts/login/')
 @require_GET
 def suitability_dashboard_data_api(request):
     """
