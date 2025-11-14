@@ -1725,13 +1725,40 @@ def upload_project_document(request, pk):
 @login_required
 def export_reports_csv(request):
     # Get projects assigned to the current project engineer
-    assigned_projects = Project.objects.filter(assigned_engineers=request.user)
+    from gistagum.access_control import is_head_engineer
+    if is_head_engineer(request.user):
+        assigned_projects = Project.objects.all()
+    else:
+        assigned_projects = Project.objects.filter(assigned_engineers=request.user)
 
-    # --- Filtering by Barangay ---
+    # Apply all filters (same as my_reports_view)
     barangay_filter = request.GET.get('barangay')
+    status_filter = request.GET.get('status')
+    start_date_filter = request.GET.get('start_date')
+    end_date_filter = request.GET.get('end_date')
+    
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
-    # --- End Filtering ---
+    if status_filter:
+        # Handle "in_progress" to match both "in_progress" and "ongoing" statuses
+        if status_filter == 'in_progress':
+            assigned_projects = assigned_projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        else:
+            assigned_projects = assigned_projects.filter(status=status_filter)
+    if start_date_filter:
+        try:
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            assigned_projects = assigned_projects.filter(start_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_date_filter:
+        try:
+            from datetime import datetime
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+            assigned_projects = assigned_projects.filter(end_date__lte=end_date)
+        except ValueError:
+            pass
 
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
@@ -1761,13 +1788,40 @@ def export_reports_csv(request):
 @login_required
 def export_reports_excel(request):
     # Get projects assigned to the current project engineer
-    assigned_projects = Project.objects.filter(assigned_engineers=request.user)
+    from gistagum.access_control import is_head_engineer
+    if is_head_engineer(request.user):
+        assigned_projects = Project.objects.all()
+    else:
+        assigned_projects = Project.objects.filter(assigned_engineers=request.user)
 
-    # --- Filtering by Barangay ---
+    # Apply all filters (same as my_reports_view)
     barangay_filter = request.GET.get('barangay')
+    status_filter = request.GET.get('status')
+    start_date_filter = request.GET.get('start_date')
+    end_date_filter = request.GET.get('end_date')
+    
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
-    # --- End Filtering ---
+    if status_filter:
+        # Handle "in_progress" to match both "in_progress" and "ongoing" statuses
+        if status_filter == 'in_progress':
+            assigned_projects = assigned_projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        else:
+            assigned_projects = assigned_projects.filter(status=status_filter)
+    if start_date_filter:
+        try:
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            assigned_projects = assigned_projects.filter(start_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_date_filter:
+        try:
+            from datetime import datetime
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+            assigned_projects = assigned_projects.filter(end_date__lte=end_date)
+        except ValueError:
+            pass
 
     # Create a new workbook and select the active sheet
     workbook = openpyxl.Workbook()
@@ -1807,13 +1861,40 @@ def export_reports_excel(request):
 @login_required
 def export_reports_pdf(request):
     # Get projects assigned to the current project engineer
-    assigned_projects = Project.objects.filter(assigned_engineers=request.user)
+    from gistagum.access_control import is_head_engineer
+    if is_head_engineer(request.user):
+        assigned_projects = Project.objects.all()
+    else:
+        assigned_projects = Project.objects.filter(assigned_engineers=request.user)
 
-    # --- Filtering by Barangay ---
+    # Apply all filters (same as my_reports_view)
     barangay_filter = request.GET.get('barangay')
+    status_filter = request.GET.get('status')
+    start_date_filter = request.GET.get('start_date')
+    end_date_filter = request.GET.get('end_date')
+    
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
-    # --- End Filtering ---
+    if status_filter:
+        # Handle "in_progress" to match both "in_progress" and "ongoing" statuses
+        if status_filter == 'in_progress':
+            assigned_projects = assigned_projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        else:
+            assigned_projects = assigned_projects.filter(status=status_filter)
+    if start_date_filter:
+        try:
+            from datetime import datetime
+            start_date = datetime.strptime(start_date_filter, '%Y-%m-%d').date()
+            assigned_projects = assigned_projects.filter(start_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_date_filter:
+        try:
+            from datetime import datetime
+            end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
+            assigned_projects = assigned_projects.filter(end_date__lte=end_date)
+        except ValueError:
+            pass
 
     # If xhtml2pdf is unavailable, return a friendly message
     if pisa is None:
