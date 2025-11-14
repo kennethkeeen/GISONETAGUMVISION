@@ -422,6 +422,13 @@ def project_list(request):
             'progress': getattr(p, 'progress', 0),
             'assigned_engineers': [str(e) for e in p.assigned_engineers.all()] if hasattr(p, 'assigned_engineers') else [],
         })
+    # Ensure projects_data is a list (not a string or other type)
+    if not isinstance(projects_data, list):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"projects_data is not a list, converting. Type: {type(projects_data)}")
+        projects_data = list(projects_data) if projects_data else []
+    
     return render(request, 'monitoring/project_list.html', {
         'page_obj': page_obj,
         'form': form,
