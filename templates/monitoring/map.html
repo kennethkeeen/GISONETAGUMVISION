@@ -2248,35 +2248,7 @@ function setupRecommendationEventListeners() {
 }
 
 // Initialize project types on page load (for initial population)
-if (document.getElementById('project-type-select')) {
-    populateProjectTypes();
-}
-
-// Also fetch recommendations when location is set
-if (latInput && lngInput) {
-    const originalLatInput = latInput;
-    const originalLngInput = lngInput;
-    
-    // Create a MutationObserver to watch for value changes
-    const observer = new MutationObserver(() => {
-        if (document.getElementById('project-type-select')?.value) {
-            fetchZoneRecommendations();
-        }
-    });
-    
-    // Watch for input events
-    latInput.addEventListener('input', () => {
-        if (document.getElementById('project-type-select')?.value) {
-            setTimeout(fetchZoneRecommendations, 500); // Debounce
-        }
-    });
-    
-    lngInput.addEventListener('input', () => {
-        if (document.getElementById('project-type-select')?.value) {
-            setTimeout(fetchZoneRecommendations, 500); // Debounce
-        }
-    });
-}
+// Event listeners for recommendations are set up when modal opens via setupRecommendationEventListeners()
 
 // Initialize elements after DOM is ready
 function initializeProjectModal() {
