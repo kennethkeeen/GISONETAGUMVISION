@@ -1355,7 +1355,7 @@ function formatDate(dateStr) {
 </script>
 
 <!-- Add/Edit Project Modal -->
-<div id="project-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 opacity-0 pointer-events-none" style="z-index: 20000;">
+<div id="project-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 opacity-0 pointer-events-none" style="z-index: 20000; display: none;">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-7xl p-0 relative mx-4 my-4 max-h-[95vh] overflow-y-auto animate-modal-scale">
         <button id="close-modal" class="absolute top-6 right-6 z-30 w-12 h-12 flex items-center justify-center bg-blue-700 text-white text-3xl rounded-full border-4 border-white shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200">&times;</button>
         <form id="project-form" method="post" enctype="multipart/form-data" action="{% url 'project_list' %}" class="w-full p-8 md:p-10">
@@ -1565,21 +1565,40 @@ function showToast(message) {
 }
 
 function showModal() {
-    if (projectModal) {
-        projectModal.classList.remove('opacity-0', 'pointer-events-none');
-        setTimeout(() => projectModal.classList.add('opacity-100'), 10);
+    // Get modal element directly if not initialized yet
+    const modal = projectModal || document.getElementById('project-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100');
+        modal.style.pointerEvents = 'auto';
+        console.log('Modal shown');
+    } else {
+        console.error('Project modal not found!');
     }
 }
 
 function hideModal() {
-    if (projectModal) {
-        projectModal.classList.remove('opacity-100');
-        setTimeout(() => projectModal.classList.add('opacity-0', 'pointer-events-none'), 300);
+    // Get modal element directly if not initialized yet
+    const modal = projectModal || document.getElementById('project-modal');
+    if (modal) {
+        modal.classList.remove('opacity-100');
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        modal.style.pointerEvents = 'none';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
     }
-    if (projectForm) projectForm.reset();
+    const form = projectForm || document.getElementById('project-form');
+    if (form) {
+        form.reset();
+        form.setAttribute('data-mode', 'add');
+    }
     editProjectId = null;
-    if (projectForm) projectForm.setAttribute('data-mode', 'add');
-    if (assignedEngineersSelect) assignedEngineersSelect.innerHTML = '';
+    const engineersSelect = assignedEngineersSelect || document.getElementById('assigned-engineers-select');
+    if (engineersSelect) {
+        engineersSelect.innerHTML = '';
+    }
 }
 
 window.closeProjectModal = hideModal;
@@ -1867,19 +1886,54 @@ function initializeProjectModal() {
         addProjectBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Add Project button clicked');
+            console.log('Add Project button clicked - opening modal');
+            
+            // Ensure modal elements are initialized
+            if (!projectModal) {
+                projectModal = document.getElementById('project-modal');
+            }
+            if (!projectForm) {
+                projectForm = document.getElementById('project-form');
+            }
+            if (!imageInput) {
+                imageInput = document.getElementById('image-input');
+            }
+            if (!assignedEngineersSelect) {
+                assignedEngineersSelect = document.getElementById('assigned-engineers-select');
+            }
+            
             editProjectId = null;
-            if (projectForm) projectForm.setAttribute('data-mode', 'add');
-            if (imageInput) imageInput.required = true;
+            if (projectForm) {
+                projectForm.setAttribute('data-mode', 'add');
+            }
+            if (imageInput) {
+                imageInput.required = true;
+            }
+            
+            // Populate dropdowns
             populateEngineers();
             populateProjectTypes();
+            
             // Hide recommendation section initially
             const recommendationSection = document.getElementById('zone-recommendation-section');
             if (recommendationSection) {
                 recommendationSection.classList.add('hidden');
             }
+            
+            // Show modal
             showModal();
+            
+            return false;
         });
+        
+        // Also add onclick as backup
+        addProjectBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Add Project button onclick triggered');
+            showModal();
+            return false;
+        };
     } else {
         console.error('Add Project button not found!');
     }
