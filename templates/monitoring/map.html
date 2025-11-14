@@ -357,7 +357,7 @@
         }
     };
     
-    console.log('✓ openAddProjectModal function defined globally (early)');
+    console.log('[OK] openAddProjectModal function defined globally (early)');
 })();
 </script>
 
@@ -1767,74 +1767,33 @@ function hideModal() {
     }
 }
 
-// closeProjectModal is already defined at the top of the script block
-// This ensures it's available when the inline onclick handler fires
-if (typeof window.closeProjectModal === 'undefined') {
-    window.closeProjectModal = hideModal;
-} else {
-    // Update the function to use hideModal if it exists
+// closeProjectModal and openAddProjectModal are already defined at the top of the script block
+// This ensures they're available when the inline onclick handlers fire
+// Update closeProjectModal to use hideModal if it exists
+if (typeof window.closeProjectModal !== 'undefined' && typeof hideModal === 'function') {
     const originalClose = window.closeProjectModal;
     window.closeProjectModal = function() {
-        if (typeof hideModal === 'function') {
-            hideModal();
-        } else {
-            originalClose();
+        hideModal();
+    };
+} else if (typeof hideModal === 'function') {
+    window.closeProjectModal = hideModal;
+}
+
+// Update openAddProjectModal to use the full implementation if functions are available
+if (typeof window.openAddProjectModal !== 'undefined') {
+    const originalOpen = window.openAddProjectModal;
+    window.openAddProjectModal = function() {
+        // Call original first
+        originalOpen();
+        
+        // Then enhance with additional functionality if available
+        if (typeof initializeModalButtons === 'function') {
+            setTimeout(() => {
+                initializeModalButtons();
+            }, 100);
         }
     };
 }
-
-// Global function to open modal (can be called from anywhere)
-window.openAddProjectModal = function() {
-    console.log('openAddProjectModal called');
-    try {
-        const modal = document.getElementById('project-modal');
-        if (!modal) {
-            console.error('Modal not found in openAddProjectModal');
-            alert('Error: Project modal not found. Please refresh the page.');
-            return false;
-        }
-        
-        // Show modal
-        modal.style.display = 'flex';
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
-        modal.classList.remove('opacity-0', 'pointer-events-none');
-        modal.classList.add('opacity-100');
-        
-        // Initialize all modal buttons
-        initializeModalButtons();
-        
-        // Initialize and populate
-        if (typeof populateEngineers === 'function') {
-            populateEngineers();
-        }
-        if (typeof populateProjectTypes === 'function') {
-            populateProjectTypes();
-        }
-        
-        // Set up event listeners for recommendations (after a short delay to ensure elements exist)
-        setTimeout(() => {
-            setupRecommendationEventListeners();
-        }, 100);
-        
-        // Re-initialize all buttons after modal is shown (ensure they're attached)
-        setTimeout(() => {
-            initializeModalButtons();
-        }, 200);
-        
-        // Hide recommendation section initially
-        const recSection = document.getElementById('zone-recommendation-section');
-        if (recSection) {
-            recSection.classList.add('hidden');
-        }
-        
-        return false;
-    } catch (error) {
-        console.error('Error in openAddProjectModal:', error);
-        alert('Error opening project modal. Please refresh the page.');
-        return false;
-    }
-};
 
 // Function to initialize all modal buttons
 function initializeModalButtons() {
