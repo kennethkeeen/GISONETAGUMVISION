@@ -1778,31 +1778,9 @@ window.openAddProjectModal = function() {
             setupRecommendationEventListeners();
         }, 100);
         
-        // Re-initialize map button after modal is shown (ensure it's attached)
+        // Re-initialize all buttons after modal is shown (ensure they're attached)
         setTimeout(() => {
-            const mapBtn = document.getElementById('map-fullscreen-btn');
-            if (mapBtn) {
-                // Remove and re-add event listener to ensure it works
-                const newBtn = mapBtn.cloneNode(true);
-                mapBtn.parentNode.replaceChild(newBtn, mapBtn);
-                
-                newBtn.onclick = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Map button clicked (re-initialized in openAddProjectModal)');
-                    showPopupMap();
-                    return false;
-                };
-                
-                newBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Map button clicked (re-initialized addEventListener in openAddProjectModal)');
-                    showPopupMap();
-                }, true);
-                
-                console.log('Map button re-initialized after modal shown (openAddProjectModal)');
-            }
+            initializeModalButtons();
         }, 200);
         
         // Hide recommendation section initially
@@ -1823,51 +1801,75 @@ window.openAddProjectModal = function() {
 function initializeModalButtons() {
     console.log('Initializing modal buttons...');
     
-    // Close modal button (X)
+    // Close modal button (X) - use multiple methods
     const closeBtn = document.getElementById('close-modal');
     if (closeBtn) {
-        // Remove existing listeners
+        // Remove existing listeners by cloning
         const newCloseBtn = closeBtn.cloneNode(true);
         closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
         
-        newCloseBtn.addEventListener('click', function(e) {
+        const handleClose = function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Close modal button clicked');
             hideModal();
-        });
+            return false;
+        };
+        
+        newCloseBtn.onclick = handleClose;
+        newCloseBtn.addEventListener('click', handleClose, false);
+        newCloseBtn.addEventListener('click', handleClose, true);
         console.log('Close modal button initialized');
+    } else {
+        console.warn('Close button not found');
     }
     
-    // Cancel button
+    // Cancel button - use multiple methods
     const cancelBtn = document.querySelector('button[type="button"][onclick="closeProjectModal()"]');
     if (cancelBtn) {
-        cancelBtn.onclick = function(e) {
+        // Remove existing listeners by cloning
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        
+        const handleCancel = function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Cancel button clicked');
             hideModal();
             return false;
         };
+        
+        newCancelBtn.onclick = handleCancel;
+        newCancelBtn.addEventListener('click', handleCancel, false);
+        newCancelBtn.addEventListener('click', handleCancel, true);
         console.log('Cancel button initialized');
+    } else {
+        console.warn('Cancel button not found');
     }
     
-    // Set Map Location button - use direct event delegation to avoid cloning issues
+    // Set Map Location button - use multiple methods
     const mapBtn = document.getElementById('map-fullscreen-btn');
     if (mapBtn) {
-        // Remove any existing event listeners by removing and re-adding
+        // Remove any existing event listeners by cloning
         const newMapBtn = mapBtn.cloneNode(true);
         mapBtn.parentNode.replaceChild(newMapBtn, mapBtn);
         
-        // Add click handler with multiple methods to ensure it works
-        newMapBtn.onclick = function(e) {
+        const handleMapClick = function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Set Map Location button clicked (onclick)');
+            console.log('Set Map Location button clicked');
             try {
-                initializeMapPopupElements();
-                setupMapPopupModal();
-                showPopupMap();
+                if (typeof initializeMapPopupElements === 'function') {
+                    initializeMapPopupElements();
+                }
+                if (typeof setupMapPopupModal === 'function') {
+                    setupMapPopupModal();
+                }
+                if (typeof showPopupMap === 'function') {
+                    showPopupMap();
+                } else {
+                    console.error('showPopupMap function not available');
+                }
             } catch (error) {
                 console.error('Error opening map popup:', error);
                 alert('Error opening map. Please try again.');
@@ -1875,22 +1877,10 @@ function initializeModalButtons() {
             return false;
         };
         
-        newMapBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Set Map Location button clicked (addEventListener)');
-            try {
-                initializeMapPopupElements();
-                setupMapPopupModal();
-                showPopupMap();
-            } catch (error) {
-                console.error('Error opening map popup:', error);
-                alert('Error opening map. Please try again.');
-            }
-            return false;
-        }, true); // Use capture phase
-        
-        console.log('Set Map Location button initialized with both onclick and addEventListener');
+        newMapBtn.onclick = handleMapClick;
+        newMapBtn.addEventListener('click', handleMapClick, false);
+        newMapBtn.addEventListener('click', handleMapClick, true);
+        console.log('Set Map Location button initialized');
     } else {
         console.warn('Map fullscreen button not found during initialization');
     }
