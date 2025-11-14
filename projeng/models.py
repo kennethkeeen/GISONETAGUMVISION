@@ -816,4 +816,94 @@ class ZoneRecommendation(models.Model):
         verbose_name_plural = 'Zone Recommendations'
     
     def __str__(self):
-        return f"{self.project.name} → {self.recommended_zone} (Score: {self.overall_score})" 
+        return f"{self.project.name} → {self.recommended_zone} (Score: {self.overall_score})"
+
+
+class UserSpatialAssignment(models.Model):
+    """
+    GEO-RBAC: Assigns users (engineers) to specific geographic zones (barangays).
+    This enables location-based access control and automatic project assignment.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='spatial_assignments',
+        help_text="User (engineer) assigned to this geographic zone"
+    )
+    
+    barangay = models.CharField(
+        max_length=255,
+        help_text="Barangay name (geographic zone)"
+    )
+    
+    # Assignment metadata
+    assigned_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When this assignment was created"
+    )
+    
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='spatial_assignments_created',
+        help_text="User who created this assignment (typically Head Engineer)"
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this assignment is currently active"
+    )
+    
+    # Optional: Priority or weight for this assignment
+    priority = models.IntegerField(
+        default=1,
+        help_text="Priority level (1 = primary, 2 = secondary, etc.)"
+    )
+    
+    notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Optional notes about this assignment"
+    )
+    
+    class Meta:
+        ordering = ['user', 'barangay']
+        unique_together = ['user', 'barangay']
+        verbose_name = 'User Spatial Assignment'
+        verbose_name_plural = 'User Spatial Assignments'
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['barangay', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} → {self.barangay}"
+    
+    @classmethod
+    def get_user_barangays(cls, user):
+        """Get all barangays assigned to a user"""
+        return cls.objects.filter(
+            user=user,
+            is_active=True
+        ).values_list('barangay', flat=True)
+    
+    @classmethod
+    def get_barangay_users(cls, barangay):
+        """Get all users assigned to a barangay"""
+        return cls.objects.filter(
+            barangay=barangay,
+            is_active=True
+        ).select_related('user')
+    
+    @classmethod
+    def user_has_access(cls, user, barangay):
+        """Check if user has access to a specific barangay"""
+        if user.is_superuser or user.is_staff:
+            return True
+        return cls.objects.filter(
+            user=user,
+            barangay=barangay,
+            is_active=True
+        ).exists()

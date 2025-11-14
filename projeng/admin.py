@@ -5,7 +5,8 @@ from .models import (
     Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, 
     BarangayMetadata, ZoningZone, ProjectMilestone,
     LandSuitabilityAnalysis, SuitabilityCriteria,
-    ProjectType, ZoneAllowedUse, ZoneRecommendation
+    ProjectType, ZoneAllowedUse, ZoneRecommendation,
+    UserSpatialAssignment
 )
 from django.contrib.auth.models import Group
 
@@ -417,4 +418,50 @@ class ZoneRecommendationAdmin(admin.ModelAdmin):
         }),
     )
     list_per_page = 25
-    ordering = ['project', 'rank'] 
+    ordering = ['project', 'rank']
+
+@admin.register(UserSpatialAssignment)
+class UserSpatialAssignmentAdmin(admin.ModelAdmin):
+    """
+    Admin interface for GEO-RBAC User Spatial Assignments.
+    Head Engineers can assign users (engineers) to specific barangays.
+    """
+    list_display = [
+        'user',
+        'barangay',
+        'is_active',
+        'priority',
+        'assigned_by',
+        'assigned_at'
+    ]
+    list_filter = [
+        'barangay',
+        'is_active',
+        'priority',
+        'assigned_at'
+    ]
+    search_fields = [
+        'user__username',
+        'user__email',
+        'user__first_name',
+        'user__last_name',
+        'barangay',
+        'notes'
+    ]
+    readonly_fields = ['assigned_at']
+    fieldsets = (
+        ('Assignment', {
+            'fields': ('user', 'barangay', 'is_active', 'priority')
+        }),
+        ('Metadata', {
+            'fields': ('assigned_by', 'assigned_at', 'notes')
+        }),
+    )
+    list_per_page = 25
+    ordering = ['user', 'barangay']
+    
+    def save_model(self, request, obj, form, change):
+        """Automatically set assigned_by to current user if not set"""
+        if not obj.assigned_by:
+            obj.assigned_by = request.user
+        super().save_model(request, obj, form, change)

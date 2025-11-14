@@ -1438,6 +1438,30 @@ def add_cost_entry(request, pk):
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+@login_required
+def combined_analytics_view(request):
+    """
+    View for displaying combined clustering + suitability analytics.
+    Shows barangay clusters with aggregated suitability statistics.
+    """
+    from .models import UserSpatialAssignment
+    
+    # Get user's accessible barangays (for display purposes)
+    if request.user.is_superuser or request.user.is_staff:
+        accessible_barangays = None
+        user_barangays = []
+    else:
+        user_barangays = list(UserSpatialAssignment.get_user_barangays(request.user))
+        accessible_barangays = user_barangays if user_barangays else None
+    
+    context = {
+        'accessible_barangays': accessible_barangays,
+        'user_barangays': user_barangays,
+        'is_head_engineer': request.user.is_superuser or request.user.is_staff,
+    }
+    return render(request, 'projeng/combined_analytics.html', context)
+
+
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def analytics_overview(request):
     return render(request, 'projeng/analytics_overview.html')
@@ -3100,4 +3124,201 @@ def suitability_dashboard_data_api(request):
     except Exception as e:
         logger = logging.getLogger(__name__)
         logger.error(f'Error in suitability_dashboard_data_api: {str(e)}', exc_info=True)
-        return JsonResponse({'error': 'Internal server error'}, status=500) 
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+@login_required
+@require_GET
+def combined_clustering_suitability_analytics_api(request):
+    """
+    API endpoint for combined clustering + suitability analytics.
+    Returns barangay clusters with aggregated suitability statistics.
+    
+    This combines:
+    - Clustering: Projects grouped by barangay (Administrative Spatial Analysis)
+    - Suitability: Aggregated suitability scores per barangay cluster
+    """
+    try:
+        from django.db.models import Avg, Count, Q, Max, Min
+        from collections import defaultdict
+        from .models import Project, LandSuitabilityAnalysis, UserSpatialAssignment
+        
+        # Get user's accessible barangays (GEO-RBAC)
+        if request.user.is_superuser or request.user.is_staff:
+            # Head engineers and admins see all barangays
+            accessible_barangays = None
+        else:
+            # Get barangays assigned to this user
+            accessible_barangays = list(UserSpatialAssignment.get_user_barangays(request.user))
+            if not accessible_barangays:
+                # If no spatial assignment, return empty data
+                return JsonResponse({
+                    'clusters': [],
+                    'summary': {
+                        'total_barangays': 0,
+                        'total_projects': 0,
+                        'average_suitability': 0
+                    }
+                })
+        
+        # Get all projects with barangay information
+        projects_query = Project.objects.filter(
+            barangay__isnull=False
+        ).exclude(barangay='')
+        
+        # Apply GEO-RBAC filter if needed
+        if accessible_barangays is not None:
+            projects_query = projects_query.filter(barangay__in=accessible_barangays)
+        
+        # Get all projects with suitability analysis
+        analyses = LandSuitabilityAnalysis.objects.select_related('project').filter(
+            project__in=projects_query
+        )
+        
+        # Create a mapping of project_id to suitability data
+        suitability_map = {}
+        for analysis in analyses:
+            suitability_map[analysis.project_id] = {
+                'overall_score': float(analysis.overall_score),
+                'category': analysis.suitability_category,
+                'has_flood_risk': analysis.has_flood_risk,
+                'has_zoning_conflict': analysis.has_zoning_conflict,
+            }
+        
+        # Group projects by barangay (Clustering)
+        barangay_clusters = defaultdict(lambda: {
+            'barangay': '',
+            'project_count': 0,
+            'projects': [],
+            'suitability_stats': {
+                'average_score': 0,
+                'min_score': 100,
+                'max_score': 0,
+                'highly_suitable_count': 0,  # 80-100
+                'suitable_count': 0,          # 60-79
+                'moderate_count': 0,          # 40-59
+                'low_suitable_count': 0,      # 0-39
+                'projects_with_analysis': 0,
+                'projects_without_analysis': 0,
+                'flood_risk_count': 0,
+                'zoning_conflict_count': 0,
+            }
+        })
+        
+        # Process each project
+        for project in projects_query:
+            barangay = project.barangay.strip() if project.barangay else 'Unknown'
+            
+            cluster = barangay_clusters[barangay]
+            cluster['barangay'] = barangay
+            cluster['project_count'] += 1
+            
+            # Add project basic info
+            project_data = {
+                'id': project.id,
+                'name': project.name,
+                'status': project.status,
+                'latitude': float(project.latitude) if project.latitude else None,
+                'longitude': float(project.longitude) if project.longitude else None,
+            }
+            
+            # Add suitability data if available
+            if project.id in suitability_map:
+                suit_data = suitability_map[project.id]
+                project_data['suitability'] = suit_data
+                
+                # Update cluster suitability statistics
+                stats = cluster['suitability_stats']
+                score = suit_data['overall_score']
+                
+                stats['projects_with_analysis'] += 1
+                stats['min_score'] = min(stats['min_score'], score)
+                stats['max_score'] = max(stats['max_score'], score)
+                
+                # Count by category
+                if score >= 80:
+                    stats['highly_suitable_count'] += 1
+                elif score >= 60:
+                    stats['suitable_count'] += 1
+                elif score >= 40:
+                    stats['moderate_count'] += 1
+                else:
+                    stats['low_suitable_count'] += 1
+                
+                # Count risks
+                if suit_data['has_flood_risk']:
+                    stats['flood_risk_count'] += 1
+                if suit_data['has_zoning_conflict']:
+                    stats['zoning_conflict_count'] += 1
+            else:
+                cluster['suitability_stats']['projects_without_analysis'] += 1
+            
+            cluster['projects'].append(project_data)
+        
+        # Calculate average scores for each cluster
+        clusters_list = []
+        total_projects = 0
+        total_suitability_score = 0
+        total_projects_with_analysis = 0
+        
+        for barangay, cluster in barangay_clusters.items():
+            stats = cluster['suitability_stats']
+            
+            # Calculate average suitability score
+            if stats['projects_with_analysis'] > 0:
+                # Sum all scores
+                scores_sum = sum(
+                    p['suitability']['overall_score']
+                    for p in cluster['projects']
+                    if 'suitability' in p
+                )
+                stats['average_score'] = round(scores_sum / stats['projects_with_analysis'], 2)
+            else:
+                stats['average_score'] = None
+                stats['min_score'] = None
+                stats['max_score'] = None
+            
+            # Prepare cluster data
+            cluster_data = {
+                'barangay': cluster['barangay'],
+                'project_count': cluster['project_count'],
+                'suitability_stats': stats,
+                'projects': cluster['projects'][:10],  # Limit to first 10 for performance
+            }
+            
+            clusters_list.append(cluster_data)
+            
+            # Update totals
+            total_projects += cluster['project_count']
+            if stats['average_score'] is not None:
+                total_suitability_score += stats['average_score'] * stats['projects_with_analysis']
+                total_projects_with_analysis += stats['projects_with_analysis']
+        
+        # Calculate overall average
+        overall_average = round(
+            total_suitability_score / total_projects_with_analysis, 2
+        ) if total_projects_with_analysis > 0 else 0
+        
+        # Sort clusters by project count (descending)
+        clusters_list.sort(key=lambda x: x['project_count'], reverse=True)
+        
+        return JsonResponse({
+            'clusters': clusters_list,
+            'summary': {
+                'total_barangays': len(clusters_list),
+                'total_projects': total_projects,
+                'total_projects_with_suitability': total_projects_with_analysis,
+                'average_suitability': overall_average,
+                'accessible_barangays': accessible_barangays if accessible_barangays else 'all',
+            }
+        })
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error in combined_clustering_suitability_analytics_api: {str(e)}', exc_info=True)
+        return JsonResponse({
+            'error': str(e),
+            'clusters': [],
+            'summary': {}
+        }, status=500) 

@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Combined Analytics - Clustering & Suitability{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Combined Analytics</h1>
+        <p class="text-gray-600">Clustering + Suitability Analysis by Barangay</p>
+        {% if not is_head_engineer and accessible_barangays %}
+        <p class="text-sm text-blue-600 mt-2">
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Showing data for your assigned barangays: {{ accessible_barangays|join:", " }}
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="summary-cards">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Total Barangays</p>
+                    <p class="text-2xl font-bold text-gray-900" id="total-barangays">—</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Total Projects</p>
+                    <p class="text-2xl font-bold text-gray-900" id="total-projects">—</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Avg Suitability</p>
+                    <p class="text-2xl font-bold text-gray-900" id="avg-suitability">—</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Projects Analyzed</p>
+                    <p class="text-2xl font-bold text-gray-900" id="projects-analyzed">—</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Suitability Distribution Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Suitability Distribution</h3>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="suitabilityDistributionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Barangay Suitability Comparison -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Average Suitability by Barangay</h3>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="barangaySuitabilityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clusters Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-800">Barangay Clusters with Suitability Statistics</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="clusters-table">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barangay</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Suitability</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Highly Suitable</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Suitable</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Moderate</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Low</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risks</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="clusters-table-body">
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let suitabilityDistributionChart = null;
+    let barangaySuitabilityChart = null;
+    
+    // Fetch combined analytics data
+    fetch('{% url "projeng:combined_clustering_suitability_analytics_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                document.getElementById('clusters-table-body').innerHTML = 
+                    '<tr><td colspan="8" class="px-6 py-4 text-center text-red-500">Error loading data: ' + data.error + '</td></tr>';
+                return;
+            }
+            
+            // Update summary cards
+            document.getElementById('total-barangays').textContent = data.summary.total_barangays || 0;
+            document.getElementById('total-projects').textContent = data.summary.total_projects || 0;
+            document.getElementById('avg-suitability').textContent = 
+                data.summary.average_suitability ? data.summary.average_suitability.toFixed(1) + '/100' : 'N/A';
+            document.getElementById('projects-analyzed').textContent = 
+                data.summary.total_projects_with_suitability || 0;
+            
+            // Render clusters table
+            renderClustersTable(data.clusters);
+            
+            // Render charts
+            renderSuitabilityDistributionChart(data.clusters);
+            renderBarangaySuitabilityChart(data.clusters);
+        })
+        .catch(error => {
+            console.error('Error fetching analytics data:', error);
+            document.getElementById('clusters-table-body').innerHTML = 
+                '<tr><td colspan="8" class="px-6 py-4 text-center text-red-500">Error loading data. Please refresh the page.</td></tr>';
+        });
+    
+    function renderClustersTable(clusters) {
+        const tbody = document.getElementById('clusters-table-body');
+        if (!clusters || clusters.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No data available</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = clusters.map(cluster => {
+            const stats = cluster.suitability_stats;
+            const avgScore = stats.average_score !== null ? stats.average_score.toFixed(1) : 'N/A';
+            const scoreColor = stats.average_score >= 80 ? 'text-green-600' : 
+                              stats.average_score >= 60 ? 'text-yellow-600' : 
+                              stats.average_score >= 40 ? 'text-orange-600' : 
+                              stats.average_score !== null ? 'text-red-600' : 'text-gray-500';
+            
+            const risks = [];
+            if (stats.flood_risk_count > 0) risks.push(`${stats.flood_risk_count} Flood`);
+            if (stats.zoning_conflict_count > 0) risks.push(`${stats.zoning_conflict_count} Zoning`);
+            const risksText = risks.length > 0 ? risks.join(', ') : 'None';
+            
+            return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-semibold text-gray-900">${cluster.barangay}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${cluster.project_count}</div>
+                        <div class="text-xs text-gray-500">${stats.projects_with_analysis} analyzed</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold ${scoreColor}">${avgScore}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-green-600 font-semibold">${stats.highly_suitable_count}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-yellow-600 font-semibold">${stats.suitable_count}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-orange-600 font-semibold">${stats.moderate_count}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-red-600 font-semibold">${stats.low_suitable_count}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-xs text-gray-600">${risksText}</div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    function renderSuitabilityDistributionChart(clusters) {
+        const ctx = document.getElementById('suitabilityDistributionChart').getContext('2d');
+        
+        // Aggregate all clusters
+        let highlySuitable = 0, suitable = 0, moderate = 0, low = 0;
+        clusters.forEach(cluster => {
+            const stats = cluster.suitability_stats;
+            highlySuitable += stats.highly_suitable_count;
+            suitable += stats.suitable_count;
+            moderate += stats.moderate_count;
+            low += stats.low_suitable_count;
+        });
+        
+        if (suitabilityDistributionChart) {
+            suitabilityDistributionChart.destroy();
+        }
+        
+        suitabilityDistributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Highly Suitable (80-100)', 'Suitable (60-79)', 'Moderate (40-59)', 'Low (0-39)'],
+                datasets: [{
+                    data: [highlySuitable, suitable, moderate, low],
+                    backgroundColor: [
+                        '#10b981', // Green
+                        '#eab308', // Yellow
+                        '#f97316', // Orange
+                        '#ef4444'  // Red
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} projects (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderBarangaySuitabilityChart(clusters) {
+        const ctx = document.getElementById('barangaySuitabilityChart').getContext('2d');
+        
+        // Sort by average score (descending) and take top 10
+        const sortedClusters = clusters
+            .filter(c => c.suitability_stats.average_score !== null)
+            .sort((a, b) => b.suitability_stats.average_score - a.suitability_stats.average_score)
+            .slice(0, 10);
+        
+        const labels = sortedClusters.map(c => c.barangay);
+        const scores = sortedClusters.map(c => c.suitability_stats.average_score);
+        const colors = scores.map(score => 
+            score >= 80 ? '#10b981' : 
+            score >= 60 ? '#eab308' : 
+            score >= 40 ? '#f97316' : '#ef4444'
+        );
+        
+        if (barangaySuitabilityChart) {
+            barangaySuitabilityChart.destroy();
+        }
+        
+        barangaySuitabilityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Suitability Score',
+                    data: scores,
+                    backgroundColor: colors,
+                    borderColor: colors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Suitability Score (0-100)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Barangay'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Score: ${context.parsed.y.toFixed(1)}/100`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

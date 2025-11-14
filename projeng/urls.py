@@ -69,6 +69,10 @@ urlpatterns = [
     path('api/suitability/stats/', views.suitability_stats_api, name='suitability_stats_api'),
     path('api/suitability/dashboard-data/', views.suitability_dashboard_data_api, name='suitability_dashboard_data_api'),
     
+    # Phase 3: Combined Clustering + Suitability Analytics
+    path('analytics/combined/', views.combined_analytics_view, name='combined_analytics_view'),
+    path('api/combined-analytics/', views.combined_clustering_suitability_analytics_api, name='combined_clustering_suitability_analytics_api'),
+    
     # Zone Compatibility Recommendation API endpoints
     path('api/zone-recommendation/', views.zone_recommendation_api, name='zone_recommendation_api'),
     path('api/zone-validation/', views.zone_validation_api, name='zone_validation_api'),
