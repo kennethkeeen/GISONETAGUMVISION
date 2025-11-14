@@ -284,13 +284,23 @@ def project_list(request):
                 logger.info(f"   Content type: {request.FILES['image'].content_type}")
             
             try:
+                # Test storage connection before saving
+                from django.core.files.storage import default_storage
+                from django.conf import settings
+                
+                logger.info(f"Storage backend: {default_storage.__class__.__name__}")
+                if hasattr(settings, 'DEFAULT_FILE_STORAGE'):
+                    logger.info(f"DEFAULT_FILE_STORAGE: {settings.DEFAULT_FILE_STORAGE}")
+                
                 # Save the project (this should trigger file upload to Spaces)
+                logger.info("Saving project...")
                 project.save()
+                logger.info("Project saved, saving many-to-many relationships...")
                 form.save_m2m()  # Save assigned engineers
+                logger.info("✅ Project and relationships saved successfully!")
                 
                 # Log successful save and image URL
                 if project.image:
-                    logger.info(f"✅ Project saved successfully!")
                     logger.info(f"   Image field value: {project.image}")
                     logger.info(f"   Image name: {project.image.name}")
                     try:
@@ -298,17 +308,35 @@ def project_list(request):
                         logger.info(f"   Image URL: {image_url}")
                         
                         # Try to verify the file exists in storage
-                        from django.core.files.storage import default_storage
+                        logger.info(f"   Checking if file exists in storage: {project.image.name}")
                         if default_storage.exists(project.image.name):
                             logger.info(f"   ✅ File exists in storage: {project.image.name}")
+                            
+                            # Try to get file size
+                            try:
+                                file_size = default_storage.size(project.image.name)
+                                logger.info(f"   File size: {file_size} bytes")
+                            except Exception as size_error:
+                                logger.warning(f"   Could not get file size: {str(size_error)}")
                         else:
                             logger.error(f"   ❌ File does NOT exist in storage: {project.image.name}")
+                            logger.error(f"   This means the upload to Spaces failed!")
+                            
+                            # Try to check storage connection
+                            try:
+                                logger.info("   Testing storage connection...")
+                                # Try to list files (this will test the connection)
+                                logger.info(f"   Storage class: {default_storage.__class__}")
+                            except Exception as conn_error:
+                                logger.error(f"   ❌ Storage connection error: {str(conn_error)}", exc_info=True)
                     except Exception as url_error:
                         logger.error(f"   ❌ Error getting image URL: {str(url_error)}", exc_info=True)
                 else:
                     logger.warning("⚠️  No image field set after save")
             except Exception as e:
                 logger.error(f"❌ Error saving project: {str(e)}", exc_info=True)
+                import traceback
+                logger.error(f"Full traceback: {traceback.format_exc()}")
                 raise
             
             # Log zone detection result (optional, for debugging)
