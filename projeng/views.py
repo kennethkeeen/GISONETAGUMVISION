@@ -2673,11 +2673,182 @@ def suitability_analysis_api(request, project_id):
         }
         
         return JsonResponse(response_data)
-        
+
+
+# ============================================================================
+# ZONE COMPATIBILITY RECOMMENDATION API ENDPOINTS
+# ============================================================================
+
+@login_required
+@require_GET
+def zone_recommendation_api(request):
+    """
+    API endpoint to get zone recommendations for a project type.
+    
+    Query parameters:
+    - project_type_code: Code of the project type (required)
+    - selected_zone: Optional selected zone to validate
+    - barangay: Optional barangay name for location-specific scoring
+    - limit: Maximum number of recommendations (default: 5)
+    
+    Returns JSON with zone validation and recommendations.
+    """
+    from .zone_recommendation import ZoneCompatibilityEngine
+    
+    project_type_code = request.GET.get('project_type_code')
+    if not project_type_code:
+        return JsonResponse({
+            'error': 'project_type_code parameter is required'
+        }, status=400)
+    
+    selected_zone = request.GET.get('selected_zone')
+    barangay = request.GET.get('barangay')
+    limit = int(request.GET.get('limit', 5))
+    
+    try:
+        engine = ZoneCompatibilityEngine()
+        result = engine.recommend_zones(
+            project_type_code=project_type_code,
+            selected_zone=selected_zone,
+            barangay=barangay,
+            limit=limit
+        )
+        return JsonResponse(result)
     except Exception as e:
+        import logging
         logger = logging.getLogger(__name__)
-        logger.error(f'Error in suitability_analysis_api: {str(e)}', exc_info=True)
-        return JsonResponse({'error': 'Internal server error'}, status=500)
+        logger.error(f"Error getting zone recommendations: {e}")
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_GET
+def zone_validation_api(request):
+    """
+    API endpoint to validate if a project type is allowed in a zone.
+    
+    Query parameters:
+    - project_type_code: Code of the project type (required)
+    - zone_type: Zone type code (required)
+    
+    Returns JSON with validation results.
+    """
+    from .zone_recommendation import ZoneCompatibilityEngine
+    
+    project_type_code = request.GET.get('project_type_code')
+    zone_type = request.GET.get('zone_type')
+    
+    if not project_type_code or not zone_type:
+        return JsonResponse({
+            'error': 'Both project_type_code and zone_type parameters are required'
+        }, status=400)
+    
+    try:
+        engine = ZoneCompatibilityEngine()
+        result = engine.validate_project_zone(project_type_code, zone_type)
+        return JsonResponse(result)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error validating zone: {e}")
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_GET
+def project_types_api(request):
+    """
+    API endpoint to get all available project types.
+    
+    Returns JSON with list of project types.
+    """
+    from .models import ProjectType
+    
+    try:
+        project_types = ProjectType.objects.all().order_by('name')
+        data = [
+            {
+                'code': pt.code,
+                'name': pt.name,
+                'description': pt.description,
+                'density_level': pt.density_level,
+                'height_category': pt.height_category,
+            }
+            for pt in project_types
+        ]
+        return JsonResponse({'project_types': data})
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting project types: {e}")
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@user_passes_test(is_head_engineer, login_url='/accounts/login/')
+@require_GET
+def project_zone_recommendations_api(request, project_id):
+    """
+    API endpoint to get zone recommendations for a specific project.
+    
+    Returns JSON with recommendations for the project.
+    """
+    from .zone_recommendation import ZoneCompatibilityEngine
+    from .models import Project, ProjectType
+    
+    try:
+        project = Project.objects.get(id=project_id)
+    except Project.DoesNotExist:
+        return JsonResponse({
+            'error': 'Project not found'
+        }, status=404)
+    
+    # For now, we'll need to infer project type from project name/description
+    # TODO: Add project_type field to Project model
+    project_type_code = request.GET.get('project_type_code')
+    if not project_type_code:
+        return JsonResponse({
+            'error': 'project_type_code parameter is required. Project model does not have project_type field yet.'
+        }, status=400)
+    
+    try:
+        engine = ZoneCompatibilityEngine()
+        result = engine.recommend_zones(
+            project_type_code=project_type_code,
+            selected_zone=project.zone_type,
+            barangay=project.barangay,
+            limit=10
+        )
+        
+        # Also get saved recommendations if any
+        saved_recommendations = project.zone_recommendations.all().order_by('rank')
+        result['saved_recommendations'] = [
+            {
+                'zone_type': rec.recommended_zone,
+                'overall_score': rec.overall_score,
+                'rank': rec.rank,
+                'is_selected': rec.is_selected,
+                'reasoning': rec.reasoning,
+                'advantages': rec.advantages,
+                'constraints': rec.constraints,
+            }
+            for rec in saved_recommendations
+        ]
+        
+        return JsonResponse(result)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting project zone recommendations: {e}")
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
 
 
 @login_required
