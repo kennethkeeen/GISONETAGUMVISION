@@ -1628,7 +1628,12 @@ window.openAddProjectModal = function() {
             populateProjectTypes();
         }
         
-        // Hide recommendation section
+        // Set up event listeners for recommendations (after a short delay to ensure elements exist)
+        setTimeout(() => {
+            setupRecommendationEventListeners();
+        }, 100);
+        
+        // Hide recommendation section initially
         const recSection = document.getElementById('zone-recommendation-section');
         if (recSection) {
             recSection.classList.add('hidden');
@@ -1675,7 +1680,7 @@ function initializeModalButtons() {
     // Set Map Location button
     const mapBtn = document.getElementById('map-fullscreen-btn');
     if (mapBtn) {
-        // Remove existing listeners
+        // Remove existing listeners by cloning
         const newMapBtn = mapBtn.cloneNode(true);
         mapBtn.parentNode.replaceChild(newMapBtn, mapBtn);
         
@@ -1683,12 +1688,16 @@ function initializeModalButtons() {
             e.preventDefault();
             e.stopPropagation();
             console.log('Set Map Location button clicked');
-            // Set up map popup modal handlers before showing
+            // Initialize map popup elements and handlers
+            initializeMapPopupElements();
             setupMapPopupModal();
             showPopupMap();
         });
         console.log('Set Map Location button initialized');
     }
+    
+    // Set up event listeners for zone recommendations
+    setupRecommendationEventListeners();
     
     // Close map popup buttons - these are set up when map popup is shown
     // But we can also set them up here as a fallback
@@ -1802,12 +1811,12 @@ function populateEngineers() {
             // Check if response is an error object
             if (engineers && engineers.error) {
                 console.error('API returned error:', engineers.error);
-                const option = document.createElement('option');
+                    const option = document.createElement('option');
                 option.textContent = 'Error: ' + engineers.error;
                 engineersSelect.appendChild(option);
                 engineersSelect.disabled = true;
-                return;
-            }
+                    return;
+                }
             
             // Check if engineers is an array
             if (!Array.isArray(engineers)) {
@@ -1829,20 +1838,20 @@ function populateEngineers() {
             }
             
             engineersSelect.disabled = false;
-            const currentUsername = (window.currentUsername || '').trim().toLowerCase();
+                const currentUsername = (window.currentUsername || '').trim().toLowerCase();
             
             let addedCount = 0;
-            engineers.forEach(engineer => {
-                const engineerUsername = (engineer.username || '').trim().toLowerCase();
+                engineers.forEach(engineer => {
+                    const engineerUsername = (engineer.username || '').trim().toLowerCase();
                 // Skip current user
                 if (engineerUsername === currentUsername) {
                     console.log('Skipping current user:', engineerUsername);
                     return;
                 }
                 
-                const option = document.createElement('option');
-                option.value = engineer.id;
-                option.textContent = engineer.full_name || engineer.username;
+                    const option = document.createElement('option');
+                    option.value = engineer.id;
+                    option.textContent = engineer.full_name || engineer.username;
                 engineersSelect.appendChild(option);
                 addedCount++;
             });
@@ -2100,18 +2109,92 @@ window.selectRecommendedZone = function(zoneType) {
     }
 };
 
-// Initialize project types and set up event listeners
+// Function to set up recommendation event listeners (called when modal opens)
+function setupRecommendationEventListeners() {
+    console.log('Setting up recommendation event listeners...');
+    
+    // Project Type dropdown
+    const projectTypeSelect = document.getElementById('project-type-select');
+    if (projectTypeSelect) {
+        // Remove existing listeners by cloning
+        const newProjectTypeSelect = projectTypeSelect.cloneNode(true);
+        projectTypeSelect.parentNode.replaceChild(newProjectTypeSelect, projectTypeSelect);
+        
+        newProjectTypeSelect.addEventListener('change', function(e) {
+            console.log('Project type changed:', e.target.value);
+            fetchZoneRecommendations();
+        });
+        console.log('Project type event listener attached');
+    } else {
+        console.warn('Project type select not found');
+    }
+    
+    // Zone Type dropdown
+    const zoneTypeSelect = document.getElementById('zone-type-select');
+    if (zoneTypeSelect) {
+        // Remove existing listeners by cloning
+        const newZoneTypeSelect = zoneTypeSelect.cloneNode(true);
+        zoneTypeSelect.parentNode.replaceChild(newZoneTypeSelect, zoneTypeSelect);
+        
+        newZoneTypeSelect.addEventListener('change', function(e) {
+            console.log('Zone type changed:', e.target.value);
+            fetchZoneRecommendations();
+        });
+        console.log('Zone type event listener attached');
+    } else {
+        console.warn('Zone type select not found');
+    }
+    
+    // Barangay dropdown
+    const barangaySelect = document.getElementById('modal-barangay-select');
+    if (barangaySelect) {
+        // Remove existing listeners by cloning
+        const newBarangaySelect = barangaySelect.cloneNode(true);
+        barangaySelect.parentNode.replaceChild(newBarangaySelect, barangaySelect);
+        
+        newBarangaySelect.addEventListener('change', function(e) {
+            console.log('Barangay changed:', e.target.value);
+            fetchZoneRecommendations();
+        });
+        console.log('Barangay event listener attached');
+    } else {
+        console.warn('Barangay select not found');
+    }
+    
+    // Location inputs (latitude/longitude)
+    const latInputEl = document.getElementById('latitude-input');
+    const lngInputEl = document.getElementById('longitude-input');
+    if (latInputEl && lngInputEl) {
+        // Remove existing listeners by cloning
+        const newLatInput = latInputEl.cloneNode(true);
+        const newLngInput = lngInputEl.cloneNode(true);
+        latInputEl.parentNode.replaceChild(newLatInput, latInputEl);
+        lngInputEl.parentNode.replaceChild(newLngInput, lngInputEl);
+        
+        // Debounced handler for location changes
+        let locationTimeout = null;
+        const handleLocationChange = () => {
+            clearTimeout(locationTimeout);
+            locationTimeout = setTimeout(() => {
+                const projectTypeSelect = document.getElementById('project-type-select');
+                if (projectTypeSelect && projectTypeSelect.value) {
+                    console.log('Location changed, fetching recommendations...');
+                    fetchZoneRecommendations();
+                }
+            }, 500);
+        };
+        
+        newLatInput.addEventListener('input', handleLocationChange);
+        newLngInput.addEventListener('input', handleLocationChange);
+        console.log('Location input event listeners attached');
+    }
+    
+    console.log('All recommendation event listeners set up');
+}
+
+// Initialize project types on page load (for initial population)
 if (document.getElementById('project-type-select')) {
     populateProjectTypes();
-    document.getElementById('project-type-select').addEventListener('change', fetchZoneRecommendations);
-}
-
-if (document.getElementById('zone-type-select')) {
-    document.getElementById('zone-type-select').addEventListener('change', fetchZoneRecommendations);
-}
-
-if (document.getElementById('modal-barangay-select')) {
-    document.getElementById('modal-barangay-select').addEventListener('change', fetchZoneRecommendations);
 }
 
 // Also fetch recommendations when location is set
@@ -2153,7 +2236,7 @@ function initializeProjectModal() {
     successToast = document.getElementById('success-toast');
     
     // Set up Add Project button event listener
-    if (addProjectBtn) {
+if (addProjectBtn) {
         // Remove any existing listeners by cloning the button
         const newBtn = addProjectBtn.cloneNode(true);
         addProjectBtn.parentNode.replaceChild(newBtn, addProjectBtn);
@@ -2178,7 +2261,7 @@ function initializeProjectModal() {
                 assignedEngineersSelect = document.getElementById('assigned-engineers-select');
             }
             
-            editProjectId = null;
+        editProjectId = null;
             if (projectForm) {
                 projectForm.setAttribute('data-mode', 'add');
             }
@@ -2187,7 +2270,7 @@ function initializeProjectModal() {
             }
             
             // Populate dropdowns
-            populateEngineers();
+        populateEngineers();
             populateProjectTypes();
             
             // Hide recommendation section initially
@@ -2197,7 +2280,7 @@ function initializeProjectModal() {
             }
             
             // Show modal
-            showModal();
+        showModal();
             
             return false;
         });
@@ -2272,7 +2355,12 @@ function setupAddProjectButton() {
         populateEngineers();
         populateProjectTypes();
         
-        // Hide recommendation section
+        // Set up event listeners for recommendations (after a short delay to ensure elements exist)
+        setTimeout(() => {
+            setupRecommendationEventListeners();
+        }, 100);
+        
+        // Hide recommendation section initially
         const recSection = document.getElementById('zone-recommendation-section');
         if (recSection) {
             recSection.classList.add('hidden');
@@ -2346,76 +2434,129 @@ function initializeMapPopupElements() {
 }
 
 function showPopupMap() {
-    // Initialize elements if not already done
+    console.log('showPopupMap called');
+    
+    // Always initialize elements to get fresh references
+    initializeMapPopupElements();
+    
     if (!mapPopupModal) {
-        initializeMapPopupElements();
+        console.error('Map popup modal element not found after initialization!');
+        alert('Error: Map popup modal not found. Please refresh the page.');
+        return;
     }
     
-    if (mapPopupModal) {
-        mapPopupModal.classList.remove('hidden');
-        mapPopupModal.style.display = 'flex';
-        setTimeout(() => {
-            // Get current inputs
-            const currentLatInput = document.getElementById('latitude-input');
-            const currentLngInput = document.getElementById('longitude-input');
-            const currentBarangaySelect = document.getElementById('modal-barangay-select');
+    console.log('Showing map popup modal');
+    mapPopupModal.classList.remove('hidden');
+    mapPopupModal.style.display = 'flex';
+    
+    // Wait a bit for modal to be visible before initializing map
+    setTimeout(() => {
+        // Get current inputs (fresh references)
+        const currentLatInput = document.getElementById('latitude-input');
+        const currentLngInput = document.getElementById('longitude-input');
+        const currentBarangaySelect = document.getElementById('modal-barangay-select');
+        
+        let lat = 7.4475;
+        let lng = 125.8078;
+        let zoom = 13;
+
+        const selectedBarangay = currentBarangaySelect ? currentBarangaySelect.value : '';
+        if (selectedBarangay && barangayCoordinates[selectedBarangay]) {
+            [lat, lng] = barangayCoordinates[selectedBarangay];
+            zoom = 14;
+            console.log('Using barangay coordinates:', lat, lng);
+        } else if (currentLatInput && currentLatInput.value && currentLngInput && currentLngInput.value) {
+            lat = parseFloat(currentLatInput.value);
+            lng = parseFloat(currentLngInput.value);
+            zoom = 14;
+            console.log('Using existing coordinates:', lat, lng);
+        } else {
+            console.log('Using default coordinates:', lat, lng);
+        }
+
+        // Check if Leaflet is available
+        if (typeof L === 'undefined') {
+            console.error('Leaflet is not loaded!');
+            alert('Error: Map library not loaded. Please refresh the page.');
+            return;
+        }
+
+        // Initialize or update map
+        if (!popupMap) {
+            console.log('Initializing new map');
+            // Clean up any existing map instance
+            const mapDiv = document.getElementById('popup-map');
+            if (mapDiv && mapDiv._leaflet_id) {
+                try {
+                    const existingMap = L.map(mapDiv);
+                    existingMap.remove();
+                } catch (e) {
+                    console.log('No existing map to remove');
+                }
+                mapDiv._leaflet_id = null;
+            }
             
-            let lat = 7.4475;
-            let lng = 125.8078;
-            let zoom = 13;
-
-            const selectedBarangay = currentBarangaySelect ? currentBarangaySelect.value : '';
-            if (selectedBarangay && barangayCoordinates[selectedBarangay]) {
-                [lat, lng] = barangayCoordinates[selectedBarangay];
-                zoom = 14;
-            } else if (currentLatInput && currentLatInput.value && currentLngInput && currentLngInput.value) {
-                lat = parseFloat(currentLatInput.value);
-                lng = parseFloat(currentLngInput.value);
-                zoom = 14;
-            }
-
-            if (!popupMap) {
-                if (L.DomUtil.get('popup-map')) {
-                    L.DomUtil.get('popup-map')._leaflet_id = null;
+            popupMap = L.map('popup-map').setView([lat, lng], zoom);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(popupMap);
+            
+            // Add click handler to set location
+            popupMap.on('click', function(e) {
+                const clickedLat = e.latlng.lat;
+                const clickedLng = e.latlng.lng;
+                console.log('Map clicked at:', clickedLat, clickedLng);
+                
+                // Update input fields
+                const latInput = document.getElementById('latitude-input');
+                const lngInput = document.getElementById('longitude-input');
+                if (latInput) latInput.value = clickedLat.toFixed(6);
+                if (lngInput) lngInput.value = clickedLng.toFixed(6);
+                
+                // Update or create marker
+                if (popupMarker) { 
+                    popupMarker.setLatLng([clickedLat, clickedLng]); 
+                } else { 
+                    popupMarker = L.marker([clickedLat, clickedLng]).addTo(popupMap);
                 }
-                popupMap = L.map('popup-map').setView([lat, lng], zoom);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(popupMap);
-                popupMap.on('click', function(e) {
-                    const clickedLat = e.latlng.lat;
-                    const clickedLng = e.latlng.lng;
-                    if (currentLatInput) currentLatInput.value = clickedLat;
-                    if (currentLngInput) currentLngInput.value = clickedLng;
-                    if (popupMarker) { 
-                        popupMarker.setLatLng([clickedLat, clickedLng]); 
-                    } else { 
-                        popupMarker = L.marker([clickedLat, clickedLng]).addTo(popupMap); 
-                    }
-                    console.log('Location selected:', clickedLat, clickedLng);
-                });
-            } else {
-                popupMap.setView([lat, lng], zoom);
-            }
-
-            if (popupMarker) {
-                popupMap.removeLayer(popupMarker);
-                popupMarker = null;
-            }
-
-            if (lat && lng) {
-                popupMarker = L.marker([lat, lng]).addTo(popupMap);
-            }
-
-            setTimeout(() => { 
-                if (popupMap) {
-                    popupMap.invalidateSize(); 
+                
+                // Show location status
+                const locationStatus = document.getElementById('location-status');
+                if (locationStatus) {
+                    locationStatus.classList.remove('hidden');
                 }
-            }, 350);
-        }, 100);
-    } else {
-        console.error('Map popup modal not found!');
-    }
+                
+                // Trigger recommendations if project type is selected
+                const projectTypeSelect = document.getElementById('project-type-select');
+                if (projectTypeSelect && projectTypeSelect.value) {
+                    setTimeout(() => fetchZoneRecommendations(), 500);
+                }
+            });
+        } else {
+            console.log('Updating existing map view');
+            popupMap.setView([lat, lng], zoom);
+        }
+
+        // Update marker
+        if (popupMarker) {
+            popupMap.removeLayer(popupMarker);
+            popupMarker = null;
+        }
+
+        if (lat && lng) {
+            popupMarker = L.marker([lat, lng]).addTo(popupMap);
+            console.log('Marker added at:', lat, lng);
+        }
+
+        // Invalidate size to ensure map renders correctly
+        setTimeout(() => { 
+            if (popupMap) {
+                popupMap.invalidateSize();
+                console.log('Map size invalidated');
+            }
+        }, 350);
+    }, 100);
 }
 
 function hidePopupMap() {
