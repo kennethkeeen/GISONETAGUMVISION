@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block content %}
 <!-- Custom Confirmation Modal -->
 <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
         <div class="p-6">
             <div class="flex items-center mb-4">
                 <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
@@ -29,168 +30,236 @@
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Notifications</h1>
-        <div class="flex space-x-2">
-            <button id="markAllReadBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
-                Mark All as Read
-            </button>
-            <button id="deleteAllBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
-                Delete All
-            </button>
-            <span class="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-medium" id="unreadCount">
-                {{ unread_count }} unread
-            </span>
+<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 lg:px-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Notifications</h1>
+                    <p class="text-gray-600">Stay updated with budget alerts and project updates</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    {% if unread_count > 0 %}
+                    <span class="bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-lg flex items-center" id="unreadCount">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        {{ unread_count }} unread
+                    </span>
+                    {% endif %}
+                    <button id="markAllReadBtn" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center font-medium">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Mark All as Read
+                    </button>
+                    <button id="deleteAllBtn" class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-5 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center font-medium">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Delete All
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    {% if notifications %}
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="divide-y divide-gray-200" id="notifications-list">
-                {% for item in notifications_with_projects %}
-                {% with notification=item.notification project_id=item.project_id %}
-                    {% if notification.message|slice:":18" == "New project created" %}
-                        {% with is_clickable=False %}
-                            <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %}" 
-                                 data-notification-id="{{ notification.id }}">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex-1 {% if is_clickable %}cursor-pointer{% endif %}" 
-                                         {% if is_clickable and project_id %}onclick="window.location.href='{% url 'monitoring_project_detail' project_id %}';"{% endif %}>
-                                        <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %} {% if is_clickable %}hover:text-blue-600{% endif %}">
+        {% if notifications %}
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                <div class="divide-y divide-gray-200" id="notifications-list">
+                    {% for item in notifications_with_projects %}
+                    {% with notification=item.notification project_id=item.project_id %}
+                    {% with is_clickable=project_id|yesno:"true,false" %}
+                    <div class="p-5 hover:bg-gray-50 transition-all duration-200 {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% else %}border-l-4 border-transparent{% endif %} notification-item {% if is_clickable %}cursor-pointer group{% endif %}" 
+                         data-notification-id="{{ notification.id }}"
+                         data-notification-message="{{ notification.message|escapejs }}"
+                         data-project-id="{{ project_id|default:'' }}"
+                         data-is-clickable="{{ is_clickable }}"
+                         {% if is_clickable and project_id %}onclick="redirectToProject({{ project_id }}, {{ notification.id }})"{% endif %}>
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1 notification-content">
+                                <div class="flex items-start gap-3">
+                                    <!-- Icon based on notification type -->
+                                    <div class="flex-shrink-0 mt-1">
+                                        {% if is_clickable %}
+                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                            </svg>
+                                        </div>
+                                        {% elif 'Budget Increase Approved' in notification.message or '✅' in notification.message %}
+                                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        </div>
+                                        {% elif 'Budget Increase Rejected' in notification.message or '❌' in notification.message %}
+                                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </div>
+                                        {% elif 'Budget Review Request' in notification.message or '💰' in notification.message %}
+                                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        {% elif 'Budget Concern' in notification.message or '📋' in notification.message %}
+                                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        </div>
+                                        {% elif 'WARNING' in notification.message or 'CRITICAL' in notification.message or 'URGENT' in notification.message or '⚠️' in notification.message or '🚨' in notification.message %}
+                                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                            </svg>
+                                        </div>
+                                        {% elif 'Cost entry' in notification.message %}
+                                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                            </svg>
+                                        </div>
+                                        {% else %}
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-gray-800 {% if not notification.is_read %}font-semibold text-lg{% else %}font-medium{% endif %} {% if is_clickable %}group-hover:text-blue-600 transition-colors{% endif %} leading-relaxed">
                                             {{ notification.message }}
                                         </p>
-                                        <p class="text-sm text-gray-500 mt-1">
-                                            {{ notification.created_at|date:"M d, Y g:i A" }}
-                                        </p>
-                                    </div>
-                                    <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
-                                        {% if not notification.is_read and not is_clickable %}
-                                        <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" 
-                                                data-notification-id="{{ notification.id }}">
-                                            Mark Read
-                                        </button>
-                                        {% endif %}
-                                        <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors" 
-                                                data-notification-id="{{ notification.id }}">
-                                            Delete
-                                        </button>
+                                        <div class="flex items-center mt-2 space-x-3">
+                                            <p class="text-sm text-gray-500">
+                                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                {{ notification.created_at|date:"M d, Y g:i A" }}
+                                            </p>
+                                            {% if is_clickable %}
+                                            <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full group-hover:bg-blue-200 transition-colors">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                                </svg>
+                                                Click to view project
+                                            </span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        {% endwith %}
-                    {% else %}
-                        {% if project_id %}
-                            {% with is_clickable=True %}
-                                <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %}" 
-                                     data-notification-id="{{ notification.id }}">
-                                    <div class="flex justify-between items-start">
-                                        <div class="flex-1 {% if is_clickable %}cursor-pointer{% endif %}" 
-                                             {% if is_clickable and project_id %}onclick="window.location.href='{% url 'monitoring_project_detail' project_id %}';"{% endif %}>
-                                            <div class="flex items-start gap-2">
-                                                {% if is_clickable %}
-                                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                                                </svg>
-                                                {% endif %}
-                                                <div class="flex-1">
-                                                    <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %} {% if is_clickable %}hover:text-blue-600{% endif %}">
-                                                        {{ notification.message }}
-                                                    </p>
-                                                    <p class="text-sm text-gray-500 mt-1">
-                                                        {{ notification.created_at|date:"M d, Y g:i A" }}
-                                                        {% if is_clickable %}
-                                                        <span class="ml-2 text-blue-600 text-xs font-medium">→ Click to view project</span>
-                                                        {% endif %}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
-                                            {% if not notification.is_read and not is_clickable %}
-                                            <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" 
-                                                    data-notification-id="{{ notification.id }}">
-                                                Mark Read
-                                            </button>
-                                            {% endif %}
-                                            <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors" 
-                                                    data-notification-id="{{ notification.id }}">
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endwith %}
+                            <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
+                                {% if not notification.is_read and not is_clickable %}
+                                <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors" 
+                                        data-notification-id="{{ notification.id }}">
+                                    Mark Read
+                                </button>
+                                {% endif %}
+                                <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors" 
+                                        data-notification-id="{{ notification.id }}">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} notifications
+                    </div>
+                    <div class="flex space-x-2">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            Previous
+                        </a>
                         {% else %}
-                            {% with is_clickable=False %}
-                                <div class="p-4 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-500{% endif %}" 
-                                     data-notification-id="{{ notification.id }}">
-                                    <div class="flex justify-between items-start">
-                                        <div class="flex-1 {% if is_clickable %}cursor-pointer{% endif %}" 
-                                             {% if is_clickable and project_id %}onclick="window.location.href='{% url 'monitoring_project_detail' project_id %}';"{% endif %}>
-                                            <p class="text-gray-800 {% if not notification.is_read %}font-semibold{% endif %} {% if is_clickable %}hover:text-blue-600{% endif %}">
-                                                {{ notification.message }}
-                                            </p>
-                                            <p class="text-sm text-gray-500 mt-1">
-                                                {{ notification.created_at|date:"M d, Y g:i A" }}
-                                            </p>
-                                        </div>
-                                        <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
-                                            {% if not notification.is_read and not is_clickable %}
-                                            <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" 
-                                                    data-notification-id="{{ notification.id }}">
-                                                Mark Read
-                                            </button>
-                                            {% endif %}
-                                            <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors" 
-                                                    data-notification-id="{{ notification.id }}">
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endwith %}
+                        <span class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed">
+                            Previous
+                        </span>
                         {% endif %}
-                    {% endif %}
-                {% endwith %}
-                {% endfor %}
-            </div>
-            
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-            <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-                <div class="text-sm text-gray-700">
-                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} notifications
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <span class="px-4 py-2 bg-blue-600 border border-blue-600 rounded-lg text-sm font-medium text-white">
+                                {{ num }}
+                            </span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                                {{ num }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            Next
+                        </a>
+                        {% else %}
+                        <span class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-gray-400 cursor-not-allowed">
+                            Next
+                        </span>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="flex space-x-2">
-                    {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm">Previous</a>
-                    {% endif %}
-                    <span class="px-3 py-1 bg-blue-500 text-white rounded text-sm">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-                    {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm">Next</a>
-                    {% endif %}
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden" id="notifications-container">
+                <div class="divide-y divide-gray-200" id="notifications-list"></div>
+                <div id="empty-state" class="p-12 text-center">
+                    <div class="text-gray-400 mb-4">
+                        <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No notifications</h3>
+                    <p class="text-gray-500">You're all caught up! No new notifications at the moment.</p>
                 </div>
             </div>
-            {% endif %}
-        </div>
-    {% else %}
-        <div class="bg-white rounded-lg shadow-md overflow-hidden" id="notifications-container">
-            <div class="divide-y divide-gray-200" id="notifications-list"></div>
-            <div id="empty-state" class="p-8 text-center">
-                <div class="text-gray-400 mb-4">
-                    <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
-                <p class="text-gray-500">You're all caught up! No new notifications at the moment.</p>
-            </div>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
 <script>
+// Make redirectToProject function available globally before DOMContentLoaded
+window.redirectToProject = function(projectId, notificationId) {
+    if (!projectId) {
+        console.warn('No project ID provided for notification', notificationId);
+        return;
+    }
+    
+    // Mark notification as read when clicked
+    if (notificationId) {
+        const formData = new FormData();
+        formData.append('action', 'mark_read');
+        formData.append('notification_id', notificationId);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        
+        fetch('{% url "head_engineer_notifications" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).catch(err => console.error('Error marking notification as read:', err));
+    }
+    
+    // Redirect to project detail page
+    window.location.href = `/dashboard/monitoring/projects/${projectId}/detail/`;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Helper function to update unread count
     function updateUnreadCount() {
@@ -200,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (unreadNotifications === 0) {
                 unreadCount.style.display = 'none';
             } else {
-                unreadCount.style.display = 'inline-block';
+                unreadCount.style.display = 'flex';
                 unreadCount.textContent = `${unreadNotifications} unread`;
             }
         }
@@ -250,8 +319,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Mark All as Read',
                 'Are you sure you want to mark all notifications as read?',
                 function() {
-            
-                    // Disable button to prevent double-click
                     originalBtn.disabled = true;
                     originalBtn.textContent = 'Processing...';
                     
@@ -273,7 +340,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error('Network response was not ok');
                     })
                     .then(() => {
-                        // Reload page to show updated state
                         window.location.reload();
                     })
                     .catch(error => {
@@ -296,7 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Delete All Notifications',
                 'Are you sure you want to delete ALL notifications? This action cannot be undone.',
                 function() {
-                    // Disable button to prevent double-click
                     originalBtn.disabled = true;
                     originalBtn.textContent = 'Deleting...';
             
@@ -319,7 +384,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .then(data => {
                         if (data.success) {
-                            // Reload page to show empty state
                             window.location.reload();
                         } else {
                             throw new Error(data.error || 'Failed to delete all notifications');
@@ -342,7 +406,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const notificationId = this.dataset.notificationId;
             const notificationDiv = document.querySelector(`[data-notification-id="${notificationId}"]`);
             
-            // Disable button
             this.disabled = true;
             this.textContent = 'Processing...';
             
@@ -366,19 +429,15 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 if (data.success) {
-                    // Remove unread styling
                     if (notificationDiv) {
                         notificationDiv.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
                         const messageP = notificationDiv.querySelector('p.text-gray-800');
                         if (messageP) {
-                            messageP.classList.remove('font-semibold');
+                            messageP.classList.remove('font-semibold', 'text-lg');
+                            messageP.classList.add('font-medium');
                         }
                     }
-                    
-                    // Remove the "Mark Read" button
                     this.remove();
-                    
-                    // Update unread count
                     updateUnreadCount();
                 } else {
                     throw new Error(data.error || 'Failed to mark notification as read');
@@ -405,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Delete Notification',
                 'Are you sure you want to delete this notification?',
                 function() {
-                    // Disable button
                     originalBtn.disabled = true;
                     originalBtn.textContent = 'Deleting...';
             
@@ -429,19 +487,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .then(data => {
                         if (data.success) {
-                            // Remove notification from DOM
                             if (notificationDiv) {
                                 notificationDiv.style.transition = 'opacity 0.3s';
                                 notificationDiv.style.opacity = '0';
                                 setTimeout(() => {
                                     notificationDiv.remove();
                                     
-                                    // Update unread count if it was unread
                                     if (wasUnread) {
                                         updateUnreadCount();
                                     }
                                     
-                                    // Show message if no notifications left
                                     const notificationsContainer = document.querySelector('.divide-y');
                                     if (notificationsContainer && notificationsContainer.children.length === 0) {
                                         window.location.reload();
@@ -471,10 +526,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const sidebarBadge = document.getElementById('notification-count');
         
         if (sidebarBadge) {
-            // Use the unread count from the server (from template context)
             const unreadCount = {{ unread_count|default:0 }};
             
-            // Update sidebar badge
             sidebarBadge.textContent = unreadCount;
             if (unreadCount === 0) {
                 sidebarBadge.classList.add('hidden');
@@ -484,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Update sidebar badge on page load (immediately sync with server count)
     updateSidebarBadge();
     
     // Also update sidebar badge whenever unread count changes
@@ -498,32 +550,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function addNotificationToList(notificationData) {
         const notificationsList = document.getElementById('notifications-list');
         const emptyState = document.getElementById('empty-state');
-        const notificationsContainer = document.getElementById('notifications-container') || document.querySelector('.bg-white.rounded-lg.shadow-md');
+        const notificationsContainer = document.getElementById('notifications-container') || document.querySelector('.bg-white.rounded-xl.shadow-lg');
         
         if (!notificationsList) return;
         
-        // Check if notification already exists (prevent duplicates)
         const existingNotification = notificationsList.querySelector(`[data-notification-id="${notificationData.id}"]`);
         if (existingNotification) {
-            return; // Notification already in list
+            return;
         }
         
-        // Hide empty state if it exists
         if (emptyState) {
             emptyState.style.display = 'none';
         }
         
-        // Ensure container exists
         if (!notificationsContainer) {
             return;
         }
         
         // Extract project ID from notification message
-        // Don't make "New project created" notifications clickable
         const isProjectCreated = notificationData.message && notificationData.message.startsWith('New project created');
         const hasProjectLink = !isProjectCreated && notificationData.message && (
             notificationData.message.includes('Cost entry') || 
-            notificationData.message.includes('Progress for project')
+            notificationData.message.includes('Progress for project') ||
+            notificationData.message.includes('Budget') ||
+            notificationData.message.includes('WARNING') ||
+            notificationData.message.includes('CRITICAL') ||
+            notificationData.message.includes('URGENT')
         );
         
         // Format date
@@ -539,37 +591,36 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create notification element
         const notificationDiv = document.createElement('div');
-        notificationDiv.className = 'p-4 hover:bg-gray-50 transition-colors bg-blue-50 border-l-4 border-blue-500';
+        notificationDiv.className = 'p-5 hover:bg-gray-50 transition-colors bg-blue-50 border-l-4 border-blue-500';
         notificationDiv.setAttribute('data-notification-id', notificationData.id);
         notificationDiv.style.opacity = '0';
         notificationDiv.style.transform = 'translateY(-10px)';
         
-        const isRead = false; // New notifications are always unread
-        // Don't show "Mark Read" button if it has a project link (will be auto-read when clicked)
+        const isRead = false;
         const markReadButton = (isRead || hasProjectLink) ? '' : `
-            <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" 
+            <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors" 
                     data-notification-id="${notificationData.id}">
                 Mark Read
             </button>
         `;
         
-        const clickableClass = hasProjectLink ? 'cursor-pointer' : '';
-        const hoverClass = hasProjectLink ? 'hover:text-blue-600' : '';
+        const clickableClass = hasProjectLink ? 'cursor-pointer group' : '';
+        const hoverClass = hasProjectLink ? 'group-hover:text-blue-600 transition-colors' : '';
         const onClick = hasProjectLink ? `onclick="fetchProjectIdAndRedirect('${escapeHtml(notificationData.message)}', ${notificationData.id})"` : '';
         
         notificationDiv.innerHTML = `
             <div class="flex justify-between items-start">
                 <div class="flex-1 ${clickableClass}" ${onClick}>
-                    <p class="text-gray-800 font-semibold ${hoverClass}">
+                    <p class="text-gray-800 font-semibold text-lg ${hoverClass}">
                         ${escapeHtml(notificationData.message)}
                     </p>
-                    <p class="text-sm text-gray-500 mt-1">
+                    <p class="text-sm text-gray-500 mt-2">
                         ${formattedDate}
                     </p>
                 </div>
                 <div class="flex space-x-2 ml-4" onclick="event.stopPropagation();">
                     ${markReadButton}
-                    <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors" 
+                    <button class="delete-notification-btn text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors" 
                             data-notification-id="${notificationData.id}">
                         Delete
                     </button>
@@ -577,146 +628,21 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        // Insert at the top of the list
         if (notificationsList.firstChild) {
             notificationsList.insertBefore(notificationDiv, notificationsList.firstChild);
         } else {
             notificationsList.appendChild(notificationDiv);
         }
         
-        // Animate in
         setTimeout(() => {
             notificationDiv.style.transition = 'opacity 0.3s, transform 0.3s';
             notificationDiv.style.opacity = '1';
             notificationDiv.style.transform = 'translateY(0)';
         }, 10);
         
-        // Attach event listeners to new buttons
-        const markReadBtn = notificationDiv.querySelector('.mark-read-btn');
-        if (markReadBtn) {
-            markReadBtn.addEventListener('click', function() {
-                const notificationId = this.dataset.notificationId;
-                const notificationDiv = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                
-                this.disabled = true;
-                this.textContent = 'Processing...';
-                
-                const formData = new FormData();
-                formData.append('action', 'mark_read');
-                formData.append('notification_id', notificationId);
-                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                
-                fetch('{% url "head_engineer_notifications" %}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        if (notificationDiv) {
-                            notificationDiv.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
-                            const messageP = notificationDiv.querySelector('p.text-gray-800');
-                            if (messageP) {
-                                messageP.classList.remove('font-semibold');
-                            }
-                        }
-                        this.remove();
-                        updateUnreadCount();
-                    } else {
-                        throw new Error(data.error || 'Failed to mark notification as read');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to mark notification as read. Please try again.');
-                    this.disabled = false;
-                    this.textContent = 'Mark Read';
-                });
-            });
-        }
-        
-        const deleteBtn = notificationDiv.querySelector('.delete-notification-btn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', function() {
-                const notificationId = this.dataset.notificationId;
-                const notificationDiv = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                const wasUnread = notificationDiv && notificationDiv.classList.contains('bg-blue-50');
-                const originalBtn = this;
-                
-                showConfirmModal(
-                    'Delete Notification',
-                    'Are you sure you want to delete this notification?',
-                    function() {
-                        originalBtn.disabled = true;
-                        originalBtn.textContent = 'Deleting...';
-                
-                        const formData = new FormData();
-                        formData.append('action', 'delete');
-                        formData.append('notification_id', notificationId);
-                        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                        
-                        fetch('{% url "head_engineer_notifications" %}', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.success) {
-                                if (notificationDiv) {
-                                    notificationDiv.style.transition = 'opacity 0.3s';
-                                    notificationDiv.style.opacity = '0';
-                                    setTimeout(() => {
-                                        notificationDiv.remove();
-                                        
-                                        if (wasUnread) {
-                                            updateUnreadCount();
-                                        }
-                                        
-                                        const notificationsList = document.getElementById('notifications-list');
-                                        if (notificationsList && notificationsList.children.length === 0) {
-                                            const emptyState = document.getElementById('empty-state');
-                                            if (emptyState) {
-                                                emptyState.style.display = 'block';
-                                            }
-                                        }
-                                    }, 300);
-                                }
-                            } else {
-                                throw new Error(data.error || 'Failed to delete notification');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Failed to delete notification. Please try again.');
-                            originalBtn.disabled = false;
-                            originalBtn.textContent = 'Delete';
-                        });
-                    }
-                );
-            });
-        }
-        
-        // Update unread count (this will also update sidebar badge)
         updateUnreadCount();
     }
     
-    // Function to update sidebar badge from realtime updates
     function updateSidebarBadgeFromRealtime(unreadCount) {
         const sidebarBadge = document.getElementById('notification-count');
         if (sidebarBadge) {
@@ -729,20 +655,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Helper function to escape HTML
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
     
-    // Function to fetch project ID from notification message and redirect
     async function fetchProjectIdAndRedirect(notificationMessage, notificationId) {
         try {
             const response = await fetch(`/projeng/api/get-project-from-notification/?message=${encodeURIComponent(notificationMessage)}`);
             const data = await response.json();
             if (data.project_id) {
-                // Mark notification as read when clicked
                 if (notificationId) {
                     const formData = new FormData();
                     formData.append('action', 'mark_read');
@@ -753,7 +676,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         body: formData
                     }).catch(err => console.error('Error marking notification as read:', err));
                 }
-                // Redirect to project detail page
                 window.location.href = `/dashboard/monitoring/projects/${data.project_id}/detail/`;
             } else {
                 console.log('No project ID found for notification');
@@ -763,29 +685,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Hook into realtime notifications to update the list
-    // Wait for realtimeManager to be available
     function setupNotificationListUpdates() {
         if (!window.realtimeManager) {
             setTimeout(setupNotificationListUpdates, 100);
             return;
         }
         
-        // Check if we're on the notifications page
         const isNotificationsPage = window.location.pathname.includes('/notifications/');
         if (!isNotificationsPage) {
             return;
         }
         
-        // Connect to notifications and update list
         window.realtimeManager.connectNotifications((data) => {
             if (data.type === 'notification') {
-                // Update sidebar badge from realtime count
                 if (data.unread_count !== undefined) {
                     updateSidebarBadgeFromRealtime(data.unread_count);
                 }
                 
-                // Add notification to list if it's a new notification
                 if (data.notification) {
                     const notificationId = data.notification.id;
                     const notificationsList = document.getElementById('notifications-list');
@@ -800,9 +716,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Setup after a short delay to ensure realtimeManager is initialized
     setTimeout(setupNotificationListUpdates, 500);
 });
 </script>
 {% endblock %}
-
