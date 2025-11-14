@@ -143,14 +143,14 @@ class Command(BaseCommand):
                     analyzer.save_analysis(project, result)
                     stats['saved'] += 1
                     if options['verbose']:
-                        self.stdout.write(self.style.SUCCESS('  ✓ Saved to database'))
+                        self.stdout.write(self.style.SUCCESS('  [OK] Saved to database'))
                 else:
                     if options['verbose']:
                         self.stdout.write(self.style.WARNING('  (Not saved - use --save to save)'))
                 
             except Exception as e:
                 stats['errors'] += 1
-                self.stdout.write(self.style.ERROR(f'  ✗ Error analyzing project {project.id}: {str(e)}'))
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Error analyzing project {project.id}: {str(e)}'))
                 if options['verbose']:
                     import traceback
                     self.stdout.write(traceback.format_exc())
