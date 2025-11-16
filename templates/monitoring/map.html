@@ -419,6 +419,19 @@
                 recSection.classList.add('hidden');
             }
             
+            // Clear validation alert when modal opens
+            const validationAlert = document.getElementById('zone-validation-alert');
+            if (validationAlert) {
+                validationAlert.classList.add('hidden');
+                validationAlert.innerHTML = '';
+            }
+            
+            // Hide suitability section initially
+            const suitabilitySection = document.getElementById('zone-suitability-section');
+            if (suitabilitySection) {
+                suitabilitySection.classList.add('hidden');
+            }
+            
             return false;
         } catch (error) {
             console.error('Error in openAddProjectModal:', error);
@@ -3187,6 +3200,16 @@ function setupRecommendationEventListeners() {
         
         newZoneTypeSelect.addEventListener('change', function(e) {
             console.log('Zone type changed:', e.target.value);
+            const zoneValue = e.target.value;
+            const validationAlert = document.getElementById('zone-validation-alert');
+            
+            // Explicitly hide validation alert if zone is cleared
+            if (!zoneValue || zoneValue === '' || zoneValue === '---------') {
+                if (validationAlert) {
+                    validationAlert.classList.add('hidden');
+                }
+            }
+            
             fetchZoneRecommendations();
             fetchZoneSuitabilityAnalysis(); // Also fetch suitability analysis
         });
