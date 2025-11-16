@@ -2754,11 +2754,16 @@ function fetchZoneRecommendations() {
         .then(data => {
             loadingDiv.classList.add('hidden');
             
-            // DEBUG: Log the response
-            console.log('Zone recommendation API response:', data);
+            // DEBUG: Log the response with full details
+            console.log('=== Zone Recommendation API Response ===');
+            console.log('Full response:', JSON.stringify(data, null, 2));
             console.log('Recommendations array:', data.recommendations);
+            console.log('Recommendations count:', data.recommendations?.length || 0);
             console.log('Allowed zones:', data.allowed_zones);
-            console.log('Number of recommendations:', data.recommendations?.length || 0);
+            console.log('Allowed zones count:', data.allowed_zones?.length || 0);
+            console.log('Selected zone validation:', data.selected_zone_validation);
+            console.log('Error:', data.error || 'none');
+            console.log('========================================');
             
             // Show validation alert ONLY if zone is selected (not empty)
             if (selectedZone && selectedZone !== '' && data.selected_zone_validation) {
@@ -2798,8 +2803,13 @@ function fetchZoneRecommendations() {
                 validationAlert.classList.add('hidden');
             }
             
-            // Display recommendations
-            if (data.recommendations && data.recommendations.length > 0) {
+            // Display recommendations - check if we have recommendations OR if allowed_zones exist
+            const hasRecommendations = data.recommendations && Array.isArray(data.recommendations) && data.recommendations.length > 0;
+            const hasAllowedZones = data.allowed_zones && Array.isArray(data.allowed_zones) && data.allowed_zones.length > 0;
+            
+            console.log('Has recommendations:', hasRecommendations, 'Has allowed zones:', hasAllowedZones);
+            
+            if (hasRecommendations) {
                 console.log(`Displaying ${data.recommendations.length} recommendations`);
                 recommendationsList.innerHTML = '';
                 data.recommendations.forEach(rec => {
@@ -2872,12 +2882,35 @@ function fetchZoneRecommendations() {
                     errorMessage = `No zones are configured for "${projectTypeName}" project type. Please contact administrator to configure zone mappings.`;
                     errorClass = 'text-orange-600';
                     showHelp = true;
-                } else if (!data.allowed_zones || (Array.isArray(data.allowed_zones) && data.allowed_zones.length > 0 && !data.recommendations)) {
-                    // If we have allowed zones but no recommendations, show a different message
-                    errorMessage = `Zone recommendations are being calculated. Please wait...`;
-                    errorClass = 'text-blue-600';
-                    showHelp = false;
-                } else if (data.allowed_zones && data.allowed_zones.length > 0) {
+                } else if (hasAllowedZones && !hasRecommendations) {
+                    // If we have allowed zones but no recommendations, show allowed zones as fallback
+                    console.log('Showing allowed zones as fallback - recommendations not available');
+                    recommendationsList.innerHTML = '';
+                    data.allowed_zones.forEach((zone, index) => {
+                        const zoneCard = document.createElement('div');
+                        zoneCard.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 hover:shadow-md transition-all';
+                        zoneCard.innerHTML = `
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded">#${index + 1}</span>
+                                        <h4 class="font-bold text-gray-800">${zone.zone_name} (${zone.zone_type})</h4>
+                                        ${zone.is_primary ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">Primary Use</span>' : ''}
+                                        ${zone.is_conditional ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">Conditional</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            ${selectedZone !== zone.zone_type ? `
+                                <button type="button" onclick="selectRecommendedZone('${zone.zone_type}')" 
+                                        class="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                                    Select This Zone
+                                </button>
+                            ` : ''}
+                        `;
+                        recommendationsList.appendChild(zoneCard);
+                    });
+                    return; // Don't show error message if we displayed zones
+                } else if (hasAllowedZones) {
                     errorMessage = `Recommendations could not be generated. Try selecting a barangay for location-specific recommendations.`;
                     errorClass = 'text-yellow-600';
                     showHelp = false;
