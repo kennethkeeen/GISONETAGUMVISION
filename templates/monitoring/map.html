@@ -1846,30 +1846,51 @@ function initializeModalButtons() {
                 e.stopPropagation();
                 console.log('Form submitted');
                 
-                // Get form fields and ensure all values are captured
-                const formData = new FormData(form);
+                // Get all form fields and their values directly from DOM elements
+                const formData = new FormData();
                 
-                // Explicitly check and add required fields if they're missing or empty
-                const requiredFields = ['name', 'status', 'latitude', 'longitude'];
-                for (const fieldName of requiredFields) {
-                    const field = form.querySelector(`[name="${fieldName}"]`);
-                    if (field) {
-                        const value = field.value ? field.value.trim() : '';
-                        if (!value) {
-                            console.warn(`Field ${fieldName} is empty`);
-                        }
-                        // Ensure the value is in FormData
-                        if (!formData.has(fieldName) || !formData.get(fieldName)) {
-                            if (value) {
-                                formData.set(fieldName, value);
-                                console.log(`Manually added ${fieldName}: ${value}`);
+                // Get all form elements with names
+                const formElements = form.querySelectorAll('input, select, textarea');
+                
+                // First, collect all form data by reading directly from DOM
+                const formValues = {};
+                formElements.forEach(element => {
+                    const name = element.name;
+                    if (name) {
+                        if (element.type === 'file') {
+                            // Handle file inputs
+                            if (element.files && element.files.length > 0) {
+                                formData.append(name, element.files[0]);
+                            }
+                        } else if (element.type === 'checkbox') {
+                            // Handle checkboxes
+                            if (element.checked) {
+                                formData.append(name, element.value);
+                            }
+                        } else if (element.type === 'radio') {
+                            // Handle radio buttons
+                            if (element.checked) {
+                                formData.append(name, element.value);
                             }
                         } else {
-                            console.log(`${fieldName} value: ${formData.get(fieldName)}`);
+                            // Handle text, select, textarea, etc.
+                            const value = element.value || '';
+                            formValues[name] = value;
+                            formData.append(name, value);
+                            console.log(`Added ${name}: ${value}`);
                         }
-                    } else {
-                        console.error(`Field ${fieldName} not found in form`);
                     }
+                });
+                
+                // Special handling for multi-select (assigned_engineers)
+                const assignedEngineersSelect = form.querySelector('[name="assigned_engineers"]');
+                if (assignedEngineersSelect && assignedEngineersSelect.options) {
+                    const selectedEngineers = Array.from(assignedEngineersSelect.selectedOptions).map(opt => opt.value);
+                    formData.delete('assigned_engineers'); // Remove if already added
+                    selectedEngineers.forEach(value => {
+                        formData.append('assigned_engineers', value);
+                        console.log(`Added assigned_engineers: ${value}`);
+                    });
                 }
                 
                 // Debug: Log all FormData entries
@@ -1878,6 +1899,7 @@ function initializeModalButtons() {
                     console.log(`${key}: ${value}`);
                 }
                 
+                // Get CSRF token
                 const csrftoken = document.cookie.split('; ')
                     .find(row => row.startsWith('csrftoken='))
                     ?.split('=')[1];
@@ -1886,7 +1908,34 @@ function initializeModalButtons() {
                     alert('Error: CSRF token not found. Please refresh the page.');
                     return false;
                 }
-
+                
+                // Add CSRF token to formData (it might not be in form elements)
+                const csrfInput = form.querySelector('[name="csrfmiddlewaretoken"]');
+                if (csrfInput) {
+                    formData.set('csrfmiddlewaretoken', csrfInput.value);
+                } else {
+                    // Fallback: get from hidden input or add manually
+                    const hiddenCsrf = document.querySelector('[name="csrfmiddlewaretoken"]');
+                    if (hiddenCsrf) {
+                        formData.set('csrfmiddlewaretoken', hiddenCsrf.value);
+                    } else {
+                        formData.set('csrfmiddlewaretoken', csrftoken);
+                    }
+                }
+                
+                // Validate required fields
+                const requiredFields = ['name', 'status', 'latitude', 'longitude'];
+                const missingFields = [];
+                for (const fieldName of requiredFields) {
+                    const value = formValues[fieldName] || formData.get(fieldName) || '';
+                    if (!value || value.trim() === '') {
+                        console.error(`Required field ${fieldName} is empty or missing`);
+                        missingFields.push(fieldName);
+                    } else {
+                        console.log(`Required field ${fieldName} has value: ${value}`);
+                    }
+                }
+                
                 // Clear previous error messages
                 const errorMessages = form.querySelectorAll('.error-message');
                 errorMessages.forEach(msg => msg.remove());
@@ -1901,6 +1950,17 @@ function initializeModalButtons() {
                 // Show loading state
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
+                
+                // If required fields are missing, show alert and stop
+                if (missingFields.length > 0) {
+                    alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnContent;
+                    }
+                    return false;
+                }
+                
                 if (submitBtn) {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Saving...';
