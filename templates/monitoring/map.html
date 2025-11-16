@@ -2867,11 +2867,16 @@ function fetchZoneRecommendations() {
                     errorMessage = `Error: ${data.error}`;
                     errorClass = 'text-red-500';
                     showHelp = true;
-                } else if (data.allowed_zones && data.allowed_zones.length === 0) {
+                } else if (data.allowed_zones && Array.isArray(data.allowed_zones) && data.allowed_zones.length === 0) {
                     const projectTypeName = projectTypeSelect.options[projectTypeSelect.selectedIndex]?.text || projectTypeCode;
                     errorMessage = `No zones are configured for "${projectTypeName}" project type. Please contact administrator to configure zone mappings.`;
                     errorClass = 'text-orange-600';
                     showHelp = true;
+                } else if (!data.allowed_zones || (Array.isArray(data.allowed_zones) && data.allowed_zones.length > 0 && !data.recommendations)) {
+                    // If we have allowed zones but no recommendations, show a different message
+                    errorMessage = `Zone recommendations are being calculated. Please wait...`;
+                    errorClass = 'text-blue-600';
+                    showHelp = false;
                 } else if (data.allowed_zones && data.allowed_zones.length > 0) {
                     errorMessage = `Recommendations could not be generated. Try selecting a barangay for location-specific recommendations.`;
                     errorClass = 'text-yellow-600';
