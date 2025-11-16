@@ -150,9 +150,6 @@ class ZoneCompatibilityEngine:
             'PARKS': 'Parks & Open Spaces',
             'ECO-TOURISM': 'Eco-tourism',
             'SPECIAL': 'Special Use',
-            'COASTAL': 'Coastal Zone',
-            'RECLAMATION': 'Reclamation Proposed Zone',
-            'CEMETERY': 'Cemetery / Memorial Park',
         }
         
         return zone_names.get(normalized, zone_names.get(zone_type, zone_type))

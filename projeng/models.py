@@ -370,9 +370,6 @@ class ZoningZone(models.Model):
         ('AGRICULTURAL', 'Agricultural Zone / SAFDZ'),
         ('ECO-TOURISM', 'Eco-tourism Zone'),
         ('SPECIAL', 'Special Use Zone'),
-        ('COASTAL', 'Coastal Zone'),
-        ('RECLAMATION', 'Reclamation Proposed Zone'),
-        ('CEMETERY', 'Cemetery / Memorial Park Zone'),
     ]
     
     zone_type = models.CharField(

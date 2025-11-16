@@ -33,21 +33,12 @@
 }
 
 /* Floating Controls Styling */
-#zoning-controls-panel,
-#view-mode-controls-panel {
+#zoning-controls-panel {
   pointer-events: auto !important;
   z-index: 10002 !important;
   position: absolute !important;
-}
-
-#zoning-controls-panel {
   top: 16px !important;
   right: 16px !important;
-}
-
-#view-mode-controls-panel {
-  top: 16px !important;
-  left: 16px !important;
 }
 
 /* Ensure floating controls don't interfere with map interactions */
@@ -81,21 +72,6 @@
   border: 1px solid rgba(0,0,0,0.1) !important;
 }
 
-/* View Mode Toggle Button Styling */
-.view-mode-btn {
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: none;
-  outline: none;
-}
-.view-mode-btn:hover {
-  background-color: #e5e7eb !important;
-}
-.view-mode-btn.active,
-.view-mode-btn.bg-blue-600 {
-  background-color: #2563eb !important;
-  color: white !important;
-}
 
 /* Modern Leaflet Controls */
 .leaflet-bar {
@@ -246,31 +222,6 @@
             <!-- Map Container with Floating Controls -->
             <div class="relative" style="position: relative;">
                 <div id="map" style="height: 75vh; width: 100%; z-index: 1; position: relative; background-color: #f0f0f0;"></div>
-                
-                <!-- Floating View Mode Controls Panel (Inside Map) -->
-                <div id="view-mode-controls-panel" class="absolute top-4 left-4 bg-white rounded-lg shadow-xl border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="position: absolute; top: 16px; left: 16px; z-index: 10002; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                    <!-- Panel Header -->
-                    <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">View Mode</span>
-                    </div>
-                    
-                    <!-- View Mode Toggle Buttons -->
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                            <input type="radio" name="view-mode" id="view-mode-status-radio" value="status" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer" checked>
-                            <span class="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Status
-                            </span>
-                        </label>
-                    </div>
-                </div>
                 
                 <!-- Floating Zoning Controls Panel (Inside Map) -->
                 <div id="zoning-controls-panel" class="absolute top-4 right-4 bg-white rounded-lg shadow-xl border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="position: absolute; top: 16px; right: 16px; z-index: 10002; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
@@ -589,7 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let statusFilter = '';
     let isFullscreen = false;
     let fullscreenButton = null;
-    let viewMode = 'status'; // Only 'status' mode now
     let mapLegend = null; // Leaflet legend control
 
     // Initialize map
@@ -1245,35 +1195,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderMarkers();
     });
     
-    // View Mode Toggle Functionality
-    function setViewMode(mode) {
-        // Only status mode is supported now
-        if (mode !== 'status') {
-            console.warn('Only status view mode is supported. Setting to status.');
-            mode = 'status';
-        }
-        
-        viewMode = mode;
-        console.log('View mode changed to:', viewMode);
-        
-        // Update radio button state
-        const radioStatus = document.getElementById('view-mode-status-radio');
-        if (radioStatus) {
-            radioStatus.checked = true;
-        }
-        
-        // Refresh markers and legend
-        updateLegend();
-        
-        // Re-render markers
-        if (typeof refreshMapMarkers === 'function') {
-            refreshMapMarkers();
-        } else if (typeof renderMarkers === 'function') {
-            renderMarkers();
-        }
-    }
-    
-    // Update legend based on view mode
+    // Update legend
     function updateLegend() {
         if (!map) return;
         
@@ -1283,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mapLegend = null;
         }
         
-        // Create new legend based on view mode
+        // Create new legend
         mapLegend = L.control({ position: 'bottomright' });
         
         mapLegend.onAdd = function(map) {
@@ -1309,39 +1231,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         mapLegend.addTo(map);
-    }
-    
-    // Initialize view mode toggle buttons
-    function initializeViewModeControls() {
-        // View Mode Radio Button Event Listeners
-        const radioViewStatus = document.getElementById('view-mode-status-radio');
-        
-        if (radioViewStatus) {
-            radioViewStatus.addEventListener('change', function() {
-                if (this.checked) {
-                    setViewMode('status');
-                }
-            });
-        }
-        
-        // Also listen to clicks on the labels for better UX
-        const labelViewStatus = radioViewStatus?.closest('label');
-        
-        if (labelViewStatus) {
-            labelViewStatus.addEventListener('click', function(e) {
-                if (e.target !== radioViewStatus) {
-                    radioViewStatus.checked = true;
-                    setViewMode('status');
-                }
-            });
-        }
-    }
-    
-    // Initialize on DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeViewModeControls);
-    } else {
-        initializeViewModeControls();
     }
     
     // Initialize legend on map load

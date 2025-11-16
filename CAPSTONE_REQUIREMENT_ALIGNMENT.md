@@ -132,7 +132,6 @@
 | **Administrative insights** | Head Engineer dashboard | ✅ |
 | | Zone statistics | ✅ |
 | | Compliance reports | ✅ |
-| **Zoning** | 14 zone types | ✅ |
 | | Official zoning data | ✅ |
 | | Zone detection | ✅ |
 | **Strategic development** | Zone distribution map | ✅ |

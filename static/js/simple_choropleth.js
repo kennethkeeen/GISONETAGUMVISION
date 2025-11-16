@@ -240,7 +240,7 @@ class SimpleChoropleth {
             } else if (this.currentView === 'zone_type') {
                 // Phase 5: Zone type legend
                 div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Zone Types</h4>';
-                const zoneTypes = ['R-1', 'R-2', 'R-3', 'SHZ', 'C-1', 'C-2', 'I-1', 'I-2', 'AGRO', 'INS-1', 'PARKS', 'AGRICULTURAL', 'ECO-TOURISM', 'SPECIAL', 'COASTAL', 'RECLAMATION', 'CEMETERY'];
+                const zoneTypes = ['R-1', 'R-2', 'R-3', 'SHZ', 'C-1', 'C-2', 'I-1', 'I-2', 'AGRO', 'INS-1', 'PARKS', 'AGRICULTURAL', 'ECO-TOURISM', 'SPECIAL'];
                 zoneTypes.forEach(zoneType => {
                     const color = this.getZoneTypeColor(zoneType);
                     const displayName = this.getZoneTypeDisplayName(zoneType);
@@ -527,9 +527,6 @@ class SimpleChoropleth {
             
             // Special Uses - Brown/Gray/Teal tones
             'SPECIAL': '#a1887f', // Brown (special use)
-            'COASTAL': '#4dd0e1', // Light cyan (coastal zone)
-            'RECLAMATION': '#80cbc4', // Teal (reclamation proposed zone)
-            'CEMETERY': '#90a4ae', // Blue-gray (cemetery/memorial park)
         };
         return zoneColors[zoneType] || '#cccccc'; // Default gray
     }
@@ -551,9 +548,6 @@ class SimpleChoropleth {
             'AGRICULTURAL': 'Agricultural / SAFDZ',
             'ECO-TOURISM': 'Eco-tourism',
             'SPECIAL': 'Special Use',
-            'COASTAL': 'Coastal Zone',
-            'RECLAMATION': 'Reclamation Proposed Zone',
-            'CEMETERY': 'Cemetery / Memorial Park',
         };
         return zoneNames[zoneType] || zoneType;
     }
