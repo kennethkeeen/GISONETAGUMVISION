@@ -652,11 +652,27 @@ function hideModal() {
     projectForm.setAttribute('data-mode', 'add');
     // Clear assigned engineers options
     assignedEngineersSelect.innerHTML = '';
+    // Reset button text to default
+    const submitBtn = projectForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        const saveIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+        submitBtn.innerHTML = saveIcon + ' Save Project';
+    }
+    // Remove any hidden project_id input
+    const projectIdInput = projectForm.querySelector('input[name="project_id"]');
+    if (projectIdInput) {
+        projectIdInput.remove();
+    }
+    // Clear location inputs
+    if (latInput) latInput.value = '';
+    if (lngInput) lngInput.value = '';
+    updateLocationStatus();
+    updateCoordinateDisplays();
 }
 window.closeProjectModal = hideModal;
 
 function populateEngineers() {
-    fetch('/projeng/api/engineers/')
+    return fetch('/projeng/api/engineers/')
         .then(response => response.json())
         .then(engineers => {
             assignedEngineersSelect.innerHTML = '';
@@ -683,6 +699,7 @@ function populateEngineers() {
         })
         .catch(err => {
             console.error('Failed to fetch engineers:', err);
+            throw err; // Re-throw to allow caller to handle
         });
 }
 
@@ -691,6 +708,12 @@ if (addProjectBtn) {
         editProjectId = null;
         projectForm.setAttribute('data-mode', 'add');
         if (imageInput) imageInput.required = true;
+        // Update button text for add mode
+        const submitBtn = projectForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            const saveIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+            submitBtn.innerHTML = saveIcon + ' Save Project';
+        }
         populateEngineers();
         showModal();
     });
@@ -1149,7 +1172,7 @@ if (latInput && lngInput) {
     });
 }
 
-// Validate location before form submission
+// Validate location before form submission and handle edit mode
 if (projectForm) {
     projectForm.addEventListener('submit', function(e) {
         if (!latInput || !lngInput || !latInput.value || !lngInput.value) {
@@ -1159,6 +1182,19 @@ if (projectForm) {
                 showPopupMap();
             }
             return false;
+        }
+        
+        // Add project ID if in edit mode
+        if (editProjectId) {
+            // Create a hidden input for the project ID if it doesn't exist
+            let projectIdInput = projectForm.querySelector('input[name="project_id"]');
+            if (!projectIdInput) {
+                projectIdInput = document.createElement('input');
+                projectIdInput.type = 'hidden';
+                projectIdInput.name = 'project_id';
+                projectForm.appendChild(projectIdInput);
+            }
+            projectIdInput.value = editProjectId;
         }
     });
 }
@@ -1197,57 +1233,94 @@ function renumberProjectRows() {
 }
 
 window.openEditModal = function(id) {
-    // Ensure window.projects is an array
-    if (!Array.isArray(window.projects)) {
-        console.error('window.projects is not an array in openEditModal:', typeof window.projects);
-        window.projects = [];
-        alert('Project data not available. Please refresh the page.');
-        return;
-    }
-    
-    const project = window.projects.find(p => p.id == id || p.id === id || String(p.id) === String(id));
-    if (!project) {
-        alert('Project data not found for id: ' + id);
-        return;
-    }
+    // Fetch project data from API instead of relying on window.projects
     editProjectId = id;
     projectForm.setAttribute('data-mode', 'edit');
     if (imageInput) imageInput.required = false;
-    // Populate form fields
-    projectForm.elements['prn'].value = project.prn || '';
-    projectForm.elements['name'].value = project.name || '';
-    projectForm.elements['description'].value = project.description || '';
-    projectForm.elements['barangay'].value = project.barangay || '';
-    projectForm.elements['project_cost'].value = project.project_cost || '';
-    projectForm.elements['source_of_funds'].value = project.source_of_funds || '';
-    projectForm.elements['status'].value = project.status || '';
-    projectForm.elements['latitude'].value = project.latitude || '';
-    projectForm.elements['longitude'].value = project.longitude || '';
-    projectForm.elements['start_date'].value = project.start_date || '';
-    projectForm.elements['end_date'].value = project.end_date || '';
-    // Assigned engineers (if select multiple)
-    const assignedEngineersField = projectForm.elements['assigned_engineers'];
-    if (assignedEngineersField && assignedEngineersField.options) {
-        for (let i = 0; i < assignedEngineersField.options.length; i++) {
-            assignedEngineersField.options[i].selected = project.assigned_engineers && project.assigned_engineers.includes(assignedEngineersField.options[i].value);
-        }
+    
+    // Show loading state
+    const submitBtn = projectForm.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Loading...</span>';
     }
-    // Populate assigned engineers options for the edit modal
-    assignedEngineersSelect.innerHTML = ''; // Clear existing options
-    // Ensure window.projects is an array before using map
-    if (!Array.isArray(window.projects)) {
-        console.error('window.projects is not an array when getting engineers:', typeof window.projects);
-        window.projects = [];
-    }
-    const engineers = window.projects.map(p => p.assigned_engineers || []).flat();
-    const uniqueEngineers = [...new Set(engineers)];
-    uniqueEngineers.forEach(engineer => {
-        const option = document.createElement('option');
-        option.value = engineer;
-        option.textContent = engineer;
-        assignedEngineersSelect.appendChild(option);
-    });
-    showModal();
+    
+    // Fetch project data from API
+    fetch(`/dashboard/projects/${id}/api/get/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success || !data.project) {
+                throw new Error(data.error || 'Failed to load project data');
+            }
+            
+            const project = data.project;
+            
+            // Populate form fields
+            projectForm.elements['prn'].value = project.prn || '';
+            projectForm.elements['name'].value = project.name || '';
+            projectForm.elements['description'].value = project.description || '';
+            projectForm.elements['barangay'].value = project.barangay || '';
+            projectForm.elements['project_cost'].value = project.project_cost || '';
+            projectForm.elements['source_of_funds'].value = project.source_of_funds || '';
+            projectForm.elements['status'].value = project.status || '';
+            projectForm.elements['latitude'].value = project.latitude || '';
+            projectForm.elements['longitude'].value = project.longitude || '';
+            projectForm.elements['start_date'].value = project.start_date || '';
+            projectForm.elements['end_date'].value = project.end_date || '';
+            
+            // Update location status
+            updateLocationStatus();
+            updateCoordinateDisplays();
+            
+            // Populate assigned engineers
+            populateEngineers().then(() => {
+                // After engineers are loaded, select the assigned ones
+                const assignedEngineersField = projectForm.elements['assigned_engineers'];
+                if (assignedEngineersField && project.assigned_engineer_ids && project.assigned_engineer_ids.length > 0) {
+                    // Select assigned engineers by ID
+                    for (let i = 0; i < assignedEngineersField.options.length; i++) {
+                        const option = assignedEngineersField.options[i];
+                        if (project.assigned_engineer_ids.includes(parseInt(option.value))) {
+                            option.selected = true;
+                        }
+                    }
+                }
+                
+                // Restore button state and update text for edit mode
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    // Update button text for edit mode
+                    const saveIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+                    submitBtn.innerHTML = saveIcon + ' Update Project';
+                }
+                
+                // Show the modal
+                showModal();
+            }).catch(err => {
+                console.error('Error populating engineers:', err);
+                // Still show modal even if engineers fail to load
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+                showModal();
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching project data:', error);
+            alert('Failed to load project data: ' + (error.message || 'Unknown error'));
+            // Restore button state
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
 };
 </script>
 {% endblock %}

@@ -270,10 +270,29 @@ def project_list(request):
         # Check if this is an AJAX request
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json'
         
-        form = ProjectForm(request.POST, request.FILES)
+        # Check if this is an edit operation
+        project_id = request.POST.get('project_id')
+        is_edit = bool(project_id)
+        
+        if is_edit:
+            # Get existing project for editing
+            try:
+                existing_project = Project.objects.get(pk=project_id)
+                form = ProjectForm(request.POST, request.FILES, instance=existing_project)
+            except Project.DoesNotExist:
+                from django.http import JsonResponse
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': 'Project not found'}, status=404)
+                from django.contrib import messages
+                messages.error(request, 'Project not found.')
+                return redirect('project_list')
+        else:
+            form = ProjectForm(request.POST, request.FILES)
+        
         if form.is_valid():
             project = form.save(commit=False)
-            project.created_by = request.user
+            if not is_edit:
+                project.created_by = request.user
             
             # Phase 4: Auto-detect zone before saving
             zone_type, confidence = project.detect_and_set_zone(save=False)
@@ -357,9 +376,15 @@ def project_list(request):
             # Return JSON response for AJAX requests
             if is_ajax:
                 from django.http import JsonResponse
-                return JsonResponse({'success': True, 'message': 'Project created successfully!', 'project_id': project.id})
+                message = 'Project updated successfully!' if is_edit else 'Project created successfully!'
+                return JsonResponse({'success': True, 'message': message, 'project_id': project.id})
             
             # Optionally add a success message or redirect
+            from django.contrib import messages
+            if is_edit:
+                messages.success(request, 'Project updated successfully!')
+            else:
+                messages.success(request, 'Project created successfully!')
             return redirect('project_list')
         else:
             # Return JSON errors for AJAX requests
@@ -894,6 +919,67 @@ def budget_reports(request):
         'all_barangays': all_barangays,
     }
     return render(request, 'monitoring/budget_reports.html', context)
+
+@login_required
+@head_engineer_required
+def project_get_api(request, pk):
+    """Get a single project's data as JSON for editing"""
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        project = get_object_or_404(Project, pk=pk)
+        
+        # Safely get image URL
+        image_url = ''
+        if project.image:
+            try:
+                image_url = project.image.url
+            except Exception as img_error:
+                logger.warning(f"Error getting image URL for project {project.id}: {str(img_error)}")
+                image_url = ''
+        
+        # Safely get assigned engineers
+        assigned_engineers = []
+        assigned_engineer_ids = []
+        try:
+            if hasattr(project, 'assigned_engineers'):
+                assigned_engineers_list = project.assigned_engineers.all()
+                assigned_engineers = [str(e) for e in assigned_engineers_list]
+                assigned_engineer_ids = [e.id for e in assigned_engineers_list]
+        except Exception as eng_error:
+            logger.warning(f"Error getting assigned engineers for project {project.id}: {str(eng_error)}")
+            assigned_engineers = []
+            assigned_engineer_ids = []
+        
+        project_data = {
+            'id': project.id,
+            'name': project.name or '',
+            'prn': project.prn or '',
+            'description': project.description or '',
+            'barangay': project.barangay or '',
+            'latitude': float(project.latitude) if project.latitude else '',
+            'longitude': float(project.longitude) if project.longitude else '',
+            'project_cost': str(project.project_cost) if project.project_cost is not None else '',
+            'source_of_funds': project.source_of_funds or '',
+            'start_date': str(project.start_date) if project.start_date else '',
+            'end_date': str(project.end_date) if project.end_date else '',
+            'status': project.status or '',
+            'image': image_url,
+            'progress': getattr(project, 'progress', 0) or 0,
+            'assigned_engineers': assigned_engineers,
+            'assigned_engineer_ids': assigned_engineer_ids,
+        }
+        
+        return JsonResponse({'success': True, 'project': project_data})
+    except Project.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Project not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error getting project {pk}: {str(e)}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def project_update_api(request, pk):
     return HttpResponse("project_update_api placeholder")

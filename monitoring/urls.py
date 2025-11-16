@@ -16,6 +16,7 @@ urlpatterns = [
     path('reports/budget/export/csv/', views.export_budget_reports_csv, name='export_budget_reports_csv'),
     path('reports/budget/export/excel/', views.export_budget_reports_excel, name='export_budget_reports_excel'),
     path('reports/budget/export/pdf/', views.export_budget_reports_pdf, name='export_budget_reports_pdf'),
+    path('projects/<int:pk>/api/get/', views.project_get_api, name='project_get_api'),
     path('projects/<int:pk>/api/update/', views.project_update_api, name='project_update_api'),
     
     path('projects/<int:pk>/api/delete/', views.project_delete_api, name='project_delete_api'),
