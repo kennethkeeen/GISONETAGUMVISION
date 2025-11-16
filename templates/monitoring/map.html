@@ -2735,10 +2735,18 @@ function fetchZoneRecommendations() {
         barangay: barangay || '(none)'
     });
     
+    // Get CSRF token for requests
+    const csrftoken = document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    console.log('CSRF token found:', csrftoken ? 'Yes' : 'No');
+    
     fetch(apiUrl, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken || '', // Include CSRF token
         },
         credentials: 'same-origin', // Include cookies for authentication
     })
