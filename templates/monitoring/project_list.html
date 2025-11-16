@@ -730,30 +730,62 @@ function formatDate(dateStr) {
 }
 
 window.openDetailsModal = function(id) {
-    // Ensure window.projects is an array
-    if (!Array.isArray(window.projects)) {
-        console.error('window.projects is not an array:', typeof window.projects);
-        window.projects = [];
-    }
-    
     const detailsModal = document.getElementById('details-modal');
     const detailsImage = document.getElementById('details-image');
-    if (detailsModal && detailsImage) {
-        detailsModal.classList.remove('hidden');
-        const project = window.projects.find(p => p.id == id || p.id === id || String(p.id) === String(id));
-        if (project) {
+    
+    if (!detailsModal || !detailsImage) {
+        console.error('Details modal elements not found');
+        return;
+    }
+    
+    // Show modal with loading state
+    detailsModal.classList.remove('hidden');
+    document.getElementById('details-title').textContent = 'Loading...';
+    document.getElementById('details-name').textContent = '';
+    document.getElementById('details-prn').textContent = '';
+    document.getElementById('details-barangay').textContent = '';
+    document.getElementById('details-cost').textContent = '';
+    document.getElementById('details-funds').textContent = '';
+    document.getElementById('details-description').textContent = 'Loading project data...';
+    document.getElementById('details-latitude').textContent = '';
+    document.getElementById('details-longitude').textContent = '';
+    document.getElementById('details-start-date').textContent = '';
+    document.getElementById('details-end-date').textContent = '';
+    document.getElementById('details-assigned-engineers').textContent = 'Loading...';
+    detailsImage.src = '';
+    detailsImage.classList.add('hidden');
+    document.getElementById('details-map').innerHTML = '<div class="text-gray-400 text-center py-8">Loading...</div>';
+    document.getElementById('details-progress-section').classList.add('hidden');
+    
+    // Fetch project data from API
+    fetch(`/dashboard/projects/${id}/api/get/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success || !data.project) {
+                throw new Error(data.error || 'Failed to load project data');
+            }
+            
+            const project = data.project;
+            
+            // Populate all fields
             document.getElementById('details-title').textContent = project.name || '';
             document.getElementById('details-status').innerHTML = getStatusBadge(project.status || '');
             document.getElementById('details-name').textContent = project.name || '';
             document.getElementById('details-prn').textContent = `PRN#: ${project.prn || ''}`;
             document.getElementById('details-barangay').textContent = project.barangay || '';
-            document.getElementById('details-cost').textContent = project.project_cost || '';
-            document.getElementById('details-funds').textContent = project.source_of_funds || '';
+            document.getElementById('details-cost').textContent = project.project_cost ? `₱${parseFloat(project.project_cost).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—';
+            document.getElementById('details-funds').textContent = project.source_of_funds || '—';
             document.getElementById('details-description').textContent = project.description || 'No description';
-            document.getElementById('details-latitude').textContent = project.latitude || '';
-            document.getElementById('details-longitude').textContent = project.longitude || '';
-            document.getElementById('details-start-date').textContent = formatDate(project.start_date) || '';
-            document.getElementById('details-end-date').textContent = formatDate(project.end_date) || '';
+            document.getElementById('details-latitude').textContent = project.latitude || '—';
+            document.getElementById('details-longitude').textContent = project.longitude || '—';
+            document.getElementById('details-start-date').textContent = formatDate(project.start_date) || '—';
+            document.getElementById('details-end-date').textContent = formatDate(project.end_date) || '—';
+            
             // Handle project image
             if (project.image && project.image.trim() !== '') {
                 detailsImage.src = project.image;
@@ -766,6 +798,8 @@ window.openDetailsModal = function(id) {
                 detailsImage.style.display = 'none';
                 console.log('No image for project:', project.id);
             }
+            
+            // Initialize map
             setTimeout(() => {
                 if (window.detailsMap) {
                     window.detailsMap.remove();
@@ -814,11 +848,13 @@ window.openDetailsModal = function(id) {
                 }
             }
             // --- End Assigned Engineers Display ---
-
-        } else {
-            alert('Project data not found for id: ' + id);
-        }
-    }
+        })
+        .catch(error => {
+            console.error('Error fetching project data:', error);
+            document.getElementById('details-title').textContent = 'Error';
+            document.getElementById('details-description').textContent = 'Failed to load project data: ' + (error.message || 'Unknown error');
+            document.getElementById('details-map').innerHTML = '<div class="text-red-400 text-center py-8">Error loading project data</div>';
+        });
 };
 window.closeDetailsModalFunc = function() {
     const detailsModal = document.getElementById('details-modal');
