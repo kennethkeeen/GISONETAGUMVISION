@@ -307,7 +307,7 @@
                             <option value="urban_rural">Urban / Rural</option>
                             <option value="economic">Economic Classification</option>
                             <option value="elevation">Elevation Type</option>
-                            <option value="zone_type">Zone Type (R-1, R-2, C-1, etc.)</option>
+                            <option value="zone_type">Zone Type</option>
                         </select>
                     </div>
                 </div>
@@ -1874,18 +1874,23 @@ function formatDate(dateStr) {
                     <label class="font-semibold text-gray-700">Zone Type</label>
                     <select name="zone_type" id="zone-type-select" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none">
                         <option value="">---------</option>
-                        <option value="R1">R1 - Low Density Residential</option>
-                        <option value="R2">R2 - Medium Density Residential</option>
-                        <option value="R3">R3 - High Density Residential</option>
+                        <option value="R-1">R-1 - Low Density Residential</option>
+                        <option value="R-2">R-2 - Medium Density Residential</option>
+                        <option value="R-3">R-3 - High Density Residential</option>
                         <option value="SHZ">SHZ - Socialized Housing Zone</option>
-                        <option value="C1">C1 - Major Commercial Zone</option>
-                        <option value="C2">C2 - Minor Commercial Zone</option>
-                        <option value="I1">I1 - Heavy Industrial Zone</option>
-                        <option value="I2">I2 - Light and Medium Industrial Zone</option>
-                        <option value="Al">Al - Agro-Industrial</option>
-                        <option value="In">In - Institutional</option>
-                        <option value="Ag">Ag - Agricultural</option>
-                        <option value="Cu">Cu - Cultural</option>
+                        <option value="C-1">C-1 - Major Commercial Zone</option>
+                        <option value="C-2">C-2 - Minor Commercial Zone</option>
+                        <option value="I-1">I-1 - Heavy Industrial Zone</option>
+                        <option value="I-2">I-2 - Light and Medium Industrial Zone</option>
+                        <option value="AGRO">AGRO - Agro-Industrial</option>
+                        <option value="INS-1">INS-1 - Institutional</option>
+                        <option value="PARKS">PARKS - Parks & Open Spaces</option>
+                        <option value="AGRICULTURAL">AGRICULTURAL - Agricultural / SAFDZ</option>
+                        <option value="ECO-TOURISM">ECO-TOURISM - Eco-tourism</option>
+                        <option value="SPECIAL">SPECIAL - Special Use</option>
+                        <option value="COASTAL">COASTAL - Coastal Zone</option>
+                        <option value="RECLAMATION">RECLAMATION - Reclamation Proposed Zone</option>
+                        <option value="CEMETERY">CEMETERY - Cemetery / Memorial Park</option>
                     </select>
                     <small class="text-xs text-gray-500 -mt-2">Zone recommendations will appear below</small>
                     <label class="font-semibold text-gray-700">Assigned Engineers</label>

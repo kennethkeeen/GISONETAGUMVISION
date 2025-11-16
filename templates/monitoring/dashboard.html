@@ -650,22 +650,31 @@
                      const labels = zones.map(z => z.zone_type);
                      const projectCounts = zones.map(z => z.total_projects);
                  
-                 // Zone colors matching the map
+                 // Zone colors matching the map (updated to standard urban planning colors)
                  const zoneColors = {
-                     'R-1': 'rgba(227, 242, 253, 0.8)', // Light blue
-                     'R-2': 'rgba(144, 202, 249, 0.8)', // Medium blue
-                     'R-3': 'rgba(25, 118, 210, 0.8)', // Dark blue
-                     'SHZ': 'rgba(129, 199, 132, 0.8)', // Green
-                     'C-1': 'rgba(255, 152, 0, 0.8)', // Orange
+                     // Residential - Yellow/Beige tones
+                     'R-1': 'rgba(255, 249, 196, 0.8)', // Very light yellow
+                     'R-2': 'rgba(255, 245, 157, 0.8)', // Light yellow
+                     'R-3': 'rgba(253, 216, 53, 0.8)', // Yellow
+                     'SHZ': 'rgba(197, 225, 165, 0.8)', // Light green-yellow
+                     // Commercial - Orange tones
+                     'C-1': 'rgba(255, 111, 0, 0.8)', // Deep orange
                      'C-2': 'rgba(255, 183, 77, 0.8)', // Light orange
-                     'I-1': 'rgba(244, 67, 54, 0.8)', // Red
-                     'I-2': 'rgba(239, 83, 80, 0.8)', // Light red
-                     'AGRO': 'rgba(102, 187, 106, 0.8)', // Green
-                     'INS-1': 'rgba(156, 39, 176, 0.8)', // Purple
-                     'PARKS': 'rgba(76, 175, 80, 0.8)', // Green
-                     'AGRICULTURAL': 'rgba(139, 195, 74, 0.8)', // Light green
-                     'ECO-TOURISM': 'rgba(0, 188, 212, 0.8)', // Cyan
-                     'SPECIAL': 'rgba(121, 85, 72, 0.8)' // Brown
+                     // Industrial - Purple tones
+                     'I-1': 'rgba(186, 104, 200, 0.8)', // Purple
+                     'I-2': 'rgba(206, 147, 216, 0.8)', // Light purple
+                     'AGRO': 'rgba(156, 204, 101, 0.8)', // Light green
+                     // Institutional
+                     'INS-1': 'rgba(121, 134, 203, 0.8)', // Indigo/purple-blue
+                     // Open Space/Parks
+                     'PARKS': 'rgba(102, 187, 106, 0.8)', // Medium green
+                     'AGRICULTURAL': 'rgba(129, 199, 132, 0.8)', // Green
+                     'ECO-TOURISM': 'rgba(38, 166, 154, 0.8)', // Teal
+                     // Special Uses
+                     'SPECIAL': 'rgba(161, 136, 127, 0.8)', // Brown
+                     'COASTAL': 'rgba(77, 208, 225, 0.8)', // Light cyan
+                     'RECLAMATION': 'rgba(128, 203, 196, 0.8)', // Teal
+                     'CEMETERY': 'rgba(144, 164, 174, 0.8)' // Blue-gray
                  };
                  
                  const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
@@ -758,22 +767,31 @@
                  const labels = zonesWithCosts.map(z => z.zone_type);
                  const costs = zonesWithCosts.map(z => z.total_cost);
                  
-                 // Zone colors matching the map
+                 // Zone colors matching the map (updated to standard urban planning colors)
                  const zoneColors = {
-                     'R-1': 'rgba(227, 242, 253, 0.8)',
-                     'R-2': 'rgba(144, 202, 249, 0.8)',
-                     'R-3': 'rgba(25, 118, 210, 0.8)',
-                     'SHZ': 'rgba(129, 199, 132, 0.8)',
-                     'C-1': 'rgba(255, 152, 0, 0.8)',
-                     'C-2': 'rgba(255, 183, 77, 0.8)',
-                     'I-1': 'rgba(244, 67, 54, 0.8)',
-                     'I-2': 'rgba(239, 83, 80, 0.8)',
-                     'AGRO': 'rgba(102, 187, 106, 0.8)',
-                     'INS-1': 'rgba(156, 39, 176, 0.8)',
-                     'PARKS': 'rgba(76, 175, 80, 0.8)',
-                     'AGRICULTURAL': 'rgba(139, 195, 74, 0.8)',
-                     'ECO-TOURISM': 'rgba(0, 188, 212, 0.8)',
-                     'SPECIAL': 'rgba(121, 85, 72, 0.8)'
+                     // Residential - Yellow/Beige tones
+                     'R-1': 'rgba(255, 249, 196, 0.8)', // Very light yellow
+                     'R-2': 'rgba(255, 245, 157, 0.8)', // Light yellow
+                     'R-3': 'rgba(253, 216, 53, 0.8)', // Yellow
+                     'SHZ': 'rgba(197, 225, 165, 0.8)', // Light green-yellow
+                     // Commercial - Orange tones
+                     'C-1': 'rgba(255, 111, 0, 0.8)', // Deep orange
+                     'C-2': 'rgba(255, 183, 77, 0.8)', // Light orange
+                     // Industrial - Purple tones
+                     'I-1': 'rgba(186, 104, 200, 0.8)', // Purple
+                     'I-2': 'rgba(206, 147, 216, 0.8)', // Light purple
+                     'AGRO': 'rgba(156, 204, 101, 0.8)', // Light green
+                     // Institutional
+                     'INS-1': 'rgba(121, 134, 203, 0.8)', // Indigo/purple-blue
+                     // Open Space/Parks
+                     'PARKS': 'rgba(102, 187, 106, 0.8)', // Medium green
+                     'AGRICULTURAL': 'rgba(129, 199, 132, 0.8)', // Green
+                     'ECO-TOURISM': 'rgba(38, 166, 154, 0.8)', // Teal
+                     // Special Uses
+                     'SPECIAL': 'rgba(161, 136, 127, 0.8)', // Brown
+                     'COASTAL': 'rgba(77, 208, 225, 0.8)', // Light cyan
+                     'RECLAMATION': 'rgba(128, 203, 196, 0.8)', // Teal
+                     'CEMETERY': 'rgba(144, 164, 174, 0.8)' // Blue-gray
                  };
                  
                  const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');

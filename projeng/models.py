@@ -367,9 +367,12 @@ class ZoningZone(models.Model):
         # Other
         ('INS-1', 'Institutional Zone'),
         ('PARKS', 'Parks & Playgrounds/Open Spaces'),
-        ('AGRICULTURAL', 'Agricultural Zone'),
+        ('AGRICULTURAL', 'Agricultural Zone / SAFDZ'),
         ('ECO-TOURISM', 'Eco-tourism Zone'),
         ('SPECIAL', 'Special Use Zone'),
+        ('COASTAL', 'Coastal Zone'),
+        ('RECLAMATION', 'Reclamation Proposed Zone'),
+        ('CEMETERY', 'Cemetery / Memorial Park Zone'),
     ]
     
     zone_type = models.CharField(

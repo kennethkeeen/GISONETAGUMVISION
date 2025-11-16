@@ -240,7 +240,7 @@ class SimpleChoropleth {
             } else if (this.currentView === 'zone_type') {
                 // Phase 5: Zone type legend
                 div.innerHTML = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 15px; font-weight: 600;">Zone Types</h4>';
-                const zoneTypes = ['R-1', 'R-2', 'R-3', 'SHZ', 'C-1', 'C-2', 'I-1', 'I-2', 'AGRO', 'INS-1', 'PARKS', 'AGRICULTURAL', 'ECO-TOURISM', 'SPECIAL'];
+                const zoneTypes = ['R-1', 'R-2', 'R-3', 'SHZ', 'C-1', 'C-2', 'I-1', 'I-2', 'AGRO', 'INS-1', 'PARKS', 'AGRICULTURAL', 'ECO-TOURISM', 'SPECIAL', 'COASTAL', 'RECLAMATION', 'CEMETERY'];
                 zoneTypes.forEach(zoneType => {
                     const color = this.getZoneTypeColor(zoneType);
                     const displayName = this.getZoneTypeDisplayName(zoneType);
@@ -499,26 +499,37 @@ class SimpleChoropleth {
     }
 
     // Phase 5: Get color for zone type
+    // Updated to follow standard urban planning color conventions
     getZoneTypeColor(zoneType) {
         const zoneColors = {
-            // Residential
-            'R-1': '#e3f2fd', // Light blue
-            'R-2': '#90caf9', // Medium blue
-            'R-3': '#1976d2', // Dark blue
-            'SHZ': '#81c784', // Green
-            // Commercial
-            'C-1': '#ff9800', // Orange
-            'C-2': '#ffb74d', // Light orange
-            // Industrial
-            'I-1': '#f44336', // Red
-            'I-2': '#ef5350', // Light red
-            'AGRO': '#66bb6a', // Green
-            // Other
-            'INS-1': '#9c27b0', // Purple
-            'PARKS': '#4caf50', // Green
-            'AGRICULTURAL': '#8bc34a', // Light green
-            'ECO-TOURISM': '#00bcd4', // Cyan
-            'SPECIAL': '#795548', // Brown
+            // Residential - Yellow/Beige tones (standard in urban planning)
+            'R-1': '#fff9c4', // Very light yellow (low density residential)
+            'R-2': '#fff59d', // Light yellow (medium density residential)
+            'R-3': '#fdd835', // Yellow (high density residential)
+            'SHZ': '#c5e1a5', // Light green-yellow (socialized housing)
+            
+            // Commercial - Orange/Red tones (standard)
+            'C-1': '#ff6f00', // Deep orange (major commercial)
+            'C-2': '#ffb74d', // Light orange (minor commercial)
+            
+            // Industrial - Purple/Gray tones (standard)
+            'I-1': '#ba68c8', // Purple (heavy industrial)
+            'I-2': '#ce93d8', // Light purple (light/medium industrial)
+            'AGRO': '#9ccc65', // Light green (agro-industrial)
+            
+            // Institutional/Public - Purple/Blue tones
+            'INS-1': '#7986cb', // Indigo/purple-blue (institutional)
+            
+            // Open Space/Parks - Green tones
+            'PARKS': '#66bb6a', // Medium green (parks & open spaces)
+            'AGRICULTURAL': '#81c784', // Green (agricultural/SAFDZ)
+            'ECO-TOURISM': '#26a69a', // Teal (eco-tourism)
+            
+            // Special Uses - Brown/Gray/Teal tones
+            'SPECIAL': '#a1887f', // Brown (special use)
+            'COASTAL': '#4dd0e1', // Light cyan (coastal zone)
+            'RECLAMATION': '#80cbc4', // Teal (reclamation proposed zone)
+            'CEMETERY': '#90a4ae', // Blue-gray (cemetery/memorial park)
         };
         return zoneColors[zoneType] || '#cccccc'; // Default gray
     }
@@ -537,9 +548,12 @@ class SimpleChoropleth {
             'AGRO': 'Agro-Industrial',
             'INS-1': 'Institutional',
             'PARKS': 'Parks & Open Spaces',
-            'AGRICULTURAL': 'Agricultural',
+            'AGRICULTURAL': 'Agricultural / SAFDZ',
             'ECO-TOURISM': 'Eco-tourism',
             'SPECIAL': 'Special Use',
+            'COASTAL': 'Coastal Zone',
+            'RECLAMATION': 'Reclamation Proposed Zone',
+            'CEMETERY': 'Cemetery / Memorial Park',
         };
         return zoneNames[zoneType] || zoneType;
     }

@@ -40,6 +40,79 @@ class ZoneCompatibilityEngine:
         """Initialize the engine"""
         pass
     
+    @staticmethod
+    def normalize_zone_type(zone_type: str) -> str:
+        """
+        Normalize zone type format for ZoneAllowedUse queries.
+        Converts hyphenated format (R-1, C-1, I-1) to non-hyphenated (R1, C1, I1).
+        Also handles special cases and legacy formats.
+        
+        Args:
+            zone_type: Zone type code (can be R-1, R1, etc.)
+        
+        Returns:
+            Normalized zone type code for ZoneAllowedUse queries
+        """
+        if not zone_type:
+            return zone_type
+        
+        # Remove hyphens for standard zone types
+        # R-1 -> R1, C-1 -> C1, I-1 -> I1, etc.
+        normalized = zone_type.replace('-', '')
+        
+        # Handle special zone types that don't use hyphens
+        # INS-1 should become In (legacy format used in ZoneAllowedUse)
+        if normalized == 'INS1' or normalized == 'INS-1':
+            normalized = 'In'  # Legacy format used in ZoneAllowedUse
+        
+        # Handle AGRO vs Al (Agro-Industrial)
+        if normalized == 'AGRO':
+            normalized = 'Al'  # Legacy format used in ZoneAllowedUse
+        
+        return normalized
+    
+    @staticmethod
+    def format_zone_type_for_display(zone_type: str) -> str:
+        """
+        Format zone type for display (convert to hyphenated format).
+        Converts non-hyphenated (R1, C1, I1) to hyphenated (R-1, C-1, I-1).
+        
+        Args:
+            zone_type: Zone type code (can be R1, R-1, etc.)
+        
+        Returns:
+            Formatted zone type code for display (R-1, C-1, etc.)
+        """
+        if not zone_type:
+            return zone_type
+        
+        # If already hyphenated, return as-is (except special cases)
+        if '-' in zone_type:
+            return zone_type
+        
+        # Convert non-hyphenated to hyphenated
+        # R1 -> R-1, C1 -> C-1, I1 -> I-1, R2 -> R-2, etc.
+        import re
+        # Match pattern: letter(s) followed by number(s)
+        match = re.match(r'^([A-Z]+)(\d+)$', zone_type)
+        if match:
+            prefix = match.group(1)
+            number = match.group(2)
+            # Only add hyphen for standard residential/commercial/industrial zones
+            if prefix in ['R', 'C', 'I']:
+                return f'{prefix}-{number}'
+        
+        # Handle special cases
+        # In -> INS-1 (Institutional)
+        if zone_type == 'In':
+            return 'INS-1'
+        # Al -> AGRO (Agro-Industrial)
+        if zone_type == 'Al':
+            return 'AGRO'
+        
+        # Special zones that don't need hyphenation
+        return zone_type
+    
     def validate_project_zone(
         self,
         project_type_code: str,
@@ -77,9 +150,12 @@ class ZoneCompatibilityEngine:
                 'max_height': ''
             }
         
+        # Normalize zone type for ZoneAllowedUse query (R-1 -> R1)
+        normalized_zone_type = self.normalize_zone_type(zone_type)
+        
         try:
             allowed_use = ZoneAllowedUse.objects.get(
-                zone_type=zone_type,
+                zone_type=normalized_zone_type,
                 project_type=project_type
             )
             
@@ -90,7 +166,7 @@ class ZoneCompatibilityEngine:
                 'message': (
                     f'Project type "{project_type.name}" is '
                     f'{"conditionally " if allowed_use.is_conditional else ""}'
-                    f'allowed in {zone_type} zone'
+                    f'allowed in {self.format_zone_type_for_display(zone_type)} zone'
                 ),
                 'conditions': allowed_use.conditions,
                 'max_density': allowed_use.max_density,
@@ -102,7 +178,7 @@ class ZoneCompatibilityEngine:
                 'is_primary': False,
                 'is_conditional': False,
                 'message': (
-                    f'Project type "{project_type.name}" is NOT allowed in {zone_type} zone'
+                    f'Project type "{project_type.name}" is NOT allowed in {self.format_zone_type_for_display(zone_type)} zone'
                 ),
                 'conditions': '',
                 'max_density': '',
@@ -147,7 +223,7 @@ class ZoneCompatibilityEngine:
         
         allowed_uses = ZoneAllowedUse.objects.filter(query).select_related('project_type')
         
-        # Zone name mapping
+        # Zone name mapping (using display format)
         zone_names = {
             'R1': 'Low Density Residential',
             'R2': 'Medium Density Residential',
@@ -165,8 +241,10 @@ class ZoneCompatibilityEngine:
         
         results = []
         for allowed_use in allowed_uses:
+            # Convert to display format (R1 -> R-1) for consistency with map
+            display_zone_type = self.format_zone_type_for_display(allowed_use.zone_type)
             results.append({
-                'zone_type': allowed_use.zone_type,
+                'zone_type': display_zone_type,  # Use hyphenated format for display
                 'zone_name': zone_names.get(allowed_use.zone_type, allowed_use.zone_type),
                 'is_primary': allowed_use.is_primary_use,
                 'is_conditional': allowed_use.is_conditional,
@@ -192,7 +270,9 @@ class ZoneCompatibilityEngine:
         - 70: Conditional use allowed
         - 0: Not allowed
         """
-        validation = self.validate_project_zone(project_type_code, zone_type)
+        # Normalize zone type for validation
+        normalized_zone_type = self.normalize_zone_type(zone_type)
+        validation = self.validate_project_zone(project_type_code, normalized_zone_type)
         
         if not validation['is_allowed']:
             return 0.0
@@ -216,8 +296,16 @@ class ZoneCompatibilityEngine:
         - Number of existing projects in the zone
         - Barangay land area and density
         """
-        # Count projects in this zone
-        projects_in_zone = Project.objects.filter(zone_type=zone_type).count()
+        # Normalize zone type for query
+        normalized_zone_type = self.normalize_zone_type(zone_type)
+        display_zone_type = self.format_zone_type_for_display(zone_type)
+        # Query using both formats to handle existing data
+        from django.db.models import Q
+        projects_in_zone = Project.objects.filter(
+            Q(zone_type=zone_type) | 
+            Q(zone_type=normalized_zone_type) |
+            Q(zone_type=display_zone_type)
+        ).count()
         
         # Base score: fewer projects = more available land
         if projects_in_zone == 0:
@@ -288,9 +376,11 @@ class ZoneCompatibilityEngine:
                 pass
         
         # Zone type impact (commercial zones typically more accessible)
-        if zone_type in ['C1', 'C2']:
+        # Normalize for comparison
+        normalized = self.normalize_zone_type(zone_type)
+        if normalized in ['C1', 'C2']:
             base_score += 20.0
-        elif zone_type in ['R3', 'In']:
+        elif normalized in ['R3', 'In']:
             base_score += 10.0
         
         return max(0.0, min(100.0, base_score))
@@ -316,7 +406,9 @@ class ZoneCompatibilityEngine:
         base_score = 70.0  # Default positive
         
         # Check if project type matches zone purpose
-        validation = self.validate_project_zone(project_type_code, zone_type)
+        # Normalize zone type for validation
+        normalized_zone_type = self.normalize_zone_type(zone_type)
+        validation = self.validate_project_zone(project_type_code, normalized_zone_type)
         if validation['is_primary']:
             base_score += 20.0
         elif validation['is_allowed']:
@@ -375,9 +467,11 @@ class ZoneCompatibilityEngine:
                 pass
         
         # Zone type impact (commercial and institutional zones have better infrastructure)
-        if zone_type in ['C1', 'In']:
+        # Normalize for comparison
+        normalized = self.normalize_zone_type(zone_type)
+        if normalized in ['C1', 'In']:
             base_score += 20.0
-        elif zone_type in ['C2', 'R3']:
+        elif normalized in ['C2', 'R3']:
             base_score += 10.0
         
         return max(0.0, min(100.0, base_score))

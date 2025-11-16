@@ -28,6 +28,20 @@ class Command(BaseCommand):
         # Define allowed uses for each zone
         # Format: (zone_type, project_type_code, is_primary, is_conditional, conditions, max_density, max_height)
         allowed_uses = [
+            # Roads/Highways - Allowed in all zones (infrastructure)
+            ('R1', 'road', True, False, '', '', ''),
+            ('R2', 'road', True, False, '', '', ''),
+            ('R3', 'road', True, False, '', '', ''),
+            ('SHZ', 'road', True, False, '', '', ''),
+            ('C1', 'road', True, False, '', '', ''),
+            ('C2', 'road', True, False, '', '', ''),
+            ('I1', 'road', True, False, '', '', ''),
+            ('I2', 'road', True, False, '', '', ''),
+            ('Al', 'road', True, False, '', '', ''),
+            ('In', 'road', True, False, '', '', ''),
+            ('Ag', 'road', True, False, '', '', ''),
+            ('Cu', 'road', True, False, '', '', ''),
+            
             # R1 - Low Density Residential
             ('R1', 'single_family_house', True, False, '', '', '2 stories'),
             ('R1', 'multi_family_house', True, False, '', '20 units/hectare', '2 stories'),
