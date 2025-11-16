@@ -374,59 +374,130 @@
         </div>
     </div>
 
-    <!-- View Details Modal -->
-    <div id="details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl p-0 relative mx-4 my-8 max-h-[90vh] overflow-y-auto animate-modal-scale">
-            <button id="close-details-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
-            <div class="flex flex-col items-center px-8 pt-8 pb-4">
-                <img id="details-image" class="w-40 h-40 object-cover object-center rounded-2xl mb-4 bg-gray-100 border-2 border-gray-200 shadow aspect-square" alt="Project image" />
-                <div class="w-full">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="text-2xl font-extrabold text-blue-900" id="details-title">Project Details</span>
-                        <span id="details-status"></span>
+    <!-- View Details Modal - Landscape Style -->
+    <div id="details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden" style="opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out;">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl relative mx-4 my-4 max-h-[85vh] overflow-hidden flex flex-col">
+            <!-- Header with Gradient -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl px-6 py-4 relative flex-shrink-0">
+                <button id="close-details-modal" class="absolute top-3 right-3 text-white hover:text-gray-200 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20 transition-all">&times;</button>
+                <div class="flex items-start gap-4 pr-10">
+                    <img id="details-image" class="w-16 h-16 object-cover object-center rounded-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 shadow-lg flex-shrink-0" alt="Project image" style="display: none;" />
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <h2 class="text-xl font-bold text-white" id="details-title">Project Details</h2>
+                            <span id="details-status"></span>
+                        </div>
+                        <div class="text-base font-semibold text-white mb-1" id="details-name"></div>
+                        <div class="text-xs text-blue-100 font-mono" id="details-prn"></div>
                     </div>
-                    <div class="text-lg font-bold text-gray-800 mb-1" id="details-name"></div>
-                    <div class="text-sm text-gray-500 mb-2" id="details-prn"></div>
                 </div>
             </div>
-            <div class="px-8 pb-8">
-                <div class="mb-4">
-                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Project Info</div>
-                    <div class="mb-2"><span class="font-semibold">Description:</span> <span id="details-description"></span></div>
-                </div>
-                <div class="mb-4">
-                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Location</div>
-                    <div class="mb-2"><span class="font-semibold">Barangay:</span> <span id="details-barangay"></span></div>
-                    <div class="mb-2 flex gap-4"><span class="font-semibold">Latitude:</span> <span id="details-latitude"></span> <span class="font-semibold">Longitude:</span> <span id="details-longitude"></span></div>
-                    <div class="mb-2"><div id="details-map" class="w-full h-40 rounded-lg border border-gray-200"></div></div>
-                </div>
-                <div class="mb-4 flex gap-8">
-                    <div>
-                        <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Start Date</div>
-                        <div class="flex items-center gap-2"><svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span id="details-start-date"></span></div>
+            
+            <!-- Content - Scrollable -->
+            <div class="p-5 overflow-y-auto flex-1">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Project Info Card -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 border-l-4 border-blue-500">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">ℹ️</div>
+                            <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Project Info</h3>
+                        </div>
+                        <div class="bg-white rounded-lg p-2 shadow-sm">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Description</div>
+                            <div class="text-xs font-medium text-gray-800" id="details-description">No description</div>
+                        </div>
                     </div>
-                    <div>
-                        <div class="font-semibold text-blue-700 text-xs uppercase mb-1">End Date</div>
-                        <div class="flex items-center gap-2"><svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span id="details-end-date"></span></div>
+                    
+                    <!-- Financial Card -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-3 border-l-4 border-yellow-500">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-7 h-7 bg-yellow-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">💰</div>
+                            <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Financial</h3>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                <div class="text-xs text-gray-500 uppercase mb-1">Project Cost</div>
+                                <div class="text-xs font-semibold text-gray-800" id="details-cost">—</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                <div class="text-xs text-gray-500 uppercase mb-1">Source of Funds</div>
+                                <div class="text-xs font-semibold text-gray-800" id="details-funds">—</div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="mb-4">
-                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Financial</div>
-                    <div class="mb-2"><span class="font-semibold">Project Cost:</span> <span id="details-cost"></span></div>
-                    <div class="mb-2"><span class="font-semibold">Source of Funds:</span> <span id="details-funds"></span></div>
-                </div>
-                <!-- Project Progress (Visible only for Ongoing projects with progress) -->
-                <div id="details-progress-section" class="mb-4 hidden">
-                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Progress</div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                        <div id="details-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    
+                    <!-- Dates Card -->
+                    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-3 border-l-4 border-indigo-500">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-7 h-7 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">📅</div>
+                            <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Timeline</h3>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                <div class="text-xs text-gray-500 uppercase mb-1">Start Date</div>
+                                <div class="text-xs font-semibold text-gray-800" id="details-start-date">—</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-2 shadow-sm">
+                                <div class="text-xs text-gray-500 uppercase mb-1">End Date</div>
+                                <div class="text-xs font-semibold text-gray-800" id="details-end-date">—</div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="details-progress-text" class="text-sm text-gray-600 mt-1">0%</div>
-                </div>
-                <!-- Assigned Engineers -->
-                <div class="mb-4">
-                    <div class="font-semibold text-blue-700 text-xs uppercase mb-1">Assigned Engineer(s)</div>
-                    <div id="details-assigned-engineers" class="text-sm text-gray-600"></div>
+                    
+                    <!-- Progress Card (Conditional) -->
+                    <div id="details-progress-section" class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-3 border-l-4 border-purple-500 hidden">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-7 h-7 bg-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">📈</div>
+                            <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Progress</h3>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 shadow-sm">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                                <div id="details-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div id="details-progress-text" class="text-xs font-semibold text-gray-700 text-center">0% Complete</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Assigned Engineers Card -->
+                    <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-3 border-l-4 border-gray-400">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-7 h-7 bg-gray-400 rounded-lg flex items-center justify-center text-white font-bold text-xs">👷</div>
+                            <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Assigned Engineer(s)</h3>
+                        </div>
+                        <div class="bg-white rounded-lg p-2 shadow-sm">
+                            <div id="details-assigned-engineers" class="text-xs text-gray-700">None assigned</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location Card - Full Width -->
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border-l-4 border-green-500 lg:col-span-2">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-7 h-7 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">📍</div>
+                            <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Location</h3>
+                        </div>
+                        <!-- Side-by-side Layout: Details Left, Map Right -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <!-- Left Side: Location Details -->
+                            <div class="space-y-2">
+                                <div class="bg-white rounded-lg p-3 shadow-sm">
+                                    <div class="text-xs text-gray-500 uppercase mb-1">Barangay</div>
+                                    <div class="text-sm font-semibold text-gray-800" id="details-barangay">—</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 shadow-sm">
+                                    <div class="text-xs text-gray-500 uppercase mb-1">Latitude</div>
+                                    <div class="text-xs font-mono text-gray-700" id="details-latitude">—</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3 shadow-sm">
+                                    <div class="text-xs text-gray-500 uppercase mb-1">Longitude</div>
+                                    <div class="text-xs font-mono text-gray-700" id="details-longitude">—</div>
+                                </div>
+                            </div>
+                            <!-- Right Side: Map -->
+                            <div class="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                                <div id="details-map" class="w-full rounded-lg" style="height: 240px; min-height: 240px; background-color: #f3f4f6;"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -732,27 +803,32 @@ window.openDetailsModal = function(id) {
     const detailsModal = document.getElementById('details-modal');
     const detailsImage = document.getElementById('details-image');
     
-    if (!detailsModal || !detailsImage) {
-        console.error('Details modal elements not found');
+    if (!detailsModal) {
+        console.error('Details modal not found');
         return;
     }
     
     // Show modal with loading state
     detailsModal.classList.remove('hidden');
+    detailsModal.style.opacity = '1';
+    detailsModal.style.pointerEvents = 'auto';
+    
     document.getElementById('details-title').textContent = 'Loading...';
     document.getElementById('details-name').textContent = '';
     document.getElementById('details-prn').textContent = '';
-    document.getElementById('details-barangay').textContent = '';
-    document.getElementById('details-cost').textContent = '';
-    document.getElementById('details-funds').textContent = '';
+    document.getElementById('details-barangay').textContent = '—';
+    document.getElementById('details-cost').textContent = '—';
+    document.getElementById('details-funds').textContent = '—';
     document.getElementById('details-description').textContent = 'Loading project data...';
-    document.getElementById('details-latitude').textContent = '';
-    document.getElementById('details-longitude').textContent = '';
-    document.getElementById('details-start-date').textContent = '';
-    document.getElementById('details-end-date').textContent = '';
+    document.getElementById('details-latitude').textContent = '—';
+    document.getElementById('details-longitude').textContent = '—';
+    document.getElementById('details-start-date').textContent = '—';
+    document.getElementById('details-end-date').textContent = '—';
     document.getElementById('details-assigned-engineers').textContent = 'Loading...';
-    detailsImage.src = '';
-    detailsImage.classList.add('hidden');
+    if (detailsImage) {
+        detailsImage.src = '';
+        detailsImage.style.display = 'none';
+    }
     document.getElementById('details-map').innerHTML = '<div class="text-gray-400 text-center py-8">Loading...</div>';
     document.getElementById('details-progress-section').classList.add('hidden');
     
@@ -772,11 +848,11 @@ window.openDetailsModal = function(id) {
             const project = data.project;
             
             // Populate all fields
-            document.getElementById('details-title').textContent = project.name || '';
+            document.getElementById('details-title').textContent = project.name || 'Project Details';
             document.getElementById('details-status').innerHTML = getStatusBadge(project.status || '');
             document.getElementById('details-name').textContent = project.name || '';
-            document.getElementById('details-prn').textContent = `PRN#: ${project.prn || ''}`;
-            document.getElementById('details-barangay').textContent = project.barangay || '';
+            document.getElementById('details-prn').textContent = project.prn ? `PRN#: ${project.prn}` : '';
+            document.getElementById('details-barangay').textContent = project.barangay || '—';
             document.getElementById('details-cost').textContent = project.project_cost ? `₱${parseFloat(project.project_cost).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—';
             document.getElementById('details-funds').textContent = project.source_of_funds || '—';
             document.getElementById('details-description').textContent = project.description || 'No description';
@@ -786,32 +862,53 @@ window.openDetailsModal = function(id) {
             document.getElementById('details-end-date').textContent = formatDate(project.end_date) || '—';
             
             // Handle project image
-            if (project.image && project.image.trim() !== '') {
-                detailsImage.src = project.image;
-                detailsImage.classList.remove('hidden');
-                detailsImage.style.display = 'block';
-                console.log('Setting project image:', project.image);
-            } else {
-                detailsImage.src = '';
-                detailsImage.classList.add('hidden');
-                detailsImage.style.display = 'none';
-                console.log('No image for project:', project.id);
+            if (detailsImage) {
+                if (project.image && project.image.trim() !== '') {
+                    detailsImage.src = project.image;
+                    detailsImage.style.display = 'block';
+                    console.log('Setting project image:', project.image);
+                } else {
+                    detailsImage.src = '';
+                    detailsImage.style.display = 'none';
+                    console.log('No image for project:', project.id);
+                }
             }
             
             // Initialize map
             setTimeout(() => {
+                const detailsMapDiv = document.getElementById('details-map');
                 if (window.detailsMap) {
                     window.detailsMap.remove();
                 }
-                if (project.latitude && project.longitude) {
-                    window.detailsMap = L.map('details-map').setView([project.latitude, project.longitude], 15);
+                const detailMapLat = parseFloat(project.latitude);
+                const detailMapLng = parseFloat(project.longitude);
+                
+                if (!isNaN(detailMapLat) && !isNaN(detailMapLng)) {
+                    // Fix for Leaflet map container reuse error
+                    if (L.DomUtil.get('details-map')) {
+                        L.DomUtil.get('details-map')._leaflet_id = null;
+                    }
+                    window.detailsMap = L.map('details-map', {
+                        zoomControl: true,
+                        scrollWheelZoom: false,
+                        doubleClickZoom: false,
+                        dragging: true,
+                        touchZoom: true
+                    }).setView([detailMapLat, detailMapLng], 15);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors'
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                        maxZoom: 19
                     }).addTo(window.detailsMap);
-                    L.marker([project.latitude, project.longitude]).addTo(window.detailsMap);
-                    setTimeout(() => { window.detailsMap.invalidateSize(); }, 350);
+                    L.marker([detailMapLat, detailMapLng]).addTo(window.detailsMap);
+                    setTimeout(() => { 
+                        if (window.detailsMap) {
+                            window.detailsMap.invalidateSize(); 
+                        }
+                    }, 350);
                 } else {
-                    document.getElementById('details-map').innerHTML = '<div class="text-gray-400 text-center py-8">No location set</div>';
+                    if (detailsMapDiv) {
+                        detailsMapDiv.innerHTML = '<div class="text-gray-400 text-center py-8">No location set</div>';
+                    }
                 }
             }, 100);
 
@@ -858,7 +955,11 @@ window.openDetailsModal = function(id) {
 window.closeDetailsModalFunc = function() {
     const detailsModal = document.getElementById('details-modal');
     if (detailsModal) {
-        detailsModal.classList.add('hidden');
+        detailsModal.style.opacity = '0';
+        detailsModal.style.pointerEvents = 'none';
+        setTimeout(() => {
+            detailsModal.classList.add('hidden');
+        }, 300); // Wait for transition to complete
     }
 };
 if (closeDetailsModal) closeDetailsModal.addEventListener('click', window.closeDetailsModalFunc);
