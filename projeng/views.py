@@ -644,6 +644,8 @@ def project_detail_view(request, pk):
                 'color': 'purple'
             })
         
+        # Pass documents separately for the dedicated documents section
+        
         # Sort by timestamp (most recent first)
         activity_log.sort(key=lambda x: x['timestamp'], reverse=True)
         
@@ -767,6 +769,7 @@ def project_detail_view(request, pk):
             'project': project,
             'status_choices': Project.STATUS_CHOICES,
             'activity_log': activity_log,
+            'documents': documents,  # Pass documents for dedicated section
             'progress_timeline_data': progress_timeline_data,
             'progress_dates': progress_dates_json,
             'progress_percentages': progress_percentages_json,
