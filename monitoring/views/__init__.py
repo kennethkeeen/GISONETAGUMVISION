@@ -1206,7 +1206,7 @@ def project_detail(request, pk):
 def head_engineer_project_detail(request, pk):
     import logging
     import json
-    from projeng.models import Project, ProjectProgress, ProjectCost, Notification
+    from projeng.models import Project, ProjectProgress, ProjectCost, Notification, ProjectDocument
     from django.contrib.auth.models import User
     from projeng.utils import get_project_from_notification
     from django.http import HttpResponse
@@ -1247,6 +1247,8 @@ def head_engineer_project_detail(request, pk):
         assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
         # Get all cost entries with created_by prefetched
         costs = ProjectCost.objects.filter(project=project).select_related('created_by').order_by('date')
+        # Get all documents with uploaded_by prefetched
+        documents = ProjectDocument.objects.filter(project=project).select_related('uploaded_by').order_by('-uploaded_at')
         # Analytics & summary
         latest_progress = progress_updates.last() if progress_updates else None
         
@@ -1290,6 +1292,7 @@ def head_engineer_project_detail(request, pk):
             'progress_updates': progress_updates,
             'assigned_to': assigned_to,
             'costs': costs,
+            'documents': documents,  # Add documents for Head Engineer view
             'latest_progress': latest_progress,
             'total_cost': total_cost,
             'budget_utilization': budget_utilization,
