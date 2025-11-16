@@ -636,11 +636,9 @@
         </div>
     </div>
 
-    <!-- Progress Analytics Section -->
-    {% if progress_timeline_data|length > 0 or timeline_comparison %}
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Progress Trends Chart -->
-        {% if progress_timeline_data|length > 0 %}
+    <!-- Progress Trends Chart (if available) -->
+    {% if progress_timeline_data|length > 0 %}
+    <div class="mt-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -655,8 +653,12 @@
                 Shows progress percentage over time based on updates
             </p>
         </div>
-        {% endif %}
+    </div>
+    {% endif %}
 
+    <!-- Timeline Comparison & Activity History Side-by-Side -->
+    {% if timeline_comparison or activity_log %}
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Timeline Comparison -->
         {% if timeline_comparison %}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -714,11 +716,8 @@
             {% endif %}
         </div>
         {% endif %}
-    </div>
-    {% endif %}
 
-    <!-- Activity History Log -->
-    <div class="mt-6">
+        <!-- Activity History Log -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -822,6 +821,7 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 
 <script>
