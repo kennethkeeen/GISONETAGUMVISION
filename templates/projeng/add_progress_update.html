@@ -71,17 +71,27 @@
 
                 <!-- Photo Upload -->
                 <div>
-                    <label for="progress-photo" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Photos (Optional)
-                    </label>
-                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
-                        <div class="space-y-1 text-center">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="progress-photo" class="block text-sm font-semibold text-gray-700">
+                            Photos (Optional)
+                        </label>
+                        <span id="photo-count" class="text-xs text-gray-500 font-medium hidden">
+                            <span id="photo-count-number">0</span> image(s) selected
+                        </span>
+                    </div>
+                    <div id="photo-upload-area" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors cursor-pointer">
+                        <div class="space-y-2 text-center">
                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                            <div class="flex text-sm text-gray-600">
+                            <div class="flex flex-col items-center text-sm text-gray-600">
                                 <label for="progress-photo" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                    <span>Upload photos</span>
+                                    <span class="flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                        Upload Multiple Photos
+                                    </span>
                                     <input type="file" 
                                            id="progress-photo" 
                                            name="photos" 
@@ -89,12 +99,12 @@
                                            multiple 
                                            class="sr-only">
                                 </label>
-                                <p class="pl-1">or drag and drop</p>
+                                <p class="mt-1 text-xs text-gray-500">or drag and drop multiple images here</p>
                             </div>
-                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB (multiple files allowed)</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB each • Select multiple files at once</p>
                         </div>
                     </div>
-                    <div id="photo-preview" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 hidden"></div>
+                    <div id="photo-preview" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden"></div>
                 </div>
 
                 <!-- Messages -->
@@ -137,32 +147,162 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMsg = document.getElementById('progress-error-message');
     const photoInput = document.getElementById('progress-photo');
     const photoPreview = document.getElementById('photo-preview');
-
-    // Photo preview
+    const photoCount = document.getElementById('photo-count');
+    const photoCountNumber = document.getElementById('photo-count-number');
+    const photoUploadArea = document.getElementById('photo-upload-area');
+    
+    // Store selected files
+    let selectedFiles = [];
+    
+    // Update photo count display
+    function updatePhotoCount() {
+        const count = selectedFiles.length;
+        if (count > 0) {
+            photoCount.classList.remove('hidden');
+            photoCountNumber.textContent = count;
+        } else {
+            photoCount.classList.add('hidden');
+        }
+    }
+    
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    // Render photo previews
+    function renderPreviews() {
+        if (selectedFiles.length === 0) {
+            photoPreview.classList.add('hidden');
+            photoPreview.innerHTML = '';
+            return;
+        }
+        
+        photoPreview.classList.remove('hidden');
+        photoPreview.innerHTML = '';
+        
+        selectedFiles.forEach((file, index) => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'relative group bg-gray-50 rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 transition-colors';
+                    div.dataset.index = index;
+                    div.innerHTML = `
+                        <div class="aspect-square relative">
+                            <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity"></div>
+                            <button type="button" 
+                                    class="remove-photo absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100"
+                                    data-index="${index}"
+                                    title="Remove this photo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="p-2">
+                            <p class="text-xs font-medium text-gray-700 truncate" title="${file.name}">${file.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                        </div>
+                    `;
+                    photoPreview.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Remove photo from selection
+    function removePhoto(index) {
+        if (index >= 0 && index < selectedFiles.length) {
+            selectedFiles.splice(index, 1);
+            
+            // Update the file input
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            photoInput.files = dataTransfer.files;
+            
+            updatePhotoCount();
+            renderPreviews();
+        }
+    }
+    
+    // Handle file selection
     if (photoInput) {
         photoInput.addEventListener('change', function(e) {
-            const files = e.target.files;
-            if (files.length > 0) {
-                photoPreview.classList.remove('hidden');
-                photoPreview.innerHTML = '';
+            const newFiles = Array.from(e.target.files);
+            
+            // Add new files to selectedFiles (avoid duplicates)
+            newFiles.forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
+                    selectedFiles.push(file);
+                }
+            });
+            
+            updatePhotoCount();
+            renderPreviews();
+        });
+        
+        // Make upload area clickable
+        if (photoUploadArea) {
+            photoUploadArea.addEventListener('click', function(e) {
+                // Only trigger if clicking on the area itself, not on child elements
+                if (e.target === photoUploadArea || e.target.closest('label') === null) {
+                    photoInput.click();
+                }
+            });
+            
+            // Drag and drop support
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                photoUploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                photoUploadArea.addEventListener(eventName, () => {
+                    photoUploadArea.classList.add('border-blue-500', 'bg-blue-50');
+                }, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                photoUploadArea.addEventListener(eventName, () => {
+                    photoUploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+                }, false);
+            });
+            
+            photoUploadArea.addEventListener('drop', function(e) {
+                const droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
                 
-                Array.from(files).forEach(file => {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const div = document.createElement('div');
-                            div.className = 'relative';
-                            div.innerHTML = `
-                                <img src="${e.target.result}" alt="Preview" class="w-full h-24 object-cover rounded-lg border border-gray-200">
-                                <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600" onclick="this.parentElement.remove()">×</button>
-                            `;
-                            photoPreview.appendChild(div);
-                        };
-                        reader.readAsDataURL(file);
+                droppedFiles.forEach(file => {
+                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
+                        selectedFiles.push(file);
                     }
                 });
-            } else {
-                photoPreview.classList.add('hidden');
+                
+                // Update the file input
+                const dataTransfer = new DataTransfer();
+                selectedFiles.forEach(file => dataTransfer.items.add(file));
+                photoInput.files = dataTransfer.files;
+                
+                updatePhotoCount();
+                renderPreviews();
+            }, false);
+        }
+        
+        // Handle remove button clicks
+        photoPreview.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-photo')) {
+                const index = parseInt(e.target.closest('.remove-photo').dataset.index);
+                removePhoto(index);
             }
         });
     }
@@ -200,6 +340,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     successMsg.querySelector('p').textContent = data.message || 'Progress update added successfully!';
                     successMsg.classList.remove('hidden');
                     form.reset();
+                    selectedFiles = [];
+                    updatePhotoCount();
                     photoPreview.classList.add('hidden');
                     photoPreview.innerHTML = '';
                     
