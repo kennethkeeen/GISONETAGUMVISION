@@ -1247,32 +1247,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // View Mode Toggle Functionality
     function setViewMode(mode) {
-        if (mode !== 'status' && mode !== 'suitability') {
-            console.error('Invalid view mode:', mode);
-            return;
+        // Only status mode is supported now
+        if (mode !== 'status') {
+            console.warn('Only status view mode is supported. Setting to status.');
+            mode = 'status';
         }
         
         viewMode = mode;
         console.log('View mode changed to:', viewMode);
         
-        // Update radio button states
+        // Update radio button state
         const radioStatus = document.getElementById('view-mode-status-radio');
-        const radioSuitability = document.getElementById('view-mode-suitability-radio');
-        
-        if (radioStatus && radioSuitability) {
-            if (mode === 'status') {
-                radioStatus.checked = true;
-                radioSuitability.checked = false;
-            } else {
-                radioSuitability.checked = true;
-                radioStatus.checked = false;
-            }
+        if (radioStatus) {
+            radioStatus.checked = true;
         }
         
         // Refresh markers and legend
         updateLegend();
         
-        // Re-render markers with new view mode
+        // Re-render markers
         if (typeof refreshMapMarkers === 'function') {
             refreshMapMarkers();
         } else if (typeof renderMarkers === 'function') {
