@@ -1846,7 +1846,38 @@ function initializeModalButtons() {
                 e.stopPropagation();
                 console.log('Form submitted');
                 
+                // Get form fields and ensure all values are captured
                 const formData = new FormData(form);
+                
+                // Explicitly check and add required fields if they're missing or empty
+                const requiredFields = ['name', 'status', 'latitude', 'longitude'];
+                for (const fieldName of requiredFields) {
+                    const field = form.querySelector(`[name="${fieldName}"]`);
+                    if (field) {
+                        const value = field.value ? field.value.trim() : '';
+                        if (!value) {
+                            console.warn(`Field ${fieldName} is empty`);
+                        }
+                        // Ensure the value is in FormData
+                        if (!formData.has(fieldName) || !formData.get(fieldName)) {
+                            if (value) {
+                                formData.set(fieldName, value);
+                                console.log(`Manually added ${fieldName}: ${value}`);
+                            }
+                        } else {
+                            console.log(`${fieldName} value: ${formData.get(fieldName)}`);
+                        }
+                    } else {
+                        console.error(`Field ${fieldName} not found in form`);
+                    }
+                }
+                
+                // Debug: Log all FormData entries
+                console.log('FormData contents:');
+                for (const [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+                
                 const csrftoken = document.cookie.split('; ')
                     .find(row => row.startsWith('csrftoken='))
                     ?.split('=')[1];
