@@ -1743,27 +1743,49 @@ def upload_project_document(request, pk):
         project = get_object_or_404(Project, pk=pk)
         if request.user not in project.assigned_engineers.all():
             return JsonResponse({'success': False, 'error': 'You are not assigned to this project.'}, status=403)
-        file = request.FILES.get('file')
-        name = request.POST.get('name')
-        if file and name:
-            document = ProjectDocument.objects.create(
-                project=project,
-                file=file,
-                name=name,
-                uploaded_by=request.user
-            )
-            return JsonResponse({
-                'success': True,
-                'message': 'Document uploaded successfully',
-                'document': {
+        
+        # Handle multiple files
+        files = request.FILES.getlist('files')
+        names = request.POST.getlist('names')  # Array of names corresponding to files
+        
+        if not files:
+            return JsonResponse({'success': False, 'error': 'No files provided'}, status=400)
+        
+        uploaded_documents = []
+        errors = []
+        
+        for i, file in enumerate(files):
+            # Get corresponding name or use filename
+            name = names[i] if i < len(names) and names[i].strip() else file.name
+            
+            try:
+                document = ProjectDocument.objects.create(
+                    project=project,
+                    file=file,
+                    name=name,
+                    uploaded_by=request.user
+                )
+                uploaded_documents.append({
                     'name': document.name,
                     'file_url': document.file.url,
                     'uploaded_by': document.uploaded_by.get_full_name() or document.uploaded_by.username,
                     'uploaded_at': document.uploaded_at.strftime('%B %d, %Y')
-                }
+                })
+            except Exception as e:
+                errors.append(f"Failed to upload {file.name}: {str(e)}")
+        
+        if uploaded_documents:
+            return JsonResponse({
+                'success': True,
+                'message': f'{len(uploaded_documents)} document(s) uploaded successfully',
+                'documents': uploaded_documents,
+                'errors': errors if errors else None
             })
         else:
-            return JsonResponse({'success': False, 'error': 'Missing file or name'}, status=400)
+            return JsonResponse({
+                'success': False,
+                'error': 'Failed to upload documents. ' + '; '.join(errors) if errors else 'Unknown error'
+            }, status=400)
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 # Report Export Views
