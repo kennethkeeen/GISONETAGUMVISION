@@ -507,7 +507,6 @@
 {% endif %}
 <script>
 window.currentUsername = "{{ request.user.username|escapejs }}";
-console.log('Template: projects_data variable exists:', typeof projects_data !== 'undefined', 'Length:', projects_data|length);
 </script>
 <script>
 // Initialize window.projects as an array
