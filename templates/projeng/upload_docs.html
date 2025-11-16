@@ -45,11 +45,12 @@
                                        id="document-files" 
                                        name="files" 
                                        multiple 
+                                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
                                        class="sr-only">
                             </label>
                             <p class="mt-1 text-xs text-gray-500">or drag and drop multiple files here</p>
                         </div>
-                        <p class="text-xs text-gray-500">PDF, DOC, DOCX, XLS, XLSX, images, etc. • Select multiple files at once</p>
+                        <p class="text-xs text-gray-500">PDF, DOC, DOCX, XLS, XLSX, images, etc. • <strong>Hold Ctrl (Windows) or Cmd (Mac) to select multiple files</strong></p>
                     </div>
                 </div>
                 <div id="file-preview" class="mt-4 space-y-3 hidden"></div>
@@ -254,6 +255,12 @@
         if (fileInput) {
             fileInput.addEventListener('change', function(e) {
                 const newFiles = Array.from(e.target.files);
+                console.log('Files selected:', newFiles.length, newFiles);
+                
+                if (newFiles.length === 0) {
+                    console.warn('No files selected');
+                    return;
+                }
                 
                 // Add new files to selectedFiles (avoid duplicates)
                 newFiles.forEach(file => {
@@ -262,6 +269,7 @@
                     }
                 });
                 
+                console.log('Total files in selection:', selectedFiles.length);
                 updateFileCount();
                 renderPreviews();
             });
@@ -340,6 +348,8 @@
                 uploadStatusDiv.className = 'mt-4 text-sm font-medium text-red-600';
                 return;
             }
+            
+            console.log('Uploading files:', selectedFiles.length, selectedFiles);
             
             // Show loading state
             uploadLoadingSpinner.classList.remove('hidden');
