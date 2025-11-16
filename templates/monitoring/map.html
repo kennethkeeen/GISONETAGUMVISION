@@ -2698,11 +2698,13 @@ function fetchZoneRecommendations() {
         return;
     }
     
+    // Always hide validation alert first (will show again if zone is selected)
+    validationAlert.classList.add('hidden');
+    
     // Show loading state
     recommendationSection.classList.remove('hidden');
     loadingDiv.classList.remove('hidden');
     recommendationsList.innerHTML = '';
-    validationAlert.classList.add('hidden');
     
     // Build API URL - use absolute path to avoid template tag issues
     let apiUrl = `/projeng/api/zone-recommendation/?project_type_code=${encodeURIComponent(projectTypeCode)}&limit=5`;
@@ -2745,8 +2747,8 @@ function fetchZoneRecommendations() {
             console.log('Allowed zones:', data.allowed_zones);
             console.log('Number of recommendations:', data.recommendations?.length || 0);
             
-            // Show validation alert if zone is selected
-            if (selectedZone && data.selected_zone_validation) {
+            // Show validation alert ONLY if zone is selected (not empty)
+            if (selectedZone && selectedZone !== '' && data.selected_zone_validation) {
                 const validation = data.selected_zone_validation;
                 validationAlert.classList.remove('hidden');
                 if (validation.is_allowed) {
