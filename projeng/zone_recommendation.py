@@ -689,37 +689,50 @@ class ZoneCompatibilityEngine:
             )
         
         # Find all allowed zones
-        allowed_zones = self.find_allowed_zones(project_type_code, include_conditional=True)
+        try:
+            allowed_zones = self.find_allowed_zones(project_type_code, include_conditional=True)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error finding allowed zones for {project_type_code}: {e}", exc_info=True)
+            allowed_zones = []
         
         # Score each allowed zone
         scored_zones = []
         for zone_info in allowed_zones:
-            zone_type = zone_info['zone_type']
-            scores = self.calculate_mcda_score(project_type_code, zone_type, barangay)
-            reasoning, advantages, constraints = self.generate_reasoning(
-                project_type_code,
-                zone_type,
-                scores,
-                barangay
-            )
-            
-            scored_zones.append({
-                'zone_type': zone_type,
-                'zone_name': zone_info['zone_name'],
-                'overall_score': scores['overall_score'],
-                'factor_scores': {
-                    'zoning_compliance': scores['zoning_compliance_score'],
-                    'land_availability': scores['land_availability_score'],
-                    'accessibility': scores['accessibility_score'],
-                    'community_impact': scores['community_impact_score'],
-                    'infrastructure': scores['infrastructure_score']
-                },
-                'reasoning': reasoning,
-                'advantages': advantages,
-                'constraints': constraints,
-                'is_primary': zone_info['is_primary'],
-                'is_conditional': zone_info['is_conditional']
-            })
+            try:
+                zone_type = zone_info['zone_type']
+                scores = self.calculate_mcda_score(project_type_code, zone_type, barangay)
+                reasoning, advantages, constraints = self.generate_reasoning(
+                    project_type_code,
+                    zone_type,
+                    scores,
+                    barangay
+                )
+                
+                scored_zones.append({
+                    'zone_type': zone_type,
+                    'zone_name': zone_info['zone_name'],
+                    'overall_score': scores['overall_score'],
+                    'factor_scores': {
+                        'zoning_compliance': scores['zoning_compliance_score'],
+                        'land_availability': scores['land_availability_score'],
+                        'accessibility': scores['accessibility_score'],
+                        'community_impact': scores['community_impact_score'],
+                        'infrastructure': scores['infrastructure_score']
+                    },
+                    'reasoning': reasoning,
+                    'advantages': advantages,
+                    'constraints': constraints,
+                    'is_primary': zone_info['is_primary'],
+                    'is_conditional': zone_info['is_conditional']
+                })
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error scoring zone {zone_info.get('zone_type', 'unknown')} for {project_type_code}: {e}", exc_info=True)
+                # Continue with next zone instead of failing completely
+                continue
         
         # Sort by overall score (descending)
         scored_zones.sort(key=lambda x: x['overall_score'], reverse=True)

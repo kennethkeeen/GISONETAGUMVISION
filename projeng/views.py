@@ -2742,13 +2742,23 @@ def zone_recommendation_api(request):
             barangay=barangay,
             limit=limit
         )
+        
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Zone recommendations API called: project_type={project_type_code}, selected_zone={selected_zone}, barangay={barangay}")
+        logger.info(f"Result: allowed_zones={len(result.get('allowed_zones', []))}, recommendations={len(result.get('recommendations', []))}")
+        
         return JsonResponse(result)
     except Exception as e:
         import logging
+        import traceback
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting zone recommendations: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return JsonResponse({
-            'error': str(e)
+            'error': str(e),
+            'traceback': traceback.format_exc()
         }, status=500)
 
 
