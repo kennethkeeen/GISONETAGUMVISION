@@ -96,6 +96,10 @@ def custom_logout(request):
 
 class CustomPasswordResetView(PasswordResetView):
     """Custom password reset view with error logging"""
+    email_template_name = 'registration/password_reset_email.html'
+    subject_template_name = 'registration/password_reset_subject.txt'
+    template_name = 'registration/password_reset_form.html'
+    success_url = '/accounts/password_reset/done/'
     
     def form_valid(self, form):
         email = form.cleaned_data['email']
