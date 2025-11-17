@@ -10,6 +10,26 @@ except Exception:  # linter-safe optional dependency
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def get_env_int(var_name: str, default: int) -> int:
+    """Safely parse environment variable as int with a default fallback."""
+    value = os.environ.get(var_name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def get_env_bool(var_name: str, default: bool) -> bool:
+    """Return boolean interpretation for environment values like 'true', '1', 'yes'."""
+    value = os.environ.get(var_name)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'insecure-dev-key')
 
@@ -321,6 +341,38 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Database-backed sessio
 # Cache Control for Security
 CACHE_CONTROL_SECURE = True
 
+# Email Configuration
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = get_env_int('EMAIL_PORT', 587)
+EMAIL_USE_TLS = get_env_bool('EMAIL_USE_TLS', True)
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@onetagumvision.com')
+
+EMAIL_CREDENTIALS_CONFIGURED = all([EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD])
+
+# Debug email configuration
+print(f"📧 Email Configuration Check:")
+print(f"   EMAIL_HOST: {'✅ Set' if EMAIL_HOST else '❌ Missing'}")
+print(f"   EMAIL_HOST_USER: {'✅ Set' if EMAIL_HOST_USER else '❌ Missing'}")
+print(f"   EMAIL_HOST_PASSWORD: {'✅ Set' if EMAIL_HOST_PASSWORD else '❌ Missing'}")
+print(f"   EMAIL_PORT: {EMAIL_PORT}")
+print(f"   EMAIL_USE_TLS: {EMAIL_USE_TLS}")
+
+if EMAIL_CREDENTIALS_CONFIGURED:
+    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+    print(f"   ✅ Using SMTP backend: {EMAIL_BACKEND}")
+    print(f"   📤 SMTP Server: {EMAIL_HOST}:{EMAIL_PORT}")
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    print(f"   ⚠️  Email credentials not fully configured; using console email backend.")
+    print(f"   📝 Password reset emails will appear in server logs (not sent via SMTP).")
+    if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("Email credentials not fully configured; using console email backend. "
+                       "Password reset emails will appear in server logs.")
+
 # Caching Configuration
 # Use in-memory cache for development, Redis for production (if available)
 CACHES = {
@@ -413,20 +465,27 @@ if DEBUG:
         },
     }
 
-# Database Connection Pooling (applied after DATABASES is set)
-if DATABASE_URL and not DEBUG:
-    # Add connection pooling to existing database config
-    if 'default' in DATABASES:
-        DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes connection pooling
-        if 'OPTIONS' not in DATABASES['default']:
-            DATABASES['default']['OPTIONS'] = {}
-        # Preserve existing options
-        existing_options = DATABASES['default']['OPTIONS'].copy()
-        existing_options.update({
-            'connect_timeout': 10,
-            'options': '-c statement_timeout=30000',  # 30 second query timeout
-        })
-        DATABASES['default']['OPTIONS'] = existing_options
+# Database Connection Pooling & Health Checks
+DB_CONN_MAX_AGE = get_env_int('DB_CONN_MAX_AGE', 600 if not DEBUG else 0)
+DB_CONN_HEALTH_CHECKS = get_env_bool('DB_CONN_HEALTH_CHECKS', True)
+
+if 'default' in DATABASES:
+    DATABASES['default']['CONN_MAX_AGE'] = DB_CONN_MAX_AGE
+    if DB_CONN_HEALTH_CHECKS and DB_CONN_MAX_AGE > 0:
+        DATABASES['default']['CONN_HEALTH_CHECKS'] = True
+
+# Add production-specific database options (DigitalOcean managed Postgres/Valkey)
+if DATABASE_URL and not DEBUG and 'default' in DATABASES:
+    db_options = DATABASES['default'].get('OPTIONS', {}).copy()
+    db_options.setdefault('connect_timeout', 10)
+    statement_timeout = '-c statement_timeout=30000'
+    existing_options_value = db_options.get('options')
+    if existing_options_value:
+        if 'statement_timeout' not in existing_options_value:
+            db_options['options'] = f"{existing_options_value.strip()} {statement_timeout}".strip()
+    else:
+        db_options['options'] = statement_timeout
+    DATABASES['default']['OPTIONS'] = db_options
 
 # ============================================================================
 # Redis/Valkey Configuration - Handles both secure (rediss://) and plain (redis://) connections
