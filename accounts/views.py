@@ -125,15 +125,43 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     """Custom password reset confirm view with logging"""
     template_name = 'registration/password_reset_confirm.html'
     success_url = '/accounts/reset/done/'
+    post_reset_login = False  # Don't auto-login after reset
     
     def dispatch(self, *args, **kwargs):
         uidb64 = kwargs.get('uidb64', '')
         token = kwargs.get('token', '')
-        print(f"🔐 Password reset confirm - uidb64: {uidb64}, token: {token[:20]}...")
+        print(f"🔐 Password reset confirm - uidb64: {uidb64}, token: {token[:30]}... (full length: {len(token)})")
         return super().dispatch(*args, **kwargs)
     
     def get(self, request, *args, **kwargs):
-        result = super().get(request, *args, **kwargs)
-        if hasattr(self, 'validlink'):
-            print(f"   Valid link: {self.validlink}")
-        return result
+        try:
+            # Check if link is valid before rendering
+            self.validlink = False
+            try:
+                user = self.get_user(kwargs['uidb64'])
+            except (TypeError, ValueError, OverflowError):
+                user = None
+                print(f"   ❌ Invalid uidb64: {kwargs.get('uidb64')}")
+            
+            if user is not None:
+                token = kwargs['token']
+                # Check if token is valid
+                from django.contrib.auth.tokens import default_token_generator
+                if default_token_generator.check_token(user, token):
+                    self.validlink = True
+                    print(f"   ✅ Token is valid for user: {user.username}")
+                else:
+                    print(f"   ❌ Token is invalid for user: {user.username}")
+            else:
+                print(f"   ❌ User not found")
+            
+            result = super().get(request, *args, **kwargs)
+            print(f"   Response status: {result.status_code}")
+            if hasattr(result, 'url'):
+                print(f"   Redirect URL: {result.url}")
+            return result
+        except Exception as e:
+            print(f"   ❌ ERROR in get(): {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            raise
