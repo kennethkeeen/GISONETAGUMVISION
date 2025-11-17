@@ -310,7 +310,7 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Password reset settings
-PASSWORD_RESET_TIMEOUT = 259200  # 3 days in seconds (default Django value)
+PASSWORD_RESET_TIMEOUT = 604800  # 7 days in seconds (longer timeout for better UX)
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
