@@ -2,9 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.auth.views import LogoutView, PasswordResetConfirmView, PasswordResetCompleteView, PasswordResetDoneView
+from django.contrib.auth.views import LogoutView, PasswordResetCompleteView, PasswordResetDoneView
 from django.views.generic import RedirectView
-from accounts.views import dual_login, custom_logout, clear_login_success, CustomPasswordResetView, CustomPasswordResetConfirmView
+from accounts.views import dual_login, custom_logout, clear_login_success, CustomPasswordResetView, password_reset_confirm
 from gistagum.views import secure_logout, redirect_to_login, health_check
 from monitoring import views as monitoring_views
 from django.shortcuts import redirect
@@ -22,7 +22,7 @@ urlpatterns = [
     # Password reset URLs (must be before django.contrib.auth.urls to override defaults)
     path('accounts/password_reset/', CustomPasswordResetView.as_view(), name='password_reset'),
     path('accounts/password_reset/done/', PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
-    path('accounts/reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('accounts/reset/<uidb64>/<token>/', password_reset_confirm, name='password_reset_confirm'),
     path('accounts/reset/done/', PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('api/engineer-projects/<int:engineer_id>/', engineer_projects_api, name='engineer_projects_api'),
