@@ -176,6 +176,18 @@ class EngineerEditForm(forms.ModelForm):
         max_length=100,
         widget=forms.TextInput(attrs={'placeholder': 'Department'})
     )
+    new_password = forms.CharField(
+        required=False,
+        min_length=8,
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter new password'}),
+        label='New Password',
+        help_text='Leave blank to keep the current password.'
+    )
+    confirm_new_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={'placeholder': 'Confirm new password'}),
+        label='Confirm New Password'
+    )
 
     class Meta:
         model = User
@@ -192,3 +204,35 @@ class EngineerEditForm(forms.ModelForm):
         if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise ValidationError('A user with this email already exists.')
         return email 
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_new_password = cleaned_data.get('confirm_new_password')
+
+        if new_password or confirm_new_password:
+            if not new_password:
+                self.add_error('new_password', 'Please enter a new password.')
+            elif not confirm_new_password:
+                self.add_error('confirm_new_password', 'Please confirm the new password.')
+            elif new_password != confirm_new_password:
+                self.add_error('confirm_new_password', 'Passwords do not match.')
+            else:
+                try:
+                    validate_password(new_password, self.instance)
+                except ValidationError as e:
+                    self.add_error('new_password', e)
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        new_password = self.cleaned_data.get('new_password')
+
+        if new_password:
+            user.set_password(new_password)
+
+        if commit:
+            user.save()
+
+        return user

@@ -46,7 +46,7 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
                 <button onclick="openEditEngineerModal({{ engineer.id }})" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                     Edit
                 </button>
@@ -65,6 +65,12 @@
                         </button>
                     </form>
                 {% endif %}
+                <form method="post" action="{% url 'engineer_delete' engineer.id %}" class="inline" onsubmit="return confirm('This will permanently delete the engineer account. Continue?');">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800">
+                        Delete
+                    </button>
+                </form>
             </div>
         </div>
     </div>

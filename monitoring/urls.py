@@ -51,4 +51,5 @@ urlpatterns = [
     path('engineers/<int:engineer_id>/edit/', views.engineer_edit, name='engineer_edit'),
     path('engineers/<int:engineer_id>/deactivate/', views.engineer_deactivate, name='engineer_deactivate'),
     path('engineers/<int:engineer_id>/activate/', views.engineer_activate, name='engineer_activate'),
+    path('engineers/<int:engineer_id>/delete/', views.engineer_delete, name='engineer_delete'),
 ] 

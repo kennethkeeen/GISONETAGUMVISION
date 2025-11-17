@@ -271,3 +271,26 @@ def engineer_activate(request, engineer_id):
     # If GET request, show confirmation page or redirect
     return redirect('engineer_detail', engineer_id=engineer.id)
 
+
+@head_engineer_required
+def engineer_delete(request, engineer_id):
+    """Delete a Project Engineer account"""
+    engineer = get_object_or_404(User, id=engineer_id)
+
+    # Ensure we're only deleting project engineers
+    if engineer.is_superuser or engineer.groups.filter(name='Head Engineer').exists():
+        messages.error(request, 'This user is not a Project Engineer.')
+        return redirect('engineer_list')
+
+    # Prevent accidental self-deletion
+    if engineer == request.user:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('engineer_detail', engineer_id=engineer.id)
+
+    if request.method == 'POST':
+        username = engineer.username
+        engineer.delete()
+        messages.success(request, f'Engineer account "{username}" has been deleted.')
+        return redirect('engineer_list')
+
+    return redirect('engineer_detail', engineer_id=engineer.id)
