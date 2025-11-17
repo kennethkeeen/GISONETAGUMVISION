@@ -3,6 +3,9 @@ from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.views import PasswordResetView
+from django.core.mail import send_mail
+import logging
 
 def dual_login(request):
     print("dual_login view received a request.") # Debug print at the very beginning
@@ -90,3 +93,26 @@ def custom_logout(request):
     response['Expires'] = '0'
     
     return response
+
+class CustomPasswordResetView(PasswordResetView):
+    """Custom password reset view with error logging"""
+    
+    def form_valid(self, form):
+        email = form.cleaned_data['email']
+        print(f"📧 Password reset requested for email: {email}")
+        
+        try:
+            # Call parent's form_valid which sends the email
+            result = super().form_valid(form)
+            print(f"✅ Password reset email sent successfully to: {email}")
+            return result
+        except Exception as e:
+            # Log the error
+            error_msg = f"❌ ERROR sending password reset email to {email}: {str(e)}"
+            print(error_msg)
+            import traceback
+            print(f"Full traceback:\n{traceback.format_exc()}")
+            logging.error(error_msg, exc_info=True)
+            # Still redirect to done page (Django's default behavior)
+            # but the error is now logged
+            return super().form_valid(form)
