@@ -622,6 +622,7 @@ def map_view(request):
                     'image': image_url,
                     'progress': progress_value,
                     'assigned_engineers': assigned_engineers,
+                    'zone_type': p.zone_type or '',
                 })
             except Exception as e:
                 import logging
@@ -959,6 +960,7 @@ def project_get_api(request, pk):
             'progress': getattr(project, 'progress', 0) or 0,
             'assigned_engineers': assigned_engineers,
             'assigned_engineer_ids': assigned_engineer_ids,
+            'zone_type': project.zone_type or '',
         }
         
         return JsonResponse({'success': True, 'project': project_data})

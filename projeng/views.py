@@ -387,6 +387,7 @@ def projeng_map_view(request):
             'end_date': str(p.end_date) if p.end_date else "",
             'image': p.image.url if p.image else "",
             'progress': progress,
+            'zone_type': p.zone_type or '',
         })
     context = {
         'layers': layers,
@@ -1958,6 +1959,7 @@ def map_projects_api(request):
             'end_date': str(p.end_date) if p.end_date else "",
             'image': p.image.url if p.image else "",
             'progress': progress,
+            'zone_type': p.zone_type or '',
         })
     return JsonResponse({'projects': projects_data}) 
 

@@ -484,6 +484,10 @@
                                     <div class="text-xs font-semibold text-gray-800" id="details-barangay">—</div>
                                 </div>
                                 <div class="bg-white rounded-lg p-2 shadow-sm">
+                                    <div class="text-xs text-gray-500 uppercase mb-1">Zone Type</div>
+                                    <div class="text-xs font-semibold text-gray-800" id="details-zone-type">—</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-2 shadow-sm">
                                     <div class="text-xs text-gray-500 uppercase mb-1">Latitude</div>
                                     <div class="text-xs font-mono text-gray-700" id="details-latitude">—</div>
                                 </div>
@@ -817,6 +821,8 @@ window.openDetailsModal = function(id) {
     document.getElementById('details-name').textContent = '';
     document.getElementById('details-prn').textContent = '';
     document.getElementById('details-barangay').textContent = '—';
+    const detailsZoneTypeEl = document.getElementById('details-zone-type');
+    if (detailsZoneTypeEl) detailsZoneTypeEl.textContent = '—';
     document.getElementById('details-cost').textContent = '—';
     document.getElementById('details-funds').textContent = '—';
     document.getElementById('details-description').textContent = 'Loading project data...';
@@ -853,6 +859,8 @@ window.openDetailsModal = function(id) {
             document.getElementById('details-name').textContent = project.name || '';
             document.getElementById('details-prn').textContent = project.prn ? `PRN#: ${project.prn}` : '';
             document.getElementById('details-barangay').textContent = project.barangay || '—';
+            const detailsZoneTypeEl = document.getElementById('details-zone-type');
+            if (detailsZoneTypeEl) detailsZoneTypeEl.textContent = project.zone_type || 'Not assigned';
             document.getElementById('details-cost').textContent = project.project_cost ? `₱${parseFloat(project.project_cost).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—';
             document.getElementById('details-funds').textContent = project.source_of_funds || '—';
             document.getElementById('details-description').textContent = project.description || 'No description';

@@ -448,6 +448,10 @@ window.hidePopupMap = function() {
                                 <div class="text-sm font-semibold text-gray-800" id="details-barangay">—</div>
                             </div>
                             <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <div class="text-xs text-gray-500 uppercase mb-1">Zone Type</div>
+                                <div class="text-sm font-semibold text-gray-800" id="details-zone-type">—</div>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
                                 <div class="text-xs text-gray-500 uppercase mb-1">Latitude</div>
                                 <div class="text-xs font-mono text-gray-700" id="details-latitude">—</div>
                             </div>
@@ -905,6 +909,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${(projectStatus === 'ongoing' || projectStatus === 'in_progress') && project.end_date && displayProgress !== undefined &&
                                 (new Date(project.end_date) < new Date()) && parseInt(displayProgress, 10) < 100 ?
                                 `<span class="px-3 py-1 text-xs rounded-full bg-red-50 text-red-700 font-semibold border border-red-200">Delayed</span>` : ''}
+                            ${project.zone_type ? `<span class="px-3 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">Zone: ${project.zone_type}</span>` : ''}
                         </div>
                         <div class="flex items-center gap-1 text-xs text-gray-500 mb-3">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1342,6 +1347,7 @@ window.openDetailsModal = function(id) {
     const detailsName = document.getElementById('details-name');
     const detailsPrn = document.getElementById('details-prn');
     const detailsBarangay = document.getElementById('details-barangay');
+    const detailsZoneType = document.getElementById('details-zone-type');
     const detailsCost = document.getElementById('details-cost');
     const detailsFunds = document.getElementById('details-funds');
     const detailsDescription = document.getElementById('details-description');
@@ -1373,6 +1379,7 @@ window.openDetailsModal = function(id) {
         if (detailsName) detailsName.textContent = project.name || '';
         if (detailsPrn) detailsPrn.textContent = `PRN#: ${project.prn || 'N/A'}`;
         if (detailsBarangay) detailsBarangay.textContent = project.barangay || '';
+        if (detailsZoneType) detailsZoneType.textContent = project.zone_type || 'Not assigned';
         if (detailsCost) detailsCost.textContent = project.project_cost || '';
         if (detailsFunds) detailsFunds.textContent = project.source_of_funds || '';
         if (detailsDescription) detailsDescription.textContent = project.description || 'No description';
