@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin.exceptions import AlreadyRegistered
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from .models import (
@@ -256,7 +257,6 @@ class ZoneAllowedUseAdmin(admin.ModelAdmin):
     list_per_page = 25
     ordering = ['zone_type', 'project_type__name']
 
-@admin.register(ZoneRecommendation)
 class ZoneRecommendationAdmin(admin.ModelAdmin):
     """
     Admin interface for Zone Recommendations.
@@ -350,3 +350,10 @@ class UserSpatialAssignmentAdmin(admin.ModelAdmin):
         if not obj.assigned_by:
             obj.assigned_by = request.user
         super().save_model(request, obj, form, change)
+
+# Register ZoneRecommendation with safe duplicate check
+try:
+    admin.site.register(ZoneRecommendation, ZoneRecommendationAdmin)
+except AlreadyRegistered:
+    # Already registered, skip
+    pass
