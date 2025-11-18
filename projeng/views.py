@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 import json
 # from django.contrib.gis.geos import GEOSGeometry  # Temporarily disabled
-from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument, Notification, BarangayMetadata, ZoningZone, LandSuitabilityAnalysis
+from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument, Notification, BarangayMetadata, ZoningZone
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
 from django.db.models import Sum, Avg, Count, Max
@@ -1055,23 +1055,6 @@ def project_analytics(request, pk):
             'actual_progress_aligned_json': actual_progress_aligned_json,
         }
         
-        # Get suitability analysis if available
-        suitability = None
-        try:
-            suitability = project.suitability_analysis
-        except LandSuitabilityAnalysis.DoesNotExist:
-            # Try to perform analysis on the fly if project has location
-            try:
-                if project.latitude and project.longitude and project.barangay:
-                    from .land_suitability import LandSuitabilityAnalyzer
-                    analyzer = LandSuitabilityAnalyzer()
-                    result = analyzer.analyze_project(project)
-                    suitability = analyzer.save_analysis(project, result)
-            except Exception as e:
-                # Fail gracefully - don't break the view if analysis fails
-                print(f"WARNING: Suitability analysis failed: {e}")
-        
-        context['suitability'] = suitability  # Add suitability analysis to context
         return render(request, 'projeng/project_detail.html', context)
     except Project.DoesNotExist:
         raise Http404("Project does not exist or you are not assigned to it.")
@@ -1445,88 +1428,6 @@ def add_cost_entry(request, pk):
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @login_required
-def combined_analytics_view(request):
-    """
-    View for displaying combined clustering + suitability analytics.
-    Shows barangay clusters with aggregated suitability statistics.
-    """
-    from .models import UserSpatialAssignment
-    
-    # Get user's accessible barangays (for display purposes)
-    if request.user.is_superuser or request.user.is_staff:
-        accessible_barangays = None
-        user_barangays = []
-    else:
-        user_barangays = list(UserSpatialAssignment.get_user_barangays(request.user))
-        accessible_barangays = user_barangays if user_barangays else None
-    
-    context = {
-        'accessible_barangays': accessible_barangays,
-        'user_barangays': user_barangays,
-        'is_head_engineer': request.user.is_superuser or request.user.is_staff,
-    }
-    return render(request, 'projeng/combined_analytics.html', context)
-
-
-@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
-def analytics_overview(request):
-    return render(request, 'projeng/analytics_overview.html')
-
-@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
-def analytics_overview_data(request):
-    from .models import Project, ProjectProgress
-    if is_head_engineer(request.user):
-        all_projects = Project.objects.all()
-    else:
-        all_projects = Project.objects.filter(assigned_engineers=request.user)
-    today = timezone.now().date()
-    status_counts = {'planned': 0, 'in_progress': 0, 'completed': 0, 'delayed': 0}
-    for project in all_projects:
-        latest_progress = ProjectProgress.objects.filter(project=project).order_by('-date').first()
-        progress = int(latest_progress.percentage_complete) if latest_progress else 0
-        status = project.status
-        if progress >= 99:
-            status = 'completed'
-        elif progress < 99 and project.end_date and project.end_date < today:
-            status = 'delayed'
-        elif status in ['in_progress', 'ongoing']:
-            status = 'in_progress'
-        elif status in ['planned', 'pending']:
-            status = 'planned'
-        if status == 'completed':
-            status_counts['completed'] += 1
-        elif status == 'in_progress':
-            status_counts['in_progress'] += 1
-        elif status == 'delayed':
-            status_counts['delayed'] += 1
-        elif status == 'planned':
-            status_counts['planned'] += 1
-    status_labels = ['Planned', 'In Progress', 'Completed', 'Delayed']
-    status_data = [status_counts['planned'], status_counts['in_progress'], status_counts['completed'], status_counts['delayed']]
-    background_colors = [
-        'rgba(54, 162, 235, 0.6)',
-        'rgba(255, 206, 86, 0.6)',
-        'rgba(75, 192, 192, 0.6)',
-        'rgba(135, 206, 250, 0.6)',
-    ]
-    border_colors = [
-        'rgba(54, 162, 235, 1)',
-        'rgba(255, 206, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-        'rgba(135, 206, 250, 1)',
-    ]
-    chart_data = {
-        'labels': status_labels,
-        'datasets': [{
-            'label': 'Number of Projects',
-            'data': status_data,
-            'backgroundColor': background_colors,
-            'borderColor': border_colors,
-            'borderWidth': 1
-        }]
-    }
-    return JsonResponse(chart_data)
-
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def dashboard_progress_over_time_data(request):
     """API endpoint for Project Progress Over Time chart"""
@@ -2511,94 +2412,6 @@ def _get_zone_display_name(zone_type):
     }
     return zone_names.get(zone_type, zone_type)
 
-@require_http_methods(["GET"])
-@login_required
-def zone_analytics_api(request):
-    """
-    Return zone analytics data for charts.
-    Shows project distribution, costs, and statistics by zone type.
-    """
-    # Check if user is head engineer (return JSON error for API, not redirect)
-    if not is_head_engineer(request.user):
-        return JsonResponse({'error': 'Permission denied'}, status=403)
-    
-    from collections import defaultdict
-    
-    try:
-        # Get all projects with zone_type
-        projects_with_zones = Project.objects.filter(
-            zone_type__isnull=False
-        ).exclude(zone_type='')
-        
-        # Aggregate statistics by zone type
-        zone_stats = defaultdict(lambda: {
-            'total_projects': 0,
-            'total_cost': 0,
-            'completed': 0,
-            'in_progress': 0,
-            'planned': 0,
-            'delayed': 0,
-            'validated': 0,
-            'unvalidated': 0
-        })
-        
-        for project in projects_with_zones:
-            zone_type = project.zone_type
-            if not zone_type:
-                continue
-                
-            zone_stats[zone_type]['total_projects'] += 1
-            
-            # Add project cost
-            if project.project_cost:
-                try:
-                    zone_stats[zone_type]['total_cost'] += float(project.project_cost)
-                except (ValueError, TypeError):
-                    pass
-            
-            # Count by status
-            status = project.status.lower() if project.status else ''
-            if status == 'completed':
-                zone_stats[zone_type]['completed'] += 1
-            elif status in ['in_progress', 'ongoing']:
-                zone_stats[zone_type]['in_progress'] += 1
-            elif status == 'planned':
-                zone_stats[zone_type]['planned'] += 1
-            elif status == 'delayed':
-                zone_stats[zone_type]['delayed'] += 1
-            
-            # Count validated vs unvalidated
-            if project.zone_validated:
-                zone_stats[zone_type]['validated'] += 1
-            else:
-                zone_stats[zone_type]['unvalidated'] += 1
-        
-        # Convert to list format for charts
-        zone_list = []
-        for zone_type, stats in sorted(zone_stats.items()):
-            zone_list.append({
-                'zone_type': zone_type,
-                'display_name': _get_zone_display_name(zone_type),
-                **stats
-            })
-        
-        # Calculate totals
-        total_projects = sum(s['total_projects'] for s in zone_stats.values())
-        total_cost = sum(s['total_cost'] for s in zone_stats.values())
-        
-        return JsonResponse({
-            'zones': zone_list,
-            'summary': {
-                'total_projects': total_projects,
-                'total_cost': total_cost,
-                'zone_count': len(zone_stats)
-            }
-        })
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error in zone_analytics_api: {str(e)}', exc_info=True)
-        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 @login_required
@@ -2689,83 +2502,6 @@ def send_budget_alert(request, project_id):
 
 
 # ============================================================================
-# SUITABILITY ANALYSIS API ENDPOINTS
-# ============================================================================
-
-@login_required
-@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
-@require_GET
-def suitability_analysis_api(request, project_id):
-    """
-    API endpoint to get suitability analysis for a specific project.
-    Returns JSON with suitability scores, factors, risks, and recommendations.
-    """
-    try:
-        project = get_object_or_404(Project, pk=project_id)
-        
-        # Check access permissions
-        if is_project_engineer(request.user):
-            if request.user not in project.assigned_engineers.all():
-                return JsonResponse({'error': 'Access denied'}, status=403)
-        
-        # Get or create suitability analysis
-        try:
-            suitability = project.suitability_analysis
-        except LandSuitabilityAnalysis.DoesNotExist:
-            # Try to perform analysis on the fly
-            try:
-                if project.latitude and project.longitude and project.barangay:
-                    from .land_suitability import LandSuitabilityAnalyzer
-                    analyzer = LandSuitabilityAnalyzer()
-                    result = analyzer.analyze_project(project)
-                    suitability = analyzer.save_analysis(project, result)
-                else:
-                    return JsonResponse({
-                        'error': 'Project location data incomplete',
-                        'message': 'Project must have latitude, longitude, and barangay to perform suitability analysis'
-                    }, status=400)
-            except Exception as e:
-                return JsonResponse({
-                    'error': 'Analysis failed',
-                    'message': str(e)
-                }, status=500)
-        
-        # Build response
-        response_data = {
-            'project_id': project.id,
-            'project_name': project.name,
-            'overall_score': suitability.overall_score,
-            'suitability_category': suitability.suitability_category,
-            'suitability_category_display': suitability.get_suitability_category_display(),
-            'factor_scores': {
-                'zoning_compliance': suitability.zoning_compliance_score,
-                'flood_risk': suitability.flood_risk_score,
-                'infrastructure_access': suitability.infrastructure_access_score,
-                'elevation': suitability.elevation_suitability_score,
-                'economic_alignment': suitability.economic_alignment_score,
-                'population_density': suitability.population_density_score,
-            },
-            'risks': {
-                'has_flood_risk': suitability.has_flood_risk,
-                'has_slope_risk': suitability.has_slope_risk,
-                'has_zoning_conflict': suitability.has_zoning_conflict,
-                'has_infrastructure_gap': suitability.has_infrastructure_gap,
-            },
-            'recommendations': suitability.recommendations or [],
-            'constraints': suitability.constraints or [],
-            'analyzed_at': suitability.analyzed_at.isoformat() if suitability.analyzed_at else None,
-            'analysis_version': suitability.analysis_version,
-        }
-        
-        return JsonResponse(response_data)
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error in suitability_analysis_api: {str(e)}', exc_info=True)
-        return JsonResponse({'error': 'Internal server error'}, status=500)
-
-
-# ============================================================================
 # ZONE COMPATIBILITY RECOMMENDATION API ENDPOINTS
 # ============================================================================
 
@@ -2853,202 +2589,6 @@ def zone_validation_api(request):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error validating zone: {e}")
-        return JsonResponse({
-            'error': str(e)
-        }, status=500)
-
-
-@login_required
-@require_GET
-def zone_suitability_analysis_api(request):
-    """
-    API endpoint to analyze suitability of a project type in a specific zone type.
-    
-    Query parameters:
-    - project_type_code: Code of the project type (required)
-    - zone_type: Zone type code (required)
-    - barangay: Optional barangay name for location-specific analysis
-    
-    Returns JSON with detailed suitability analysis.
-    """
-    from .zone_recommendation import ZoneCompatibilityEngine
-    from .models import ProjectType, BarangayMetadata
-    import logging
-    
-    logger = logging.getLogger(__name__)
-    
-    project_type_code = request.GET.get('project_type_code')
-    zone_type = request.GET.get('zone_type')
-    barangay = request.GET.get('barangay')
-    
-    if not project_type_code or not zone_type:
-        return JsonResponse({
-            'error': 'Both project_type_code and zone_type parameters are required'
-        }, status=400)
-    
-    try:
-        # Get project type
-        try:
-            project_type = ProjectType.objects.get(code=project_type_code)
-        except ProjectType.DoesNotExist:
-            return JsonResponse({
-                'error': f'Project type with code "{project_type_code}" not found'
-            }, status=404)
-        
-        # Get barangay metadata if provided
-        barangay_meta = None
-        if barangay:
-            try:
-                barangay_meta = BarangayMetadata.objects.get(barangay__name=barangay)
-            except BarangayMetadata.DoesNotExist:
-                pass
-        
-        # Initialize engines
-        zone_engine = ZoneCompatibilityEngine()
-        
-        # Validate zone compatibility
-        validation = zone_engine.validate_project_zone(project_type_code, zone_type)
-        
-        # Calculate comprehensive suitability scores
-        scores = zone_engine.calculate_mcda_score(
-            project_type_code=project_type_code,
-            zone_type=zone_type,
-            barangay=barangay
-        )
-        
-        # Get reasoning
-        reasoning, advantages, constraints = zone_engine.generate_reasoning(
-            project_type_code=project_type_code,
-            zone_type=zone_type,
-            scores=scores,
-            barangay=barangay
-        )
-        
-        # Determine suitability level
-        overall_score = scores['overall_score']
-        if overall_score >= 85:
-            suitability_level = 'Highly Suitable'
-            suitability_class = 'high'
-            suitability_color = 'green'
-        elif overall_score >= 70:
-            suitability_level = 'Suitable'
-            suitability_class = 'medium-high'
-            suitability_color = 'blue'
-        elif overall_score >= 55:
-            suitability_level = 'Moderately Suitable'
-            suitability_class = 'medium'
-            suitability_color = 'yellow'
-        elif overall_score >= 40:
-            suitability_level = 'Less Suitable'
-            suitability_class = 'low-medium'
-            suitability_color = 'orange'
-        else:
-            suitability_level = 'Not Suitable'
-            suitability_class = 'low'
-            suitability_color = 'red'
-        
-        # Determine if zone is allowed
-        is_allowed = validation['is_allowed']
-        is_primary = validation.get('is_primary', False)
-        is_conditional = validation.get('is_conditional', False)
-        
-        # Generate recommendations
-        recommendations = []
-        if not is_allowed:
-            recommendations.append({
-                'type': 'error',
-                'message': f'{project_type.name} is not allowed in {zone_engine.format_zone_type_for_display(zone_type)} zone',
-                'action': 'Consider selecting a different zone type'
-            })
-        elif is_conditional:
-            recommendations.append({
-                'type': 'warning',
-                'message': f'{project_type.name} is conditionally allowed in {zone_engine.format_zone_type_for_display(zone_type)} zone',
-                'action': 'Additional permits or conditions may be required'
-            })
-        elif overall_score < 70:
-            # Get top recommendations
-            top_zones = zone_engine.recommend_zones(
-                project_type_code=project_type_code,
-                barangay=barangay,
-                limit=3
-            )
-            if top_zones.get('recommendations'):
-                rec_zones = [z['zone_type'] for z in top_zones['recommendations'][:3]]
-                recommendations.append({
-                    'type': 'suggestion',
-                    'message': f'Consider these more suitable zones: {", ".join(rec_zones)}',
-                    'action': 'These zones have higher suitability scores for this project type'
-                })
-        
-        # Add factor-specific recommendations
-        if scores['zoning_compliance_score'] < 50:
-            recommendations.append({
-                'type': 'warning',
-                'message': 'Low zoning compliance score',
-                'action': 'This zone type may not be optimal for this project type'
-            })
-        if scores['land_availability_score'] < 40:
-            recommendations.append({
-                'type': 'info',
-                'message': 'Limited land availability',
-                'action': 'Consider alternative locations or zones'
-            })
-        if scores['accessibility_score'] < 50:
-            recommendations.append({
-                'type': 'info',
-                'message': 'Lower accessibility',
-                'action': 'Ensure adequate transportation access for project users'
-            })
-        
-        # Format zone type for display
-        display_zone_type = zone_engine.format_zone_type_for_display(zone_type)
-        zone_display_name = zone_engine.get_zone_display_name(zone_type) if hasattr(zone_engine, 'get_zone_display_name') else display_zone_type
-        
-        result = {
-            'project_type': {
-                'code': project_type.code,
-                'name': project_type.name,
-                'description': project_type.description or ''
-            },
-            'zone_type': {
-                'code': zone_type,
-                'display_code': display_zone_type,
-                'name': zone_display_name
-            },
-            'suitability': {
-                'overall_score': round(overall_score, 2),
-                'level': suitability_level,
-                'class': suitability_class,
-                'color': suitability_color
-            },
-            'compatibility': {
-                'is_allowed': is_allowed,
-                'is_primary': is_primary,
-                'is_conditional': is_conditional,
-                'message': validation['message']
-            },
-            'factor_scores': {
-                'zoning_compliance': round(scores['zoning_compliance_score'], 2),
-                'land_availability': round(scores['land_availability_score'], 2),
-                'accessibility': round(scores['accessibility_score'], 2),
-                'community_impact': round(scores['community_impact_score'], 2),
-                'infrastructure': round(scores['infrastructure_score'], 2)
-            },
-            'reasoning': reasoning,
-            'advantages': advantages,
-            'constraints': constraints,
-            'recommendations': recommendations,
-            'barangay_context': {
-                'name': barangay_meta.barangay.name if barangay_meta else None,
-                'elevation_type': barangay_meta.elevation_type if barangay_meta else None,
-                'barangay_class': barangay_meta.barangay_class if barangay_meta else None
-            } if barangay_meta else None
-        }
-        
-        return JsonResponse(result)
-    except Exception as e:
-        logger.error(f"Error analyzing zone suitability: {e}", exc_info=True)
         return JsonResponse({
             'error': str(e)
         }, status=500)
@@ -3175,417 +2715,158 @@ def project_zone_recommendations_api(request, project_id):
 
 
 @login_required
-@user_passes_test(is_head_engineer, login_url='/accounts/login/')
-@require_GET
-def suitability_stats_api(request):
-    """
-    API endpoint to get overall suitability statistics.
-    Returns aggregate statistics about suitability scores across all projects.
-    """
-    try:
-        from django.db.models import Avg, Count, Min, Max, Q
-        
-        # Get all projects with suitability analysis
-        analyses = LandSuitabilityAnalysis.objects.select_related('project').all()
-        
-        total_analyses = analyses.count()
-        
-        if total_analyses == 0:
-            return JsonResponse({
-                'total_analyses': 0,
-                'message': 'No suitability analyses found'
-            })
-        
-        # Calculate statistics
-        avg_score = analyses.aggregate(Avg('overall_score'))['overall_score__avg'] or 0
-        min_score = analyses.aggregate(Min('overall_score'))['overall_score__min'] or 0
-        max_score = analyses.aggregate(Max('overall_score'))['overall_score__max'] or 0
-        
-        # Count by category
-        category_counts = {
-            'highly_suitable': analyses.filter(suitability_category='highly_suitable').count(),
-            'suitable': analyses.filter(suitability_category='suitable').count(),
-            'moderately_suitable': analyses.filter(suitability_category='moderately_suitable').count(),
-            'marginally_suitable': analyses.filter(suitability_category='marginally_suitable').count(),
-            'not_suitable': analyses.filter(suitability_category='not_suitable').count(),
-        }
-        
-        # Count risks
-        risk_counts = {
-            'flood_risk': analyses.filter(has_flood_risk=True).count(),
-            'slope_risk': analyses.filter(has_slope_risk=True).count(),
-            'zoning_conflict': analyses.filter(has_zoning_conflict=True).count(),
-            'infrastructure_gap': analyses.filter(has_infrastructure_gap=True).count(),
-        }
-        
-        # Average factor scores
-        avg_factors = {
-            'zoning_compliance': analyses.aggregate(Avg('zoning_compliance_score'))['zoning_compliance_score__avg'] or 0,
-            'flood_risk': analyses.aggregate(Avg('flood_risk_score'))['flood_risk_score__avg'] or 0,
-            'infrastructure_access': analyses.aggregate(Avg('infrastructure_access_score'))['infrastructure_access_score__avg'] or 0,
-            'elevation': analyses.aggregate(Avg('elevation_suitability_score'))['elevation_suitability_score__avg'] or 0,
-            'economic_alignment': analyses.aggregate(Avg('economic_alignment_score'))['economic_alignment_score__avg'] or 0,
-            'population_density': analyses.aggregate(Avg('population_density_score'))['population_density_score__avg'] or 0,
-        }
-        
-        return JsonResponse({
-            'total_analyses': total_analyses,
-            'score_statistics': {
-                'average': round(avg_score, 2),
-                'minimum': round(min_score, 2),
-                'maximum': round(max_score, 2),
-            },
-            'category_distribution': category_counts,
-            'risk_distribution': risk_counts,
-            'average_factor_scores': {k: round(v, 2) for k, v in avg_factors.items()},
-        })
-        
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error in suitability_stats_api: {str(e)}', exc_info=True)
-        return JsonResponse({'error': 'Internal server error'}, status=500)
-
-
-@login_required
-@require_GET
-def suitability_dashboard_data_api(request):
-    """
-    API endpoint to get suitability data for dashboard widgets.
-    Returns data formatted for dashboard visualization.
-    Works with both projeng and monitoring projects.
-    """
-    try:
-        from django.db.models import Avg, Count, Q
-        from collections import defaultdict
-        
-        # Get all projects with suitability analysis from projeng app
-        analyses = LandSuitabilityAnalysis.objects.select_related('project').all()
-        
-        # Also check monitoring projects and find their corresponding projeng projects
-        try:
-            from monitoring.models import Project as MonitoringProject
-            from .models import Project as ProjengProject
-            
-            # Get all monitoring projects that have location data
-            monitoring_projects = MonitoringProject.objects.filter(
-                latitude__isnull=False,
-                longitude__isnull=False,
-                barangay__isnull=False
-            ).exclude(barangay='')
-            
-            # For each monitoring project, try to find corresponding projeng project and its analysis
-            for mon_project in monitoring_projects:
-                # Try to find projeng project by PRN first
-                if mon_project.prn:
-                    try:
-                        projeng_project = ProjengProject.objects.get(prn=mon_project.prn)
-                        # Check if analysis exists for this projeng project
-                        if not analyses.filter(project=projeng_project).exists():
-                            # Try to create analysis for this project if it has location
-                            if projeng_project.latitude and projeng_project.longitude and projeng_project.barangay:
-                                try:
-                                    from .land_suitability import LandSuitabilityAnalyzer
-                                    analyzer = LandSuitabilityAnalyzer()
-                                    result = analyzer.analyze_project(projeng_project)
-                                    analyzer.save_analysis(projeng_project, result)
-                                    # Refresh analyses queryset
-                                    analyses = LandSuitabilityAnalysis.objects.select_related('project').all()
-                                except Exception as e:
-                                    import logging
-                                    logger = logging.getLogger(__name__)
-                                    logger.warning(f"Could not analyze monitoring project {mon_project.id}: {e}")
-                    except ProjengProject.DoesNotExist:
-                        # No corresponding projeng project found - skip
-                        pass
-                    except ProjengProject.MultipleObjectsReturned:
-                        # Multiple matches - use the first one
-                        projeng_project = ProjengProject.objects.filter(prn=mon_project.prn).first()
-                        if projeng_project and not analyses.filter(project=projeng_project).exists():
-                            if projeng_project.latitude and projeng_project.longitude and projeng_project.barangay:
-                                try:
-                                    from .land_suitability import LandSuitabilityAnalyzer
-                                    analyzer = LandSuitabilityAnalyzer()
-                                    result = analyzer.analyze_project(projeng_project)
-                                    analyzer.save_analysis(projeng_project, result)
-                                    analyses = LandSuitabilityAnalysis.objects.select_related('project').all()
-                                except Exception as e:
-                                    pass
-        except ImportError:
-            # Monitoring app not available - continue with projeng projects only
-            pass
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Error checking monitoring projects: {e}")
-        
-        total_analyses = analyses.count()
-        
-        if total_analyses == 0:
-            return JsonResponse({
-                'total_analyses': 0,
-                'category_distribution': {},
-                'risk_summary': {},
-                'top_projects': [],
-                'bottom_projects': [],
-            })
-        
-        # Category distribution (for pie chart)
-        category_distribution = {
-            'highly_suitable': analyses.filter(suitability_category='highly_suitable').count(),
-            'suitable': analyses.filter(suitability_category='suitable').count(),
-            'moderately_suitable': analyses.filter(suitability_category='moderately_suitable').count(),
-            'marginally_suitable': analyses.filter(suitability_category='marginally_suitable').count(),
-            'not_suitable': analyses.filter(suitability_category='not_suitable').count(),
-        }
-        
-        # Risk summary
-        risk_summary = {
-            'total_with_risks': analyses.filter(
-                Q(has_flood_risk=True) | Q(has_slope_risk=True) | 
-                Q(has_zoning_conflict=True) | Q(has_infrastructure_gap=True)
-            ).count(),
-            'flood_risk': analyses.filter(has_flood_risk=True).count(),
-            'slope_risk': analyses.filter(has_slope_risk=True).count(),
-            'zoning_conflict': analyses.filter(has_zoning_conflict=True).count(),
-            'infrastructure_gap': analyses.filter(has_infrastructure_gap=True).count(),
-        }
-        
-        # Top 5 projects by score
-        top_projects = analyses.order_by('-overall_score')[:5].values(
-            'project__id', 'project__name', 'overall_score', 'suitability_category'
-        )
-        
-        # Bottom 5 projects by score
-        bottom_projects = analyses.order_by('overall_score')[:5].values(
-            'project__id', 'project__name', 'overall_score', 'suitability_category'
-        )
-        
-        # Distribution by barangay (top 10)
-        barangay_distribution = defaultdict(lambda: {'count': 0, 'avg_score': 0, 'total_score': 0})
-        for analysis in analyses.select_related('project'):
-            barangay = analysis.project.barangay or 'Unknown'
-            barangay_distribution[barangay]['count'] += 1
-            barangay_distribution[barangay]['total_score'] += analysis.overall_score
-        
-        # Calculate averages
-        for barangay, data in barangay_distribution.items():
-            data['avg_score'] = round(data['total_score'] / data['count'], 2)
-            del data['total_score']
-        
-        # Sort by count and get top 10
-        top_barangays = sorted(
-            [{'barangay': k, **v} for k, v in barangay_distribution.items()],
-            key=lambda x: x['count'],
-            reverse=True
-        )[:10]
-        
-        return JsonResponse({
-            'total_analyses': total_analyses,
-            'category_distribution': category_distribution,
-            'risk_summary': risk_summary,
-            'top_projects': list(top_projects),
-            'bottom_projects': list(bottom_projects),
-            'top_barangays': top_barangays,
-        })
-        
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error in suitability_dashboard_data_api: {str(e)}', exc_info=True)
-        return JsonResponse({'error': 'Internal server error'}, status=500)
-
-
-@login_required
-@require_GET
-def combined_clustering_suitability_analytics_api(request):
-    """
-    API endpoint for combined clustering + suitability analytics.
-    Returns barangay clusters with aggregated suitability statistics.
+def clustering_comparison_view(request):
+    """Display clustering algorithm comparison results"""
+    from projeng.models import ClusteringAlgorithmComparison
+    from projeng.clustering_comparison import run_clustering_comparison
     
-    This combines:
-    - Clustering: Projects grouped by barangay (Administrative Spatial Analysis)
-    - Suitability: Aggregated suitability scores per barangay cluster
-    """
-    try:
-        from django.db.models import Avg, Count, Q, Max, Min
-        from collections import defaultdict
-        from .models import Project, LandSuitabilityAnalysis, UserSpatialAssignment
-        
-        # Get user's accessible barangays (GEO-RBAC)
-        if request.user.is_superuser or request.user.is_staff:
-            # Head engineers and admins see all barangays
-            accessible_barangays = None
-        else:
-            # Get barangays assigned to this user
-            accessible_barangays = list(UserSpatialAssignment.get_user_barangays(request.user))
-            if not accessible_barangays:
-                # If no spatial assignment, return empty data
-                return JsonResponse({
-                    'clusters': [],
-                    'summary': {
-                        'total_barangays': 0,
-                        'total_projects': 0,
-                        'average_suitability': 0
-                    }
-                })
-        
-        # Get all projects with barangay information
-        projects_query = Project.objects.filter(
-            barangay__isnull=False
-        ).exclude(barangay='')
-        
-        # Apply GEO-RBAC filter if needed
-        if accessible_barangays is not None:
-            projects_query = projects_query.filter(barangay__in=accessible_barangays)
-        
-        # Get all projects with suitability analysis
-        analyses = LandSuitabilityAnalysis.objects.select_related('project').filter(
-            project__in=projects_query
-        )
-        
-        # Create a mapping of project_id to suitability data
-        suitability_map = {}
-        for analysis in analyses:
-            suitability_map[analysis.project_id] = {
-                'overall_score': float(analysis.overall_score),
-                'category': analysis.suitability_category,
-                'has_flood_risk': analysis.has_flood_risk,
-                'has_zoning_conflict': analysis.has_zoning_conflict,
+    # Get latest comparison
+    latest_comparison = ClusteringAlgorithmComparison.objects.first()
+    
+    # Run new comparison if requested
+    if request.GET.get('run_comparison') == 'true':
+        try:
+            comparison_data = run_clustering_comparison()
+            
+            # Save to database
+            results = comparison_data['results']
+            comparison = ClusteringAlgorithmComparison.objects.create(
+                total_projects=comparison_data['total_projects'],
+                valid_projects=comparison_data['valid_projects'],
+                best_algorithm=comparison_data['best_algorithm'],
+                # Administrative
+                admin_silhouette=results['administrative']['metrics']['silhouette_score'],
+                admin_zas=results['administrative']['metrics']['zoning_alignment_score'],
+                admin_calinski=results['administrative']['metrics']['calinski_harabasz_score'],
+                admin_davies=results['administrative']['metrics']['davies_bouldin_score'],
+                admin_execution_time=results['administrative']['metrics']['execution_time'],
+                admin_cluster_count=results['administrative']['metrics']['cluster_count'],
+                # K-Means
+                kmeans_silhouette=results['kmeans']['metrics']['silhouette_score'],
+                kmeans_zas=results['kmeans']['metrics']['zoning_alignment_score'],
+                kmeans_calinski=results['kmeans']['metrics']['calinski_harabasz_score'],
+                kmeans_davies=results['kmeans']['metrics']['davies_bouldin_score'],
+                kmeans_execution_time=results['kmeans']['metrics']['execution_time'],
+                kmeans_cluster_count=results['kmeans']['metrics']['cluster_count'],
+                # DBSCAN
+                dbscan_silhouette=results['dbscan']['metrics']['silhouette_score'],
+                dbscan_zas=results['dbscan']['metrics']['zoning_alignment_score'],
+                dbscan_calinski=results['dbscan']['metrics']['calinski_harabasz_score'],
+                dbscan_davies=results['dbscan']['metrics']['davies_bouldin_score'],
+                dbscan_execution_time=results['dbscan']['metrics']['execution_time'],
+                dbscan_cluster_count=results['dbscan']['metrics']['cluster_count'],
+                dbscan_noise_count=results['dbscan']['metrics'].get('noise_count', 0),
+                # Hierarchical
+                hierarchical_silhouette=results['hierarchical']['metrics']['silhouette_score'],
+                hierarchical_zas=results['hierarchical']['metrics']['zoning_alignment_score'],
+                hierarchical_calinski=results['hierarchical']['metrics']['calinski_harabasz_score'],
+                hierarchical_davies=results['hierarchical']['metrics']['davies_bouldin_score'],
+                hierarchical_execution_time=results['hierarchical']['metrics']['execution_time'],
+                hierarchical_cluster_count=results['hierarchical']['metrics']['cluster_count'],
+            )
+            latest_comparison = comparison
+        except Exception as e:
+            error_message = str(e)
+            return render(request, 'projeng/clustering_comparison.html', {
+                'error': error_message,
+                'latest_comparison': latest_comparison
+            })
+    
+    # Format data for template
+    comparison_table = []
+    if latest_comparison:
+        comparison_table = [
+            {
+                'algorithm': 'Administrative Spatial Analysis',
+                'silhouette_score': latest_comparison.admin_silhouette,
+                'zoning_alignment_score': latest_comparison.admin_zas,
+                'calinski_harabasz_score': latest_comparison.admin_calinski,
+                'davies_bouldin_score': latest_comparison.admin_davies,
+                'execution_time': latest_comparison.admin_execution_time,
+                'cluster_count': latest_comparison.admin_cluster_count,
+                'noise_count': 0,
+                'strengths': [
+                    "Perfect alignment with administrative boundaries",
+                    "Fast execution time",
+                    "Governance-oriented clustering",
+                    "No parameter tuning required"
+                ],
+                'weaknesses': [
+                    "May not capture spatial density patterns",
+                    "Ignores geographic proximity"
+                ],
+                'remarks': "Most effective for governance-oriented clustering; ideal for ONETAGUMVISION"
+            },
+            {
+                'algorithm': 'K-Means Clustering',
+                'silhouette_score': latest_comparison.kmeans_silhouette,
+                'zoning_alignment_score': latest_comparison.kmeans_zas,
+                'calinski_harabasz_score': latest_comparison.kmeans_calinski,
+                'davies_bouldin_score': latest_comparison.kmeans_davies,
+                'execution_time': latest_comparison.kmeans_execution_time,
+                'cluster_count': latest_comparison.kmeans_cluster_count,
+                'noise_count': 0,
+                'strengths': [
+                    "Handles irregular spatial patterns",
+                    "Fast and scalable",
+                    "Good for spherical clusters"
+                ],
+                'weaknesses': [
+                    "Requires predefined number of clusters",
+                    "May not align with administrative boundaries"
+                ],
+                'remarks': "Good for spatial pattern identification; useful for exploratory analysis"
+            },
+            {
+                'algorithm': 'DBSCAN Clustering',
+                'silhouette_score': latest_comparison.dbscan_silhouette,
+                'zoning_alignment_score': latest_comparison.dbscan_zas,
+                'calinski_harabasz_score': latest_comparison.dbscan_calinski,
+                'davies_bouldin_score': latest_comparison.dbscan_davies,
+                'execution_time': latest_comparison.dbscan_execution_time,
+                'cluster_count': latest_comparison.dbscan_cluster_count,
+                'noise_count': latest_comparison.dbscan_noise_count or 0,
+                'strengths': [
+                    "Identifies irregular spatial patterns",
+                    "No need to specify cluster count",
+                    "Handles noise/outliers well"
+                ],
+                'weaknesses': [
+                    "Does not conform to administrative boundaries",
+                    "Sensitive to parameter tuning"
+                ],
+                'remarks': "Effective for identifying dense regions; less suitable for governance"
+            },
+            {
+                'algorithm': 'Hierarchical Clustering',
+                'silhouette_score': latest_comparison.hierarchical_silhouette,
+                'zoning_alignment_score': latest_comparison.hierarchical_zas,
+                'calinski_harabasz_score': latest_comparison.hierarchical_calinski,
+                'davies_bouldin_score': latest_comparison.hierarchical_davies,
+                'execution_time': latest_comparison.hierarchical_execution_time,
+                'cluster_count': latest_comparison.hierarchical_cluster_count,
+                'noise_count': 0,
+                'strengths': [
+                    "Multi-level visualization of relationships",
+                    "No need to specify cluster count upfront",
+                    "Provides dendrogram for analysis"
+                ],
+                'weaknesses': [
+                    "Computationally intensive",
+                    "May not align with administrative boundaries"
+                ],
+                'remarks': "Provides detailed cluster relationships; best for analytical visualization"
             }
-        
-        # Group projects by barangay (Clustering)
-        barangay_clusters = defaultdict(lambda: {
-            'barangay': '',
-            'project_count': 0,
-            'projects': [],
-            'suitability_stats': {
-                'average_score': 0,
-                'min_score': 100,
-                'max_score': 0,
-                'highly_suitable_count': 0,  # 80-100
-                'suitable_count': 0,          # 60-79
-                'moderate_count': 0,          # 40-59
-                'low_suitable_count': 0,      # 0-39
-                'projects_with_analysis': 0,
-                'projects_without_analysis': 0,
-                'flood_risk_count': 0,
-                'zoning_conflict_count': 0,
-            }
-        })
-        
-        # Process each project
-        for project in projects_query:
-            barangay = project.barangay.strip() if project.barangay else 'Unknown'
-            
-            cluster = barangay_clusters[barangay]
-            cluster['barangay'] = barangay
-            cluster['project_count'] += 1
-            
-            # Add project basic info
-            project_data = {
-                'id': project.id,
-                'name': project.name,
-                'status': project.status,
-                'latitude': float(project.latitude) if project.latitude else None,
-                'longitude': float(project.longitude) if project.longitude else None,
-            }
-            
-            # Add suitability data if available
-            if project.id in suitability_map:
-                suit_data = suitability_map[project.id]
-                project_data['suitability'] = suit_data
-                
-                # Update cluster suitability statistics
-                stats = cluster['suitability_stats']
-                score = suit_data['overall_score']
-                
-                stats['projects_with_analysis'] += 1
-                stats['min_score'] = min(stats['min_score'], score)
-                stats['max_score'] = max(stats['max_score'], score)
-                
-                # Count by category
-                if score >= 80:
-                    stats['highly_suitable_count'] += 1
-                elif score >= 60:
-                    stats['suitable_count'] += 1
-                elif score >= 40:
-                    stats['moderate_count'] += 1
-                else:
-                    stats['low_suitable_count'] += 1
-                
-                # Count risks
-                if suit_data['has_flood_risk']:
-                    stats['flood_risk_count'] += 1
-                if suit_data['has_zoning_conflict']:
-                    stats['zoning_conflict_count'] += 1
-            else:
-                cluster['suitability_stats']['projects_without_analysis'] += 1
-            
-            cluster['projects'].append(project_data)
-        
-        # Calculate average scores for each cluster
-        clusters_list = []
-        total_projects = 0
-        total_suitability_score = 0
-        total_projects_with_analysis = 0
-        
-        for barangay, cluster in barangay_clusters.items():
-            stats = cluster['suitability_stats']
-            
-            # Calculate average suitability score
-            if stats['projects_with_analysis'] > 0:
-                # Sum all scores
-                scores_sum = sum(
-                    p['suitability']['overall_score']
-                    for p in cluster['projects']
-                    if 'suitability' in p
-                )
-                stats['average_score'] = round(scores_sum / stats['projects_with_analysis'], 2)
-            else:
-                stats['average_score'] = None
-                stats['min_score'] = None
-                stats['max_score'] = None
-            
-            # Prepare cluster data
-            cluster_data = {
-                'barangay': cluster['barangay'],
-                'project_count': cluster['project_count'],
-                'suitability_stats': stats,
-                'projects': cluster['projects'][:10],  # Limit to first 10 for performance
-            }
-            
-            clusters_list.append(cluster_data)
-            
-            # Update totals
-            total_projects += cluster['project_count']
-            if stats['average_score'] is not None:
-                total_suitability_score += stats['average_score'] * stats['projects_with_analysis']
-                total_projects_with_analysis += stats['projects_with_analysis']
-        
-        # Calculate overall average
-        overall_average = round(
-            total_suitability_score / total_projects_with_analysis, 2
-        ) if total_projects_with_analysis > 0 else 0
-        
-        # Sort clusters by project count (descending)
-        clusters_list.sort(key=lambda x: x['project_count'], reverse=True)
-        
-        return JsonResponse({
-            'clusters': clusters_list,
-            'summary': {
-                'total_barangays': len(clusters_list),
-                'total_projects': total_projects,
-                'total_projects_with_suitability': total_projects_with_analysis,
-                'average_suitability': overall_average,
-                'accessible_barangays': accessible_barangays if accessible_barangays else 'all',
-            }
-        })
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error in combined_clustering_suitability_analytics_api: {str(e)}', exc_info=True)
-        return JsonResponse({
-            'error': str(e),
-            'clusters': [],
-            'summary': {}
-        }, status=500) 
+        ]
+        # Sort by zoning alignment score
+        comparison_table.sort(key=lambda x: x['zoning_alignment_score'], reverse=True)
+    
+    context = {
+        'latest_comparison': latest_comparison,
+        'comparison_table': comparison_table,
+        'best_algorithm': latest_comparison.best_algorithm if latest_comparison else None,
+        'total_projects': latest_comparison.total_projects if latest_comparison else 0,
+        'valid_projects': latest_comparison.valid_projects if latest_comparison else 0,
+    }
+    
+    return render(request, 'projeng/clustering_comparison.html', context) 

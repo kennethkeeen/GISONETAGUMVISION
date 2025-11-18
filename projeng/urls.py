@@ -20,14 +20,12 @@ urlpatterns = [
     path('save-layer/', views.save_layer, name='save_layer'),
     path('api/engineers/', views.get_project_engineers, name='get_project_engineers'),
     
-    # New URLs for analytics and reporting
+    # New URLs for reporting
     path('projects/<int:pk>/analytics/', views.project_analytics, name='projeng_project_analytics'),
     path('projects/<int:pk>/export-report/', views.export_project_report, name='projeng_export_project_report'),
     path('projects/<int:pk>/add-progress/', views.add_progress_update, name='projeng_add_progress_update'),
     path('projects/<int:pk>/add-cost/', views.add_cost_entry, name='projeng_add_cost_entry'),
     path('projects/<int:project_id>/send-budget-alert/', views.send_budget_alert, name='send_budget_alert'),
-    path('analytics/', views.analytics_overview, name='projeng_analytics_overview'),
-    path('analytics/overview-data/', views.analytics_overview_data, name='projeng_analytics_overview_data'),
     path('dashboard/progress-over-time-data/', views.dashboard_progress_over_time_data, name='projeng_dashboard_progress_over_time_data'),
     path('dashboard/budget-utilization-data/', views.dashboard_budget_utilization_data, name='projeng_dashboard_budget_utilization_data'),
     path('dashboard/cost-breakdown-data/', views.dashboard_cost_breakdown_data, name='projeng_dashboard_cost_breakdown_data'),
@@ -63,22 +61,13 @@ urlpatterns = [
     path('api/barangay-zoning-stats/', views.barangay_zoning_stats_api, name='barangay_zoning_stats_api'),
     # Phase 5: Zone Data API endpoint for map visualization
     path('api/barangay-zone-data/', views.barangay_zone_data_api, name='barangay_zone_data_api'),
-    # Phase 6: Zone Analytics API endpoint
-    path('api/zone-analytics/', views.zone_analytics_api, name='zone_analytics_api'),
-    
-    # Suitability Analysis API endpoints
-    path('api/suitability/<int:project_id>/', views.suitability_analysis_api, name='suitability_analysis_api'),
-    path('api/suitability/stats/', views.suitability_stats_api, name='suitability_stats_api'),
-    path('api/suitability/dashboard-data/', views.suitability_dashboard_data_api, name='suitability_dashboard_data_api'),
-    
-    # Phase 3: Combined Clustering + Suitability Analytics
-    path('analytics/combined/', views.combined_analytics_view, name='combined_analytics_view'),
-    path('api/combined-analytics/', views.combined_clustering_suitability_analytics_api, name='combined_clustering_suitability_analytics_api'),
     
     # Zone Compatibility Recommendation API endpoints
     path('api/zone-recommendation/', views.zone_recommendation_api, name='zone_recommendation_api'),
     path('api/zone-validation/', views.zone_validation_api, name='zone_validation_api'),
-    path('api/zone-suitability/', views.zone_suitability_analysis_api, name='zone_suitability_analysis_api'),
     path('api/project-types/', views.project_types_api, name='project_types_api'),
     path('api/projects/<int:project_id>/zone-recommendations/', views.project_zone_recommendations_api, name='project_zone_recommendations_api'),
+    
+    # Clustering Algorithm Comparison
+    path('clustering-comparison/', views.clustering_comparison_view, name='clustering_comparison'),
 ] 

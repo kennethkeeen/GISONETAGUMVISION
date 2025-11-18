@@ -1,0 +1,149 @@
+{% extends 'projeng_base.html' %}
+{% load static %}
+
+{% block title %}Clustering Algorithm Comparison{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Comparative Analysis of Clustering Algorithms</h1>
+        <p class="text-gray-600">
+            Comparative algorithms of Administrative Spatial Analysis, K-Means, DBSCAN, and 
+            Hierarchical Clustering were utilized to determine the best spatial clustering 
+            algorithm for the GIS-based project tracking system.
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="mb-4">
+        <a href="?run_comparison=true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            Run New Comparison
+        </a>
+    </div>
+
+    {% if latest_comparison %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">Table 12. Comparative Analysis of Clustering Algorithms</h2>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border border-gray-300 px-4 py-2 text-left">Algorithm</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Silhouette Score</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Zoning Alignment Score</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Execution Time (s)</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Cluster Count</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left">Strengths</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left">Weaknesses</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in comparison_table %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="border border-gray-300 px-4 py-2 font-semibold">{{ row.algorithm }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            <span class="text-lg font-bold">{{ row.silhouette_score|floatformat:3 }}</span>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            <span class="text-lg font-bold">{{ row.zoning_alignment_score|floatformat:3 }}</span>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            {{ row.execution_time|floatformat:4 }}s
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                            {{ row.cluster_count }}
+                            {% if row.noise_count > 0 %}
+                            <span class="text-xs text-gray-500">(+{{ row.noise_count }} noise)</span>
+                            {% endif %}
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            <ul class="list-disc list-inside text-sm">
+                                {% for strength in row.strengths %}
+                                <li>{{ strength }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            <ul class="list-disc list-inside text-sm">
+                                {% for weakness in row.weaknesses %}
+                                <li>{{ weakness }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-sm">{{ row.remarks }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-3">Detailed Metrics</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for row in comparison_table %}
+            <div class="border border-gray-200 rounded p-4">
+                <h4 class="font-semibold mb-2">{{ row.algorithm }}</h4>
+                <ul class="text-sm space-y-1">
+                    <li><strong>Silhouette Score:</strong> {{ row.silhouette_score|floatformat:4 }}</li>
+                    <li><strong>Zoning Alignment:</strong> {{ row.zoning_alignment_score|floatformat:4 }}</li>
+                    <li><strong>Calinski-Harabasz:</strong> {{ row.calinski_harabasz_score|floatformat:2 }}</li>
+                    <li><strong>Davies-Bouldin:</strong> {{ row.davies_bouldin_score|floatformat:4 }}</li>
+                    <li><strong>Execution Time:</strong> {{ row.execution_time|floatformat:4 }}s</li>
+                    <li><strong>Clusters:</strong> {{ row.cluster_count }}</li>
+                    {% if row.noise_count > 0 %}
+                    <li><strong>Noise Points:</strong> {{ row.noise_count }}</li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-3">Analysis Summary</h3>
+        <p class="text-sm text-gray-700 mb-2">
+            The comparative analysis was conducted using a dataset from ONETAGUMVISION project records, 
+            containing comprehensive features including spatial data (barangay, latitude, longitude), 
+            project characteristics (project_type, status, zone_type), and administrative boundaries.
+        </p>
+        <p class="text-sm text-gray-700 mb-2">
+            Each algorithm was evaluated using multiple metrics including Silhouette Score (cluster quality), 
+            Zoning Alignment Score (administrative boundary compliance), Calinski-Harabasz Index (cluster 
+            separation), Davies-Bouldin Index (cluster compactness), and computational performance 
+            (execution time).
+        </p>
+        <p class="text-sm text-gray-700 mb-2">
+            <strong>{{ best_algorithm|title }}</strong> achieved the highest Zoning Alignment Score, 
+            demonstrating superior performance in aligning with administrative boundaries, which is 
+            crucial for governance-oriented systems like ONETAGUMVISION.
+        </p>
+        <p class="text-sm text-gray-700">
+            The analysis shows that while data-driven algorithms (K-Means, DBSCAN, Hierarchical) 
+            effectively identify spatial patterns, <strong>Administrative Spatial Analysis</strong> 
+            proves most effective for governance-oriented clustering, achieving superior Zoning 
+            Alignment Scores and maintaining administrative compliance. To optimize both analytical 
+            performance and policy relevance, ONETAGUMVISION adopts a hybrid approach combining 
+            Administrative Spatial Analysis with GEO-RBAC, enabling clusters that are both 
+            data-driven and administratively compliant.
+        </p>
+        <p class="text-sm text-gray-600 mt-2">
+            <strong>Dataset:</strong> {{ total_projects }} total projects, {{ valid_projects }} with valid coordinates | 
+            <strong>Last Updated:</strong> {{ latest_comparison.created_at|date:"F d, Y H:i" }}
+        </p>
+    </div>
+    {% else %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <p class="text-gray-700">No comparison results available. Click "Run New Comparison" to generate results.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,1 @@
+[(106, 'Concreating of Roads-GAD'), (105, 'Construction/Rehabilitation of Public Cemeteries'), (114, 'MALL'), (113, 'Road Widening Project'), (109, 'Street Lights'), (110, 'Street Lights'), (108, 'Street Lights'), (112, 'Street Lights'), (111, 'Street Lights'), (107, 'Water tank')]

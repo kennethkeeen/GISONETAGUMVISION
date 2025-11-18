@@ -586,24 +586,6 @@ def map_view(request):
                 if latest and latest.percentage_complete is not None:
                     latest_progress[item['project_id']] = int(latest.percentage_complete)
         
-        # Prefetch suitability analyses for all projects (efficient query)
-        from projeng.models import LandSuitabilityAnalysis
-        project_ids_list = [p.id for p in projects_with_coords]
-        suitability_data = {}
-        if project_ids_list:
-            suitability_analyses = LandSuitabilityAnalysis.objects.filter(
-                project_id__in=project_ids_list
-            ).select_related('project')
-            for analysis in suitability_analyses:
-                suitability_data[analysis.project_id] = {
-                    'overall_score': float(analysis.overall_score) if analysis.overall_score else None,
-                    'suitability_category': analysis.suitability_category or '',
-                    'category_display': analysis.get_suitability_category_display() if analysis.suitability_category else '',
-                    'has_flood_risk': analysis.has_flood_risk,
-                    'has_zoning_conflict': analysis.has_zoning_conflict,
-                    'recommendations': analysis.recommendations or [],
-                }
-        
         projects_data = []
         for p in projects_with_coords:
             try:
@@ -624,9 +606,6 @@ def map_view(request):
                 except (ValueError, AttributeError):
                     image_url = ""
                 
-                # Get suitability data (graceful fallback if not available)
-                suitability = suitability_data.get(p.id, {})
-                
                 projects_data.append({
                     'id': p.id,
                     'name': p.name or '',
@@ -643,13 +622,6 @@ def map_view(request):
                     'image': image_url,
                     'progress': progress_value,
                     'assigned_engineers': assigned_engineers,
-                    # Suitability data (backward compatible - will be null if not available)
-                    'suitability_score': suitability.get('overall_score'),
-                    'suitability_category': suitability.get('suitability_category', ''),
-                    'suitability_category_display': suitability.get('category_display', ''),
-                    'has_flood_risk': suitability.get('has_flood_risk', False),
-                    'has_zoning_conflict': suitability.get('has_zoning_conflict', False),
-                    'suitability_recommendations': suitability.get('recommendations', []),
                 })
             except Exception as e:
                 import logging

@@ -12,6 +12,7 @@ import json
 import time
 from .models import Notification, Project, ProjectProgress
 from django.db.models import Q, Count
+from django.db import close_old_connections
 
 
 @login_required
@@ -27,6 +28,8 @@ def sse_notifications(request):
         
         # Send initial unread count without notification details (to avoid showing old notifications)
         try:
+            # Drop any stale DB connection before the first query
+            close_old_connections()
             initial_unread_count = Notification.objects.filter(
                 recipient=request.user,
                 is_read=False
@@ -43,6 +46,9 @@ def sse_notifications(request):
         
         while True:
             try:
+                # Ensure we don't reuse a dead database connection on long-lived streams
+                close_old_connections()
+
                 # Get unread notifications count
                 unread_count = Notification.objects.filter(
                     recipient=request.user,
@@ -116,6 +122,9 @@ def sse_dashboard_updates(request):
         last_update_time = timezone.now()
         while True:
             try:
+                # Ensure DB connection is still valid for long-lived streams
+                close_old_connections()
+
                 # Check for project updates in the last 5 seconds
                 recent_time = timezone.now() - timedelta(seconds=5)
                 
@@ -183,6 +192,7 @@ def sse_project_status(request, project_id=None):
         last_progress = None
         
         try:
+            close_old_connections()
             if project_id:
                 project = Project.objects.get(id=project_id)
             else:
@@ -197,6 +207,8 @@ def sse_project_status(request, project_id=None):
         
         while True:
             try:
+                # Ensure DB connection is still valid for long-lived streams
+                close_old_connections()
                 if project_id:
                     # Monitor single project
                     project = Project.objects.get(id=project_id)

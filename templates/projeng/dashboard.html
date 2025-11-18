@@ -61,13 +61,7 @@
 
   <!-- Charts Section: First Row - 2 Large Charts -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <!-- Chart 1: Project Status Overview -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <h3 class="text-xl font-bold text-gray-800 mb-4">Project Status Overview</h3>
-      <div class="chart-container" style="height: 320px;">
-          <canvas id="projectOverviewChart"></canvas>
-      </div>
-    </div>
+    <!-- Chart 1: Project Status Overview - Removed -->
 
     <!-- Chart 2: Project Progress Over Time -->
     <div class="bg-white rounded-xl shadow-md p-6">
@@ -144,62 +138,7 @@
 <!-- Custom script for the chart -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Fetch data for the chart
-        fetch('{% url "projeng:projeng_analytics_overview_data" %}')
-         .then(response => {
-             if (!response.ok) {
-                 throw new Error('Network response was not ok');
-             }
-             return response.json();
-         })
-         .then(data => {
-             try {
-                 renderProjectOverviewChart(data);
-             } catch (error) {
-                 console.error('Error rendering chart:', error);
-                 const chartContainer = document.querySelector('#projectOverviewChart').parentElement;
-                 if (chartContainer) {
-                     chartContainer.innerHTML = '<div class="text-red-500 text-sm">Error loading chart data</div>';
-                 }
-             }
-         })
-         .catch(error => {
-             console.error('Error fetching chart data:', error);
-             const chartContainer = document.querySelector('#projectOverviewChart').parentElement;
-             if (chartContainer) {
-                 chartContainer.innerHTML = '<div class="text-red-500 text-sm">Error loading chart data</div>';
-             }
-         });
-
-        function renderProjectOverviewChart(chartData) {
-            const ctx = document.getElementById('projectOverviewChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Projects'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: false,
-                            text: 'Project Status Overview'
-                        }
-                    }
-                }
-            });
-        }
+        // Analytics chart removed
 
         // Chart 2: Project Progress Over Time
         fetch('{% url "projeng:projeng_dashboard_progress_over_time_data" %}')

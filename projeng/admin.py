@@ -4,7 +4,6 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (
     Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, 
     BarangayMetadata, ZoningZone, ProjectMilestone,
-    LandSuitabilityAnalysis, SuitabilityCriteria,
     ProjectType, ZoneAllowedUse, ZoneRecommendation,
     UserSpatialAssignment
 )
@@ -183,119 +182,46 @@ class BarangayMetadataAdmin(admin.ModelAdmin):
     )
     list_per_page = 25
 
-@admin.register(LandSuitabilityAnalysis)
-class LandSuitabilityAnalysisAdmin(admin.ModelAdmin):
+@admin.register(ZoneRecommendation)
+class ZoneRecommendationAdmin(admin.ModelAdmin):
     """
-    Admin interface for Land Suitability Analysis results.
+    Admin interface for Zone Recommendations.
     """
     list_display = [
         'project',
+        'recommended_zone',
         'overall_score',
-        'suitability_category',
-        'zoning_compliance_score',
-        'flood_risk_score',
-        'has_zoning_conflict',
-        'has_flood_risk',
-        'analyzed_at'
+        'rank',
+        'is_selected',
+        'created_at'
     ]
     list_filter = [
-        'suitability_category',
-        'has_flood_risk',
-        'has_slope_risk',
-        'has_zoning_conflict',
-        'has_infrastructure_gap',
-        'analyzed_at'
+        'recommended_zone',
+        'is_selected',
+        'created_at'
     ]
     search_fields = [
         'project__name',
-        'project__barangay',
-        'project__prn'
+        'project__prn',
+        'recommended_zone',
+        'reasoning'
     ]
-    readonly_fields = [
-        'analyzed_at',
-        'updated_at',
-        'analysis_version'
-    ]
+    readonly_fields = ['created_at']
     fieldsets = (
         ('Project', {
             'fields': ('project',)
         }),
-        ('Overall Assessment', {
-            'fields': ('overall_score', 'suitability_category', 'analysis_version')
+        ('Recommendation', {
+            'fields': ('recommended_zone', 'rank', 'overall_score', 'is_selected')
         }),
-        ('Factor Scores', {
-            'fields': (
-                'zoning_compliance_score',
-                'flood_risk_score',
-                'infrastructure_access_score',
-                'elevation_suitability_score',
-                'economic_alignment_score',
-                'population_density_score'
-            )
-        }),
-        ('Risk Factors', {
-            'fields': (
-                'has_flood_risk',
-                'has_slope_risk',
-                'has_zoning_conflict',
-                'has_infrastructure_gap'
-            )
-        }),
-        ('Analysis Results', {
-            'fields': ('recommendations', 'constraints')
+        ('Details', {
+            'fields': ('reasoning', 'advantages', 'constraints')
         }),
         ('Timestamps', {
-            'fields': ('analyzed_at', 'updated_at')
+            'fields': ('created_at',)
         }),
     )
     list_per_page = 25
-    ordering = ['-analyzed_at']
-
-@admin.register(SuitabilityCriteria)
-class SuitabilityCriteriaAdmin(admin.ModelAdmin):
-    """
-    Admin interface for Suitability Criteria configuration.
-    """
-    list_display = [
-        'name',
-        'project_type',
-        'weight_zoning',
-        'weight_flood_risk',
-        'weight_infrastructure',
-        'is_active',
-        'created_at'
-    ]
-    list_filter = [
-        'project_type',
-        'is_active',
-        'created_at'
-    ]
-    search_fields = ['name']
-    readonly_fields = ['created_at', 'updated_at']
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('name', 'project_type', 'is_active')
-        }),
-        ('Factor Weights (must sum to 1.0)', {
-            'fields': (
-                'weight_zoning',
-                'weight_flood_risk',
-                'weight_infrastructure',
-                'weight_elevation',
-                'weight_economic',
-                'weight_population'
-            ),
-            'description': 'All weights must sum to 1.0'
-        }),
-        ('Additional Parameters', {
-            'fields': ('parameters',)
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at')
-        }),
-    )
-    list_per_page = 25
-    ordering = ['name']
 
 @admin.register(ProjectType)
 class ProjectTypeAdmin(admin.ModelAdmin):
