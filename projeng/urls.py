@@ -61,6 +61,8 @@ urlpatterns = [
     path('api/barangay-zoning-stats/', views.barangay_zoning_stats_api, name='barangay_zoning_stats_api'),
     # Phase 5: Zone Data API endpoint for map visualization
     path('api/barangay-zone-data/', views.barangay_zone_data_api, name='barangay_zone_data_api'),
+    # Zone Analytics API endpoint for dashboard charts
+    path('api/zone-analytics/', views.zone_analytics_api, name='zone_analytics_api'),
     
     # Zone Compatibility Recommendation API endpoints
     path('api/zone-recommendation/', views.zone_recommendation_api, name='zone_recommendation_api'),

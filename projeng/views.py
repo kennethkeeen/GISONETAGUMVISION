@@ -2415,6 +2415,50 @@ def _get_zone_display_name(zone_type):
     return zone_names.get(zone_type, zone_type)
 
 
+@require_http_methods(["GET"])
+@login_required
+@user_passes_test(is_head_engineer, login_url='/accounts/login/')
+def zone_analytics_api(request):
+    """
+    API endpoint for zone analytics charts.
+    Returns aggregated project data by zone type.
+    Accessible to Head Engineers only.
+    """
+    from django.db.models import Q
+    
+    # Get all projects with zone_type
+    projects_with_zones = Project.objects.filter(
+        zone_type__isnull=False
+    ).exclude(zone_type='')
+    
+    # Aggregate by zone_type
+    zone_stats = projects_with_zones.values('zone_type').annotate(
+        total_projects=Count('id'),
+        completed=Count('id', filter=Q(status='completed')),
+        in_progress=Count('id', filter=Q(status__in=['in_progress', 'ongoing'])),
+        planned=Count('id', filter=Q(status__in=['planned', 'pending'])),
+        delayed=Count('id', filter=Q(status='delayed')),
+        total_cost=Sum('project_cost')
+    ).order_by('zone_type')
+    
+    # Format response
+    zones = []
+    for stat in zone_stats:
+        zones.append({
+            'zone_type': stat['zone_type'],
+            'display_name': _get_zone_display_name(stat['zone_type']),
+            'total_projects': stat['total_projects'],
+            'completed': stat['completed'],
+            'in_progress': stat['in_progress'],
+            'planned': stat['planned'],
+            'delayed': stat.get('delayed', 0),
+            'total_cost': float(stat['total_cost'] or 0)
+        })
+    
+    return JsonResponse({
+        'zones': zones
+    })
+
 
 @login_required
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
