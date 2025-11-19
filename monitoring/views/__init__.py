@@ -52,7 +52,9 @@ def home(request):
 def dashboard(request):
     try:
         print(f"Dashboard view accessed by user: {request.user.username}, authenticated: {request.user.is_authenticated}")
-        from projeng.models import Project
+        from projeng.models import Project, ProjectProgress
+        from django.utils import timezone
+        from django.db.models import Max
         from collections import Counter, defaultdict
         
         # Role-based queryset
@@ -65,12 +67,56 @@ def dashboard(request):
             projects = Project.objects.none()
         # Recent projects (5 most recent)
         recent_projects = projects.order_by('-created_at')[:5]
-        # Metrics
+        
+        # Calculate metrics with dynamic delayed status
+        today = timezone.now().date()
         project_count = projects.count()
-        completed_count = projects.filter(status='completed').count()
-        in_progress_count = projects.filter(status='in_progress').count() + projects.filter(status='ongoing').count()
-        planned_count = projects.filter(status='planned').count() + projects.filter(status='pending').count()
-        delayed_count = projects.filter(status='delayed').count()
+        
+        # Get latest progress for all projects
+        project_ids = [p.id for p in projects]
+        latest_progress = {}
+        if project_ids:
+            latest_progress_qs = ProjectProgress.objects.filter(
+                project_id__in=project_ids
+            ).values('project_id').annotate(
+                latest_date=Max('date'),
+                latest_created=Max('created_at')
+            )
+            for item in latest_progress_qs:
+                latest = ProjectProgress.objects.filter(
+                    project_id=item['project_id'],
+                    date=item['latest_date'],
+                    created_at=item['latest_created']
+                ).order_by('-created_at').first()
+                if latest and latest.percentage_complete is not None:
+                    latest_progress[item['project_id']] = int(latest.percentage_complete)
+        
+        # Calculate status counts dynamically
+        completed_count = 0
+        in_progress_count = 0
+        planned_count = 0
+        delayed_count = 0
+        
+        for p in projects:
+            progress = latest_progress.get(p.id, 0)
+            stored_status = p.status or ''
+            
+            # Calculate actual status dynamically
+            # Priority: completed > delayed > in_progress > planned
+            if progress >= 99:
+                completed_count += 1
+            elif stored_status == 'delayed':
+                # Already marked as delayed in database
+                delayed_count += 1
+            elif progress < 99 and p.end_date and p.end_date < today and stored_status in ['in_progress', 'ongoing']:
+                # Project is delayed if: end_date passed, progress < 99%, and status is in_progress/ongoing
+                delayed_count += 1
+            elif stored_status in ['in_progress', 'ongoing']:
+                in_progress_count += 1
+            elif stored_status in ['planned', 'pending']:
+                planned_count += 1
+            elif stored_status == 'completed':
+                completed_count += 1
         # Collaborative analytics
         collab_by_barangay = defaultdict(int)
         collab_by_status = defaultdict(int)
@@ -567,6 +613,7 @@ def map_view(request):
         
         # Get latest progress for all projects
         from django.db.models import Max
+        from django.utils import timezone
         project_ids = [p.id for p in projects_with_coords]
         latest_progress = {}
         if project_ids:
@@ -586,6 +633,7 @@ def map_view(request):
                 if latest and latest.percentage_complete is not None:
                     latest_progress[item['project_id']] = int(latest.percentage_complete)
         
+        today = timezone.now().date()
         projects_data = []
         for p in projects_with_coords:
             try:
@@ -597,6 +645,18 @@ def map_view(request):
                     progress_value = getattr(p, 'progress', 0)
                     if progress_value is None:
                         progress_value = 0
+                
+                # Calculate actual status dynamically (including delayed)
+                calculated_status = p.status or ''
+                if progress_value >= 99:
+                    calculated_status = 'completed'
+                elif progress_value < 99 and p.end_date and p.end_date < today and p.status in ['in_progress', 'ongoing']:
+                    # Project is delayed if: end_date passed, progress < 99%, and status is in_progress/ongoing
+                    calculated_status = 'delayed'
+                elif p.status in ['in_progress', 'ongoing']:
+                    calculated_status = 'in_progress'
+                elif p.status in ['planned', 'pending']:
+                    calculated_status = 'planned'
                 
                 # Safely get image URL
                 image_url = ""
@@ -612,7 +672,7 @@ def map_view(request):
                     'latitude': float(p.latitude) if p.latitude else 0.0,
                     'longitude': float(p.longitude) if p.longitude else 0.0,
                     'barangay': p.barangay or '',
-                    'status': p.status or '',
+                    'status': calculated_status,  # Use calculated_status instead of p.status
                     'description': p.description or '',
                     'project_cost': str(p.project_cost) if p.project_cost is not None else "",
                     'source_of_funds': p.source_of_funds or '',
@@ -1168,33 +1228,82 @@ def head_engineer_analytics(request):
         # Handle "in_progress" to match both "in_progress" and "ongoing" statuses
         if status_filter == 'in_progress':
             projects = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+        elif status_filter == 'delayed':
+            # For delayed, we need to filter projects that are either:
+            # 1. Already marked as delayed in database, OR
+            # 2. Should be delayed (in_progress/ongoing + end_date passed + progress < 99%)
+            # We'll filter in Python after getting progress data
+            # First get projects that are marked as delayed
+            delayed_marked = projects.filter(status='delayed')
+            # Also get in_progress/ongoing projects that might be delayed
+            potentially_delayed = projects.filter(Q(status='in_progress') | Q(status='ongoing'))
+            # We'll filter these in the loop below
+            projects = delayed_marked | potentially_delayed
         else:
             projects = projects.filter(status=status_filter)
     
-    # Count totals (before filtering for pagination)
-    total_projects_all = Project.objects.all().count()
-    completed_projects = Project.objects.filter(status='completed').count()
-    ongoing_projects = Project.objects.filter(status__in=['in_progress', 'ongoing']).count()
-    planned_projects = Project.objects.filter(status__in=['planned', 'pending']).count()
-    delayed_projects = Project.objects.filter(status='delayed').count()
+    # Count totals (before filtering for pagination) - calculate dynamically
+    from django.utils import timezone
+    from django.db.models import Max
+    all_projects = Project.objects.all()
+    total_projects_all = all_projects.count()
+    
+    # Get latest progress for all projects to calculate delayed status
+    all_project_ids = [p.id for p in all_projects]
+    latest_progress_all = {}
+    if all_project_ids:
+        latest_progress_qs = ProjectProgress.objects.filter(
+            project_id__in=all_project_ids
+        ).values('project_id').annotate(
+            latest_date=Max('date'),
+            latest_created=Max('created_at')
+        )
+        for item in latest_progress_qs:
+            latest = ProjectProgress.objects.filter(
+                project_id=item['project_id'],
+                date=item['latest_date'],
+                created_at=item['latest_created']
+            ).order_by('-created_at').first()
+            if latest and latest.percentage_complete is not None:
+                latest_progress_all[item['project_id']] = int(latest.percentage_complete)
+    
+    # Calculate status counts dynamically
+    today = timezone.now().date()
+    completed_projects = 0
+    ongoing_projects = 0
+    planned_projects = 0
+    delayed_projects = 0
+    
+    for p in all_projects:
+        progress = latest_progress_all.get(p.id, 0)
+        stored_status = p.status or ''
+        
+        # Calculate actual status dynamically
+        if progress >= 99:
+            completed_projects += 1
+        elif stored_status == 'delayed':
+            delayed_projects += 1
+        elif progress < 99 and p.end_date and p.end_date < today and stored_status in ['in_progress', 'ongoing']:
+            delayed_projects += 1
+        elif stored_status in ['in_progress', 'ongoing']:
+            ongoing_projects += 1
+        elif stored_status in ['planned', 'pending']:
+            planned_projects += 1
+        elif stored_status == 'completed':
+            completed_projects += 1
     
     # Order by created_at descending
     projects = projects.order_by('-created_at')
     
-    # Pagination - 15 items per page
-    paginator = Paginator(projects, 15)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    # Get all project IDs for batch queries (before pagination if filtering by delayed)
+    all_project_ids_for_page = [p.id for p in projects]
     
-    # Get all project IDs for batch queries
-    project_ids = [p.id for p in page_obj.object_list]
-    
-    # Batch fetch latest progress for all projects on this page
+    # Batch fetch latest progress for all projects (before pagination if filtering by delayed)
     from django.db.models import Max
     latest_progress_dict = {}
-    if project_ids:
+    if all_project_ids_for_page:
         # Get the latest progress update for each project
-        for project_id in project_ids:
+        for project_id in all_project_ids_for_page:
             latest = ProjectProgress.objects.filter(
                 project_id=project_id
             ).order_by('-date', '-created_at').first()
@@ -1204,15 +1313,15 @@ def head_engineer_analytics(request):
     # Batch fetch assigned engineers for all projects
     from django.db.models import Prefetch
     projects_with_engineers = Project.objects.filter(
-        id__in=project_ids
+        id__in=all_project_ids_for_page
     ).prefetch_related('assigned_engineers')
     engineers_dict = {}
     for proj in projects_with_engineers:
         engineers_dict[proj.id] = [eng.username for eng in proj.assigned_engineers.all()]
     
-    # Prepare project list for the table and JS (only for current page)
+    # Prepare project list for the table and JS (calculate status for all projects first)
     projects_list = []
-    for p in page_obj.object_list:
+    for p in projects:
         # Get latest progress from batch query
         latest_progress = latest_progress_dict.get(p.id)
         
@@ -1234,12 +1343,30 @@ def head_engineer_analytics(request):
         else:
             progress = 0
         
+        # Calculate actual status dynamically (including delayed)
+        stored_status = p.status or ''
+        calculated_status = stored_status
+        
+        # Priority: completed > delayed > in_progress > planned
+        if progress >= 99:
+            calculated_status = 'completed'
+        elif stored_status == 'delayed':
+            calculated_status = 'delayed'
+        elif progress < 99 and p.end_date and p.end_date < today and stored_status in ['in_progress', 'ongoing']:
+            # Project is delayed if: end_date passed, progress < 99%, and status is in_progress/ongoing
+            calculated_status = 'delayed'
+        elif stored_status in ['in_progress', 'ongoing']:
+            calculated_status = 'in_progress'
+        elif stored_status in ['planned', 'pending']:
+            calculated_status = 'planned'
+        
         # Status display
         status_display = (
-            'Ongoing' if p.status in ['in_progress', 'ongoing'] else
-            'Planned' if p.status in ['planned', 'pending'] else
-            'Completed' if p.status == 'completed' else
-            'Delayed' if p.status == 'delayed' else p.status.title()
+            'Completed' if calculated_status == 'completed' else
+            'Delayed' if calculated_status == 'delayed' else
+            'Ongoing' if calculated_status in ['in_progress', 'ongoing'] else
+            'Planned' if calculated_status in ['planned', 'pending'] else
+            calculated_status.title()
         )
         
         # Assigned engineers from batch query
@@ -1251,12 +1378,26 @@ def head_engineer_analytics(request):
             'prn': p.prn or '',
             'barangay': p.barangay or '',
             'total_progress': progress,
-            'status': p.status,
+            'status': calculated_status,  # Use calculated_status instead of stored status
             'status_display': status_display,
             'start_date': str(p.start_date) if p.start_date else '',
             'end_date': str(p.end_date) if p.end_date else '',
             'assigned_to': assigned_to,
         })
+    
+    # If filtering by delayed status, filter the list to only show delayed projects
+    if status_filter == 'delayed':
+        projects_list = [p for p in projects_list if p['status'] == 'delayed']
+    
+    # Pagination - 15 items per page (after filtering if needed)
+    from django.core.paginator import Paginator
+    paginator = Paginator(projects_list, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Update projects_list to only include current page items
+    projects_list = list(page_obj.object_list)
+    
     context = {
         'projects': projects_list,  # for Django template rendering
         'projects_json': json.dumps(projects_list),  # for JS
@@ -1266,10 +1407,10 @@ def head_engineer_analytics(request):
         'ongoing_projects': ongoing_projects,
         'planned_projects': planned_projects,
         'delayed_projects': delayed_projects,
-        'user_role': 'head_engineer',
-        'search_query': search_query,
-        'barangay_filter': barangay_filter,
         'status_filter': status_filter,
+        'barangay_filter': barangay_filter,
+        'search_query': search_query,
+        'user_role': 'head_engineer',
     }
     return render(request, 'monitoring/analytics.html', context)
 
