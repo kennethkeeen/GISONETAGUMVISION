@@ -425,7 +425,6 @@
                           status === 'delayed' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
                         ${status ? status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ') : 'Unknown'}
                     </span>
-                    ${status === 'delayed' ? `<span class='px-2 py-1 text-xs rounded-full font-semibold bg-red-100 text-red-700'>Delayed</span>` : ''}
                 </div>
                 <h3 class="font-bold text-base mb-1 line-clamp-2">${escapeHtml(project.name || 'Unnamed Project')}</h3>
                 <div class="text-sm text-gray-600 mb-2 line-clamp-2">${escapeHtml(project.description || 'No description')}</div>

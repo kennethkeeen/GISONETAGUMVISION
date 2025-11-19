@@ -342,21 +342,24 @@ def project_list(request):
                 project.created_by = request.user
             
             # Phase 4: Auto-detect zone before saving
-            # DISABLED: Zone detection is slow and blocks project creation
-            # Make it optional - can be done later if needed
-            # This significantly improves project creation performance
+            # Try to detect zone, but don't block project creation if it fails
             zone_type, confidence = None, 0
-            # try:
-            #     if project.latitude and project.longitude:
-            #         zone_type, confidence = project.detect_and_set_zone(save=False)
-            #     else:
-            #         zone_type, confidence = None, 0
-            # except Exception as e:
-            #     # Fail gracefully - don't block project creation if zone detection fails
-            #     import logging
-            #     logger = logging.getLogger(__name__)
-            #     logger.warning(f"Zone detection failed for project: {str(e)}")
-            #     zone_type, confidence = None, 0
+            try:
+                # Try zone detection if we have barangay, name, or description
+                if project.barangay or project.name or project.description:
+                    zone_type, confidence = project.detect_and_set_zone(save=False)
+                    if zone_type:
+                        # Set the zone_type on the project object
+                        project.zone_type = zone_type
+                        # Auto-validate if confidence is high
+                        if confidence >= 70:
+                            project.zone_validated = True
+            except Exception as e:
+                # Fail gracefully - don't block project creation if zone detection fails
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Zone detection failed for project: {str(e)}")
+                zone_type, confidence = None, 0
             
             # Log image upload info for debugging (use print() so it shows in runtime logs)
             if 'image' in request.FILES:
@@ -630,6 +633,18 @@ def project_list(request):
                 logger.warning(f"Error getting assigned engineers for project {p.id}: {str(eng_error)}")
                 assigned_engineers = []
             
+            # Auto-detect zone type if not assigned
+            zone_type = p.zone_type or ''
+            if not zone_type and (p.barangay or p.name or p.description):
+                try:
+                    detected_zone, confidence = p.detect_and_set_zone(save=True)
+                    if detected_zone:
+                        zone_type = detected_zone
+                        logger.info(f"Auto-detected zone for project {p.id}: {zone_type} (confidence: {confidence}%)")
+                except Exception as zone_error:
+                    logger.warning(f"Zone detection failed for project {p.id}: {str(zone_error)}")
+                    # Continue without zone type if detection fails
+            
             projects_data.append({
                 'id': p.id,
                 'name': p.name or '',
@@ -646,6 +661,7 @@ def project_list(request):
                 'image': image_url,
                 'progress': progress,
                 'assigned_engineers': assigned_engineers,
+                'zone_type': zone_type,
             })
         except Exception as e:
             logger.error(f"Error building project data for project {p.id}: {str(e)}", exc_info=True)
@@ -749,6 +765,22 @@ def map_view(request):
                 except (ValueError, AttributeError):
                     image_url = ""
                 
+                # Auto-detect zone type if not assigned
+                zone_type = p.zone_type or ''
+                if not zone_type and (p.barangay or p.name or p.description):
+                    try:
+                        detected_zone, confidence = p.detect_and_set_zone(save=True)
+                        if detected_zone:
+                            zone_type = detected_zone
+                            import logging
+                            logger = logging.getLogger(__name__)
+                            logger.info(f"Auto-detected zone for project {p.id} in map_view: {zone_type} (confidence: {confidence}%)")
+                    except Exception as zone_error:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Zone detection failed for project {p.id} in map_view: {str(zone_error)}")
+                        # Continue without zone type if detection fails
+                
                 projects_data.append({
                     'id': p.id,
                     'name': p.name or '',
@@ -765,7 +797,7 @@ def map_view(request):
                     'image': image_url,
                     'progress': progress_value,
                     'assigned_engineers': assigned_engineers,
-                    'zone_type': p.zone_type or '',
+                    'zone_type': zone_type,
                 })
             except Exception as e:
                 import logging
