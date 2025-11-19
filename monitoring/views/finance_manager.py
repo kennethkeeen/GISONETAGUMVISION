@@ -114,7 +114,15 @@ def finance_projects(request):
                 logger.error(f"Error processing project {project.id}: {str(e)}", exc_info=True)
                 continue
         
-        # Sort by budget and take top 10 for chart
+        # Pagination - 25 items per page
+        paginator = Paginator(project_financials, 25)
+        page_number = request.GET.get('page', 1)
+        try:
+            page_obj = paginator.get_page(page_number)
+        except:
+            page_obj = paginator.get_page(1)
+        
+        # Sort by budget and take top 10 for chart (from all projects, not just current page)
         top_projects = sorted(project_financials, key=lambda x: x['budget'], reverse=True)[:10]
         project_names = [p['name'] for p in top_projects]
         project_budgets = [p['budget'] for p in top_projects]
@@ -128,13 +136,17 @@ def finance_projects(request):
         except Exception as e:
             logger.error(f"Error calculating cost breakdown: {str(e)}", exc_info=True)
         
-        # Hardcoded list of 23 barangays
-        all_barangays = [
-            'Apokon', 'Bincungan', 'Busaon', 'Canocotan', 'Cuambogan', 'La Filipina', 'Liboganon',
-            'Madaum', 'Magdum', 'Magugpo East', 'Magugpo North', 'Magugpo Poblacion', 'Magugpo South',
-            'Magugpo West', 'Mankilam', 'New Balamban', 'Nueva Fuerza', 'Pagsabangan', 'Pandapan',
-            'San Agustin', 'San Isidro', 'San Miguel', 'Visayan Village'
-        ]
+        # Get unique barangays from all projects (normalized)
+        barangay_list = Project.objects.exclude(barangay__isnull=True).exclude(barangay='').values_list('barangay', flat=True).distinct()
+        all_barangays = sorted(set([b.strip() for b in barangay_list if b and b.strip()]))
+        # Fallback to hardcoded list if no projects exist
+        if not all_barangays:
+            all_barangays = [
+                'Apokon', 'Bincungan', 'Busaon', 'Canocotan', 'Cuambogan', 'La Filipina', 'Liboganon',
+                'Madaum', 'Magdum', 'Magugpo East', 'Magugpo North', 'Magugpo Poblacion', 'Magugpo South',
+                'Magugpo West', 'Mankilam', 'New Balamban', 'Nueva Fuerza', 'Pagsabangan', 'Pandapan',
+                'San Agustin', 'San Isidro', 'San Miguel', 'Visayan Village'
+            ]
         try:
             all_statuses = [s[0] for s in Project.STATUS_CHOICES if s[0] != 'cancelled']
         except Exception as e:
@@ -156,7 +168,8 @@ def finance_projects(request):
             cost_by_type_json = '{}'
         
         context = {
-            'project_financials': project_financials,
+            'project_financials': list(page_obj.object_list),
+            'page_obj': page_obj,
             'project_names': project_names,
             'project_names_json': project_names_json,
             'project_budgets': project_budgets,
@@ -209,10 +222,11 @@ def finance_cost_management(request):
                 remaining = budget_float - spent_float
                 
                 if budget_float > 0:
+                    utilization_percentage = (spent_float / budget_float) * 100
                     if spent_float > budget_float:
                         budget_status = 'over'
                         over_budget_count += 1
-                    elif abs(spent_float - budget_float) < 0.01:  # Use small epsilon for float comparison
+                    elif utilization_percentage >= 80:  # Within Budget: 80-100% utilization (at risk but not over)
                         budget_status = 'within'
                         within_budget_count += 1
                     else:
