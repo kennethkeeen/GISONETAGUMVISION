@@ -370,6 +370,12 @@ window.hidePopupMap = function() {
         <!-- Header with Gradient -->
         <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl px-6 py-4 relative flex-shrink-0">
             <button id="close-details-modal" class="absolute top-3 right-3 text-white hover:text-gray-200 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20 transition-all">&times;</button>
+            <a id="view-report-button" href="#" class="absolute top-3 right-12 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                View Report
+            </a>
             <div class="flex items-start gap-4 pr-10">
                 <img id="details-image" class="w-16 h-16 object-cover object-center rounded-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 shadow-lg flex-shrink-0" alt="Project image" style="display: none;" />
                 <div class="flex-1 min-w-0">
@@ -1324,6 +1330,12 @@ window.openDetailsModal = function(id) {
     if (!detailsModal) {
         console.error('Details modal element not found!');
         return; // Stop if modal not found
+    }
+
+    // Set the view report button href
+    const viewReportButton = document.getElementById('view-report-button');
+    if (viewReportButton) {
+        viewReportButton.href = `/dashboard/monitoring/projects/${id}/detail/`;
     }
 
     // Temporarily disable map interactions while modal is open
