@@ -82,16 +82,36 @@ class SimpleChoropleth {
             
             // Try to find matching barangay name from GeoJSON (case-insensitive)
             let matchedBarangay = null;
+            
+            // First, try exact match (case-insensitive)
             if (normalizedBarangayNames.has(normalizedProjectBarangay)) {
                 matchedBarangay = normalizedBarangayNames.get(normalizedProjectBarangay);
             } else {
+                // Try removing spaces and special characters for matching
+                const normalizedNoSpaces = normalizedProjectBarangay.replace(/\s+/g, '').toLowerCase();
+                
                 // Try to find by partial match or fuzzy match
                 for (const [normalized, original] of normalizedBarangayNames.entries()) {
+                    const normalizedGeoNoSpaces = normalized.replace(/\s+/g, '').toLowerCase();
+                    
+                    // Exact match after removing spaces
+                    if (normalizedGeoNoSpaces === normalizedNoSpaces) {
+                        matchedBarangay = original;
+                        break;
+                    }
+                    
                     // Check if names are similar (one contains the other or vice versa)
                     if (normalized.includes(normalizedProjectBarangay) || normalizedProjectBarangay.includes(normalized)) {
                         matchedBarangay = original;
                         break;
                     }
+                    
+                    // Check without spaces
+                    if (normalizedGeoNoSpaces.includes(normalizedNoSpaces) || normalizedNoSpaces.includes(normalizedGeoNoSpaces)) {
+                        matchedBarangay = original;
+                        break;
+                    }
+                    
                     // Also try removing common suffixes/prefixes
                     const normalizedClean = normalized.replace(/^(barangay|brgy|brg)\s*/i, '').trim();
                     const projectClean = normalizedProjectBarangay.replace(/^(barangay|brgy|brg)\s*/i, '').trim();
@@ -102,11 +122,16 @@ class SimpleChoropleth {
                 }
             }
             
-            // Use matched barangay name or fallback to original (normalized)
-            const statsKey = matchedBarangay || barangay.trim();
+            // Always use the matched GeoJSON barangay name as the key
+            // This ensures consistency when looking up stats in popups
+            const statsKey = matchedBarangay || null;
             
             if (!matchedBarangay) {
                 unmatchedBarangays.add(barangay);
+                // Skip projects that don't match any GeoJSON barangay
+                // This prevents stats from being stored with incorrect keys
+                console.warn(`Project ${project.id} (${project.name}) has barangay "${barangay}" which doesn't match any GeoJSON barangay`);
+                return; // Skip this project
             }
             
             if (!this.barangayStats[statsKey]) {
@@ -139,16 +164,36 @@ class SimpleChoropleth {
             } else if (status === 'planned' || status === 'pending' || status === 'not started') {
                 this.barangayStats[statsKey].plannedProjects++;
             }
+            
+            // Debug: Log successful match
+            if (matchedBarangay !== barangay.trim()) {
+                console.log(`Matched project barangay "${barangay}" to GeoJSON barangay "${matchedBarangay}"`);
+            }
         });
         
         console.log('Projects with barangay:', projectsWithBarangay);
         console.log('Projects without barangay:', projectsWithoutBarangay);
         if (unmatchedBarangays.size > 0) {
             console.warn('Unmatched barangay names from projects:', Array.from(unmatchedBarangays));
+            console.warn('These projects will not be counted in barangay statistics');
         }
         console.log('Barangay statistics calculated:', this.barangayStats);
         console.log('Total barangays with stats:', Object.keys(this.barangayStats).length);
-        console.log('Sample stats:', Object.entries(this.barangayStats).slice(0, 3));
+        
+        // Log detailed stats for first few barangays
+        const statsEntries = Object.entries(this.barangayStats);
+        if (statsEntries.length > 0) {
+            console.log('Sample stats (first 5 barangays):');
+            statsEntries.slice(0, 5).forEach(([name, stats]) => {
+                console.log(`  ${name}: ${stats.totalProjects} projects, ${stats.completedProjects} completed, ${stats.ongoingProjects} ongoing, ${stats.plannedProjects} planned, Cost: ${this.formatCurrency(stats.totalCost)}`);
+            });
+        } else {
+            console.warn('⚠️ WARNING: No barangay statistics were calculated!');
+            console.warn('This could mean:');
+            console.warn('  1. Projects don\'t have barangay values set');
+            console.warn('  2. Barangay names in projects don\'t match GeoJSON barangay names');
+            console.warn('  3. Projects data is empty or not loaded');
+        }
         console.log('=== calculateBarangayStats END ===');
     }
 
