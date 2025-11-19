@@ -1,9 +1,12 @@
 {% extends 'projeng_base.html' %}
 {% block content %}
 <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold text-gray-900 mb-6">Project Map</h1>
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Project Map</h1>
+        <p class="text-gray-600 text-sm">View and manage your assigned projects on the map</p>
+    </div>
     <!-- Map container -->
-    <div id="mapid" style="height: 600px;"></div>
+    <div id="mapid" class="rounded-xl shadow-lg border border-gray-200 overflow-hidden" style="height: 75vh; min-height: 600px;"></div>
 </div>
 
 <!-- Layer Details Modal -->
@@ -33,6 +36,137 @@
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Project Details Modal -->
+<div id="projectDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden overflow-y-auto h-full w-full z-50" style="z-index: 2000;">
+    <div class="relative top-10 mx-auto p-0 w-full max-w-4xl shadow-2xl rounded-lg bg-white mb-10">
+        <!-- Modal Header -->
+        <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-lg flex items-center justify-between z-10">
+            <h2 class="text-2xl font-bold" id="modal-project-name">Project Details</h2>
+            <button onclick="closeProjectModal()" class="text-white hover:text-gray-200 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div id="modal-loading" class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-600">Loading project details...</p>
+            </div>
+            
+            <div id="modal-content" class="hidden">
+                <!-- Project Image -->
+                <div id="modal-image-container" class="mb-6 hidden">
+                    <img id="modal-project-image" src="" alt="Project Image" class="w-full h-64 object-cover rounded-lg shadow-md">
+                </div>
+                
+                <!-- Status and Basic Info -->
+                <div class="flex flex-wrap items-center gap-3 mb-6">
+                    <span id="modal-status-badge" class="px-4 py-2 rounded-full text-sm font-semibold"></span>
+                    <span id="modal-zone-badge" class="px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200 hidden"></span>
+                </div>
+                
+                <!-- Project Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Project Name</label>
+                        <p id="modal-name" class="text-gray-900 font-medium"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">PRN</label>
+                        <p id="modal-prn" class="text-gray-900"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Barangay</label>
+                        <p id="modal-barangay" class="text-gray-900 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span id="modal-barangay-text"></span>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Zone Type</label>
+                        <p id="modal-zone-type" class="text-gray-900"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Start Date</label>
+                        <p id="modal-start-date" class="text-gray-900 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="modal-start-date-text"></span>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">End Date</label>
+                        <p id="modal-end-date" class="text-gray-900 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="modal-end-date-text"></span>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Project Cost</label>
+                        <p id="modal-cost" class="text-gray-900 font-semibold"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Source of Funds</label>
+                        <p id="modal-funds" class="text-gray-900"></p>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                    <p id="modal-description" class="text-gray-700 bg-gray-50 p-4 rounded-lg"></p>
+                </div>
+                
+                <!-- Progress Section -->
+                <div id="modal-progress-section" class="mb-6 hidden">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Progress</label>
+                    <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+                        <span>Completion</span>
+                        <span id="modal-progress-percent" class="font-semibold text-gray-900"></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div id="modal-progress-bar" class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"></div>
+                    </div>
+                </div>
+                
+                <!-- Coordinates -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Latitude</label>
+                        <p id="modal-latitude" class="text-gray-900 font-mono text-sm"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Longitude</label>
+                        <p id="modal-longitude" class="text-gray-900 font-mono text-sm"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-lg flex items-center justify-end gap-3 border-t border-gray-200">
+            <button onclick="closeProjectModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                Close
+            </button>
+            <a id="modal-view-details-link" href="#" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                View Full Details
+            </a>
         </div>
     </div>
 </div>
@@ -207,62 +341,236 @@
 
     // --- Project Markers Dynamic AJAX Refresh ---
     var projectMarkers = {};
+    var projectDataStore = {}; // Store project data for modal access
+
+    // Create custom icon based on status
+    function createStatusIcon(status) {
+        let iconColor = '#6B7280'; // gray default
+        if (status === 'completed') iconColor = '#10B981'; // green
+        else if (status === 'ongoing' || status === 'in_progress') iconColor = '#3B82F6'; // blue
+        else if (status === 'planned' || status === 'pending') iconColor = '#F59E0B'; // amber
+        else if (status === 'delayed') iconColor = '#EF4444'; // red
+        
+        return L.divIcon({
+            className: 'custom-marker-icon',
+            html: `<div style="background-color: ${iconColor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+    }
 
     function createOrUpdateMarker(project) {
+        // Store project data for modal access
+        projectDataStore[project.id] = project;
+        
         const progress = parseFloat(project.progress);
         const displayProgress = !isNaN(progress) && progress >= 0 && progress <= 100 ? progress : 0;
+        const status = project.status || '';
+        
         var popupContent = `
-            <div class="p-2">
+            <div class="p-3" style="min-width: 250px; max-width: 300px;">
                 <div class="flex items-center gap-2 mb-2">
                     <span class="px-2 py-1 text-xs rounded-full font-semibold shadow-sm
-                        ${project.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          project.status === 'ongoing' || project.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                          project.status === 'planned' || project.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          project.status === 'delayed' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
-                        ${project.status ? project.status.charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ') : ''}
+                        ${status === 'completed' ? 'bg-green-100 text-green-700' :
+                          status === 'ongoing' || status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                          status === 'planned' || status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          status === 'delayed' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
+                        ${status ? status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ') : 'Unknown'}
                     </span>
-                    ${project.status === 'delayed' ? `<span class='px-2 py-1 text-xs rounded-full font-semibold bg-red-100 text-red-700'>Delayed Project</span>` : ''}
+                    ${status === 'delayed' ? `<span class='px-2 py-1 text-xs rounded-full font-semibold bg-red-100 text-red-700'>Delayed</span>` : ''}
                 </div>
-                <h3 class="font-bold text-lg mb-1">${project.name}</h3>
-                <div class="text-sm text-gray-700 mb-2">${project.description || 'City Lights'}</div>
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-xs text-gray-500">${project.barangay || 'N/A'}</span>
+                <h3 class="font-bold text-base mb-1 line-clamp-2">${escapeHtml(project.name || 'Unnamed Project')}</h3>
+                <div class="text-sm text-gray-600 mb-2 line-clamp-2">${escapeHtml(project.description || 'No description')}</div>
+                <div class="flex items-center gap-1 mb-2">
+                    <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-xs text-gray-500">${escapeHtml(project.barangay || 'N/A')}</span>
                 </div>
-                <div class="text-xs text-gray-500 mb-1">
-                    <span class="block"><span class='font-semibold'>Lat:</span> ${project.latitude}, <span class='font-semibold'>Lng:</span> ${project.longitude}</span>
-                </div>
-                ${project.status === 'ongoing' || project.status === 'in_progress' ? `
-                    <div class="text-xs text-gray-500 mb-2">
-                        <span class="block"><span class='font-semibold'>Progress:</span> ${displayProgress}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                        <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${displayProgress}%"></div>
+                ${status === 'ongoing' || status === 'in_progress' ? `
+                    <div class="mb-2">
+                        <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span class="font-semibold">${displayProgress}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-blue-600 h-1.5 rounded-full transition-all" style="width: ${displayProgress}%"></div>
+                        </div>
                     </div>
                 ` : ''}
-                ${project.image ? `<img src="${project.image}" alt="Project Image" class="mt-2 h-auto rounded" style="max-width: 80px; height: auto;">` : ''}
-                <div class="mt-2">
-                    <a href="/projeng/projects/${project.id}/detail/" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">View Details</a>
+                ${project.image ? `<img src="${project.image}" alt="Project Image" class="mt-2 h-auto rounded shadow-sm" style="max-width: 100%; height: auto; max-height: 100px; object-fit: cover;">` : ''}
+                <div class="mt-3 pt-2 border-t border-gray-200">
+                    <button onclick="openProjectModal(${project.id})" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                        View Details
+                    </button>
                 </div>
             </div>
         `;
+        
         if (projectMarkers[project.id]) {
-            // Update marker position and popup
+            // Update marker position, icon, and popup
             projectMarkers[project.id].setLatLng([project.latitude, project.longitude]);
+            projectMarkers[project.id].setIcon(createStatusIcon(status));
             projectMarkers[project.id].setPopupContent(popupContent);
         } else {
-            // Create new marker
-            var marker = L.marker([project.latitude, project.longitude])
-                .addTo(mymap)
-                .bindPopup(popupContent);
+            // Create new marker with custom icon
+            var marker = L.marker([project.latitude, project.longitude], {
+                icon: createStatusIcon(status)
+            })
+            .addTo(mymap)
+            .bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'custom-popup'
+            });
             projectMarkers[project.id] = marker;
         }
     }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Project Modal Functions
+    function openProjectModal(projectId) {
+        const project = projectDataStore[projectId];
+        if (!project) {
+            console.error('Project data not found for ID:', projectId);
+            return;
+        }
+        
+        const modal = document.getElementById('projectDetailsModal');
+        const loading = document.getElementById('modal-loading');
+        const content = document.getElementById('modal-content');
+        
+        // Show modal and loading
+        modal.classList.remove('hidden');
+        loading.classList.remove('hidden');
+        content.classList.add('hidden');
+        
+        // Populate modal with project data
+        setTimeout(() => {
+            populateModal(project);
+            loading.classList.add('hidden');
+            content.classList.remove('hidden');
+        }, 300);
+    }
+    
+    function populateModal(project) {
+        const status = project.status || '';
+        const progress = parseFloat(project.progress) || 0;
+        const displayProgress = !isNaN(progress) && progress >= 0 && progress <= 100 ? progress : 0;
+        
+        // Project name
+        document.getElementById('modal-project-name').textContent = project.name || 'Unnamed Project';
+        document.getElementById('modal-name').textContent = project.name || 'N/A';
+        
+        // Status badge
+        const statusBadge = document.getElementById('modal-status-badge');
+        let statusClass = 'bg-gray-100 text-gray-800';
+        let statusText = 'Unknown';
+        
+        if (status === 'completed') {
+            statusClass = 'bg-green-100 text-green-800 border border-green-200';
+            statusText = 'Completed';
+        } else if (status === 'ongoing' || status === 'in_progress') {
+            statusClass = 'bg-blue-100 text-blue-800 border border-blue-200';
+            statusText = 'In Progress';
+        } else if (status === 'planned' || status === 'pending') {
+            statusClass = 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+            statusText = 'Planned';
+        } else if (status === 'delayed') {
+            statusClass = 'bg-red-100 text-red-800 border border-red-200';
+            statusText = 'Delayed';
+        }
+        
+        statusBadge.className = `px-4 py-2 rounded-full text-sm font-semibold ${statusClass}`;
+        statusBadge.textContent = statusText;
+        
+        // Zone badge
+        const zoneBadge = document.getElementById('modal-zone-badge');
+        if (project.zone_type) {
+            zoneBadge.textContent = `Zone: ${project.zone_type}`;
+            zoneBadge.classList.remove('hidden');
+        } else {
+            zoneBadge.classList.add('hidden');
+        }
+        
+        // Project details
+        document.getElementById('modal-prn').textContent = project.prn || 'N/A';
+        document.getElementById('modal-barangay-text').textContent = project.barangay || 'N/A';
+        document.getElementById('modal-zone-type').textContent = project.zone_type || 'N/A';
+        
+        // Dates
+        const startDate = project.start_date ? new Date(project.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+        const endDate = project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+        document.getElementById('modal-start-date-text').textContent = startDate;
+        document.getElementById('modal-end-date-text').textContent = endDate;
+        
+        // Cost and funds
+        const cost = project.project_cost ? parseFloat(project.project_cost).toLocaleString('en-US', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }) : 'N/A';
+        document.getElementById('modal-cost').textContent = cost;
+        document.getElementById('modal-funds').textContent = project.source_of_funds || 'N/A';
+        
+        // Description
+        document.getElementById('modal-description').textContent = project.description || 'No description available';
+        
+        // Progress
+        const progressSection = document.getElementById('modal-progress-section');
+        if (status === 'ongoing' || status === 'in_progress' || displayProgress > 0) {
+            progressSection.classList.remove('hidden');
+            document.getElementById('modal-progress-percent').textContent = `${displayProgress}%`;
+            document.getElementById('modal-progress-bar').style.width = `${displayProgress}%`;
+        } else {
+            progressSection.classList.add('hidden');
+        }
+        
+        // Coordinates
+        document.getElementById('modal-latitude').textContent = project.latitude || 'N/A';
+        document.getElementById('modal-longitude').textContent = project.longitude || 'N/A';
+        
+        // Image
+        const imageContainer = document.getElementById('modal-image-container');
+        const image = document.getElementById('modal-project-image');
+        if (project.image) {
+            image.src = project.image;
+            imageContainer.classList.remove('hidden');
+        } else {
+            imageContainer.classList.add('hidden');
+        }
+        
+        // View details link
+        document.getElementById('modal-view-details-link').href = `/projeng/projects/${project.id}/detail/`;
+    }
+    
+    function closeProjectModal() {
+        const modal = document.getElementById('projectDetailsModal');
+        modal.classList.add('hidden');
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('projectDetailsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeProjectModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeProjectModal();
+        }
+    });
 
     function removeOldMarkers(currentProjectIds) {
         Object.keys(projectMarkers).forEach(function(id) {
             if (!currentProjectIds.includes(parseInt(id))) {
                 mymap.removeLayer(projectMarkers[id]);
                 delete projectMarkers[id];
+                delete projectDataStore[id]; // Clean up stored data
             }
         });
     }
@@ -288,4 +596,46 @@
     // Refresh every 10 seconds
     setInterval(fetchAndUpdateProjects, 10000);
 </script>
+
+<style>
+    /* Custom popup styling */
+    .custom-popup .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .custom-popup .leaflet-popup-content {
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Custom marker icon styling */
+    .custom-marker-icon {
+        background: transparent !important;
+        border: none !important;
+    }
+    
+    /* Line clamp utility */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    /* Modal animations */
+    #projectDetailsModal {
+        transition: opacity 0.3s ease;
+    }
+    
+    #projectDetailsModal.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    #projectDetailsModal:not(.hidden) {
+        opacity: 1;
+        pointer-events: auto;
+    }
+</style>
 {% endblock %} 

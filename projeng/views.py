@@ -1972,14 +1972,21 @@ def export_reports_pdf(request):
     # If there were errors, return an error message
     return HttpResponse('We had some errors <pre>' + html + '</pre>', content_type='text/plain') 
 
-@user_passes_test(is_project_engineer, login_url='/accounts/login/')
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 @require_GET
 def map_projects_api(request):
-    all_projects = Project.objects.filter(
-        assigned_engineers=request.user,
-        latitude__isnull=False,
-        longitude__isnull=False
-    )
+    # Role-based queryset
+    if is_head_engineer(request.user):
+        all_projects = Project.objects.filter(
+            latitude__isnull=False,
+            longitude__isnull=False
+        )
+    else:
+        all_projects = Project.objects.filter(
+            assigned_engineers=request.user,
+            latitude__isnull=False,
+            longitude__isnull=False
+        )
     projects_with_coords = [p for p in all_projects if p.latitude != '' and p.longitude != '']
     projects_data = []
     for p in projects_with_coords:
