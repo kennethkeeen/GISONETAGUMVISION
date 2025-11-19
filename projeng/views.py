@@ -1975,6 +1975,9 @@ def export_reports_pdf(request):
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 @require_GET
 def map_projects_api(request):
+    from django.db.models import Max
+    from django.utils import timezone
+    
     # Role-based queryset
     if is_head_engineer(request.user):
         all_projects = Project.objects.filter(
@@ -1988,17 +1991,58 @@ def map_projects_api(request):
             longitude__isnull=False
         )
     projects_with_coords = [p for p in all_projects if p.latitude != '' and p.longitude != '']
+    
+    # Get project IDs for batch progress queries
+    project_ids = [p.id for p in projects_with_coords]
+    latest_progress_percent = {}
+    
+    if project_ids:
+        # Get latest progress for delay calculation
+        latest_progress_qs = ProjectProgress.objects.filter(
+            project_id__in=project_ids
+        ).values('project_id').annotate(
+            max_date=Max('date'),
+            max_created=Max('created_at')
+        )
+        for item in latest_progress_qs:
+            latest = ProjectProgress.objects.filter(
+                project_id=item['project_id'],
+                date=item['max_date'],
+                created_at=item['max_created']
+            ).order_by('-created_at').first()
+            if latest and latest.percentage_complete is not None:
+                latest_progress_percent[item['project_id']] = int(latest.percentage_complete)
+    
+    # Calculate status dynamically (including delayed)
+    today = timezone.now().date()
     projects_data = []
     for p in projects_with_coords:
-        latest_progress = ProjectProgress.objects.filter(project=p).order_by('-date').first()
-        progress = int(latest_progress.percentage_complete) if latest_progress else 0
+        progress = latest_progress_percent.get(p.id, 0)
+        stored_status = p.status or ''
+        
+        # Calculate actual status dynamically (same logic as my_projects_view)
+        calculated_status = stored_status
+        if progress >= 99:
+            calculated_status = 'completed'
+        elif stored_status == 'delayed':
+            calculated_status = 'delayed'
+        elif progress < 99 and p.end_date and p.end_date < today and stored_status in ['in_progress', 'ongoing']:
+            calculated_status = 'delayed'
+        elif stored_status in ['in_progress', 'ongoing']:
+            calculated_status = 'in_progress'
+        elif stored_status in ['planned', 'pending']:
+            calculated_status = 'planned'
+        elif stored_status == 'completed':
+            calculated_status = 'completed'
+        
         projects_data.append({
             'id': p.id,
             'name': p.name,
             'latitude': float(p.latitude),
             'longitude': float(p.longitude),
             'barangay': p.barangay,
-            'status': p.status,
+            'status': p.status,  # Keep original status
+            'calculated_status': calculated_status,  # Add calculated status for filtering
             'description': p.description,
             'project_cost': str(p.project_cost) if p.project_cost is not None else "",
             'source_of_funds': p.source_of_funds,

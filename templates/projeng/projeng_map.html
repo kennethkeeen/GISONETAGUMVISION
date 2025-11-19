@@ -6,25 +6,37 @@
         <p class="text-gray-600 text-sm">View and manage your assigned projects on the map</p>
     </div>
     
-    <!-- Status Filter Buttons -->
+    <!-- Filters Section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-        <div class="flex flex-wrap gap-2 items-center">
-            <span class="text-sm font-semibold text-gray-700 mr-2">Filter by Status:</span>
-            <button type="button" id="filter-all" onclick="filterMarkersByStatus('')" class="filter-status-btn active px-3 py-2 rounded-lg font-semibold text-sm border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-all">
-                All
-            </button>
-            <button type="button" id="filter-planned" onclick="filterMarkersByStatus('planned')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all">
-                Planned
-            </button>
-            <button type="button" id="filter-in-progress" onclick="filterMarkersByStatus('in_progress')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all">
-                In Progress
-            </button>
-            <button type="button" id="filter-completed" onclick="filterMarkersByStatus('completed')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 transition-all">
-                Completed
-            </button>
-            <button type="button" id="filter-delayed" onclick="filterMarkersByStatus('delayed')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 transition-all">
-                Delayed
-            </button>
+        <div class="flex flex-col lg:flex-row gap-4">
+            <!-- Status Filter Buttons -->
+            <div class="flex flex-wrap gap-2 items-center flex-1">
+                <span class="text-sm font-semibold text-gray-700 mr-2">Filter by Status:</span>
+                <button type="button" id="filter-all" onclick="filterMarkersByStatus('')" class="filter-status-btn active px-3 py-2 rounded-lg font-semibold text-sm border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-all">
+                    All
+                </button>
+                <button type="button" id="filter-planned" onclick="filterMarkersByStatus('planned')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all">
+                    Planned
+                </button>
+                <button type="button" id="filter-in-progress" onclick="filterMarkersByStatus('in_progress')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all">
+                    In Progress
+                </button>
+                <button type="button" id="filter-completed" onclick="filterMarkersByStatus('completed')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 transition-all">
+                    Completed
+                </button>
+                <button type="button" id="filter-delayed" onclick="filterMarkersByStatus('delayed')" class="filter-status-btn px-3 py-2 rounded-lg font-semibold text-sm border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 transition-all">
+                    Delayed
+                </button>
+            </div>
+            
+            <!-- Barangay Filter -->
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-gray-700">Filter by Barangay:</span>
+                <select id="barangay-filter" onchange="filterMarkersByBarangay(this.value)" class="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-w-[180px]">
+                    <option value="">All Barangays</option>
+                    <!-- Barangays will be populated dynamically -->
+                </select>
+            </div>
         </div>
     </div>
     
@@ -376,6 +388,7 @@
     var projectMarkers = {};
     var projectDataStore = {}; // Store project data for modal access
     var currentStatusFilter = ''; // Current status filter
+    var currentBarangayFilter = ''; // Current barangay filter
 
     // Create custom icon based on status
     function createStatusIcon(status) {
@@ -399,7 +412,8 @@
         
         const progress = parseFloat(project.progress);
         const displayProgress = !isNaN(progress) && progress >= 0 && progress <= 100 ? progress : 0;
-        const status = project.status || '';
+        // Use calculated_status if available, otherwise fall back to status
+        const status = project.calculated_status || project.status || '';
         
         var popupContent = `
             <div class="p-3" style="min-width: 250px; max-width: 300px;">
@@ -494,7 +508,6 @@
     }
     
     function populateModal(project) {
-        const status = project.status || '';
         const progress = parseFloat(project.progress) || 0;
         const displayProgress = !isNaN(progress) && progress >= 0 && progress <= 100 ? progress : 0;
         
@@ -502,8 +515,9 @@
         document.getElementById('modal-project-name').textContent = project.name || 'Unnamed Project';
         document.getElementById('modal-name').textContent = project.name || 'N/A';
         
-        // Status badge
+        // Status badge - use calculated_status if available
         const statusBadge = document.getElementById('modal-status-badge');
+        const status = project.calculated_status || project.status || '';
         let statusClass = 'bg-gray-100 text-gray-800';
         let statusText = 'Unknown';
         
@@ -609,6 +623,45 @@
         });
     }
     
+    // Apply both status and barangay filters
+    function applyFilters() {
+        Object.keys(projectMarkers).forEach(function(id) {
+            const project = projectDataStore[id];
+            if (!project) return;
+            
+            // Use calculated_status for filtering (especially for delayed)
+            const projectStatus = project.calculated_status || project.status || '';
+            const projectBarangay = (project.barangay || '').trim();
+            
+            // Status filter
+            let statusMatch = true;
+            if (currentStatusFilter === '') {
+                statusMatch = true; // Show all
+            } else if (currentStatusFilter === 'in_progress') {
+                statusMatch = projectStatus === 'in_progress' || projectStatus === 'ongoing';
+            } else {
+                statusMatch = projectStatus === currentStatusFilter;
+            }
+            
+            // Barangay filter
+            let barangayMatch = true;
+            if (currentBarangayFilter) {
+                barangayMatch = projectBarangay.toLowerCase() === currentBarangayFilter.toLowerCase();
+            }
+            
+            // Show/hide marker based on both filters
+            if (statusMatch && barangayMatch) {
+                if (!mymap.hasLayer(projectMarkers[id])) {
+                    projectMarkers[id].addTo(mymap);
+                }
+            } else {
+                if (mymap.hasLayer(projectMarkers[id])) {
+                    mymap.removeLayer(projectMarkers[id]);
+                }
+            }
+        });
+    }
+    
     // Filter markers by status
     function filterMarkersByStatus(status) {
         currentStatusFilter = status;
@@ -663,40 +716,59 @@
             }
         }
         
-        // Show/hide markers based on status
-        Object.keys(projectMarkers).forEach(function(id) {
-            const project = projectDataStore[id];
-            if (!project) return;
-            
-            const projectStatus = project.status || '';
-            let shouldShow = true;
-            
-            if (status === '') {
-                shouldShow = true; // Show all
-            } else if (status === 'in_progress') {
-                shouldShow = projectStatus === 'in_progress' || projectStatus === 'ongoing';
-            } else {
-                shouldShow = projectStatus === status;
-            }
-            
-            if (shouldShow) {
-                if (!mymap.hasLayer(projectMarkers[id])) {
-                    projectMarkers[id].addTo(mymap);
-                }
-            } else {
-                if (mymap.hasLayer(projectMarkers[id])) {
-                    mymap.removeLayer(projectMarkers[id]);
-                }
-            }
-        });
+        // Apply filters
+        applyFilters();
+    }
+    
+    // Filter markers by barangay
+    function filterMarkersByBarangay(barangay) {
+        currentBarangayFilter = barangay;
+        applyFilters();
     }
 
+    function populateBarangayFilter(projects) {
+        // Get unique barangays from projects
+        const barangays = new Set();
+        projects.forEach(function(project) {
+            if (project.barangay && project.barangay.trim()) {
+                barangays.add(project.barangay.trim());
+            }
+        });
+        
+        // Sort barangays alphabetically
+        const sortedBarangays = Array.from(barangays).sort();
+        
+        // Get the select element
+        const select = document.getElementById('barangay-filter');
+        const currentValue = select.value;
+        
+        // Clear existing options except "All Barangays"
+        select.innerHTML = '<option value="">All Barangays</option>';
+        
+        // Add barangay options
+        sortedBarangays.forEach(function(barangay) {
+            const option = document.createElement('option');
+            option.value = barangay;
+            option.textContent = barangay;
+            select.appendChild(option);
+        });
+        
+        // Restore previous selection if it still exists
+        if (currentValue) {
+            select.value = currentValue;
+        }
+    }
+    
     function fetchAndUpdateProjects() {
         fetch('/projeng/map/api/projects/')
             .then(response => response.json())
             .then(data => {
                 var projects = data.projects || [];
                 var currentIds = [];
+                
+                // Populate barangay filter with available barangays
+                populateBarangayFilter(projects);
+                
                 projects.forEach(function(project) {
                     if (project.latitude && project.longitude) {
                         createOrUpdateMarker(project);
@@ -705,10 +777,8 @@
                 });
                 removeOldMarkers(currentIds);
                 
-                // Apply current filter after updating markers
-                if (currentStatusFilter !== '') {
-                    filterMarkersByStatus(currentStatusFilter);
-                }
+                // Apply current filters after updating markers
+                applyFilters();
             });
     }
 
