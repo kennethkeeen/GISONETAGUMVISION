@@ -1127,28 +1127,33 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             statusFilter = status.toLowerCase();
         }
-        // Reset all button styles
-        btnCompleted.classList.remove('bg-green-600', 'text-white');
-        btnOngoing.classList.remove('bg-blue-600', 'text-white');
-        btnPlanned.classList.remove('bg-yellow-600', 'text-white');
-        btnDelayed.classList.remove('bg-red-600', 'text-white');
+        
+        // Reset all buttons to inactive state
+        // Remove all active styles
+        btnCompleted.classList.remove('bg-green-100', 'text-green-800', 'border-green-400', 'bg-green-600', 'text-white', 'border-green-600');
+        btnOngoing.classList.remove('bg-blue-100', 'text-blue-800', 'border-blue-400', 'bg-blue-600', 'text-white', 'border-blue-600');
+        btnPlanned.classList.remove('bg-yellow-100', 'text-yellow-800', 'border-yellow-400', 'bg-yellow-600', 'text-white', 'border-yellow-600');
+        btnDelayed.classList.remove('bg-red-100', 'text-red-800', 'border-red-400', 'bg-red-600', 'text-white', 'border-red-600');
+        
+        // Set all buttons to default inactive styles
         btnCompleted.classList.add('bg-green-50', 'text-green-700', 'border-green-200');
         btnOngoing.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
         btnPlanned.classList.add('bg-yellow-50', 'text-yellow-700', 'border-yellow-200');
         btnDelayed.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
-        // Highlight active
+        
+        // Highlight active button with darker shade
         if (statusFilter === 'completed') {
-            btnCompleted.classList.add('bg-green-600', 'text-white', 'border-green-600');
             btnCompleted.classList.remove('bg-green-50', 'text-green-700', 'border-green-200');
+            btnCompleted.classList.add('bg-green-100', 'text-green-800', 'border-green-400');
         } else if (statusFilter === 'ongoing') {
-            btnOngoing.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
             btnOngoing.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
+            btnOngoing.classList.add('bg-blue-100', 'text-blue-800', 'border-blue-400');
         } else if (statusFilter === 'planned') {
-            btnPlanned.classList.add('bg-yellow-600', 'text-white', 'border-yellow-600');
             btnPlanned.classList.remove('bg-yellow-50', 'text-yellow-700', 'border-yellow-200');
+            btnPlanned.classList.add('bg-yellow-100', 'text-yellow-800', 'border-yellow-400');
         } else if (statusFilter === 'delayed') {
-            btnDelayed.classList.add('bg-red-600', 'text-white', 'border-red-600');
             btnDelayed.classList.remove('bg-red-50', 'text-red-700', 'border-red-200');
+            btnDelayed.classList.add('bg-red-100', 'text-red-800', 'border-red-400');
         }
         
         // Always render markers (combined view)

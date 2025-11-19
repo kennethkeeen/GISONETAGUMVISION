@@ -97,49 +97,58 @@ window.updateActiveFilter = function(activeStatus) {
         'delayed': filterDelayed
     };
     
+    // First, reset all buttons to inactive state
     Object.keys(statusFilters).forEach(status => {
         const btn = statusFilters[status];
         if (!btn) return;
-        if (status === activeStatus) {
-            btn.classList.add('active');
-            // Update button styles based on status
-            if (status === '') {
-                btn.classList.remove('bg-gray-50', 'text-gray-700', 'border-gray-300');
-                btn.classList.add('bg-gray-100', 'text-gray-900', 'border-gray-400');
-            } else if (status === 'in_progress') {
-                btn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-300');
-                btn.classList.add('bg-blue-100', 'text-blue-800', 'border-blue-400');
-            } else if (status === 'planned') {
-                btn.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-300');
-                btn.classList.add('bg-amber-100', 'text-amber-800', 'border-amber-400');
-            } else if (status === 'completed') {
-                btn.classList.remove('bg-green-50', 'text-green-700', 'border-green-300');
-                btn.classList.add('bg-green-100', 'text-green-800', 'border-green-400');
-            } else if (status === 'delayed') {
-                btn.classList.remove('bg-red-50', 'text-red-700', 'border-red-300');
-                btn.classList.add('bg-red-100', 'text-red-800', 'border-red-400');
-            }
-        } else {
-            btn.classList.remove('active');
-            // Reset button styles
-            if (status === '') {
-                btn.classList.remove('bg-gray-100', 'text-gray-900', 'border-gray-400');
-                btn.classList.add('bg-gray-50', 'text-gray-700', 'border-gray-300');
-            } else if (status === 'in_progress') {
-                btn.classList.remove('bg-blue-100', 'text-blue-800', 'border-blue-400');
-                btn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-300');
-            } else if (status === 'planned') {
-                btn.classList.remove('bg-amber-100', 'text-amber-800', 'border-amber-400');
-                btn.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-300');
-            } else if (status === 'completed') {
-                btn.classList.remove('bg-green-100', 'text-green-800', 'border-green-400');
-                btn.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
-            } else if (status === 'delayed') {
-                btn.classList.remove('bg-red-100', 'text-red-800', 'border-red-400');
-                btn.classList.add('bg-red-50', 'text-red-700', 'border-red-300');
-            }
+        
+        // Remove active class and all possible active styles
+        btn.classList.remove('active');
+        btn.classList.remove('bg-gray-100', 'text-gray-900', 'border-gray-400');
+        btn.classList.remove('bg-blue-100', 'text-blue-800', 'border-blue-400');
+        btn.classList.remove('bg-amber-100', 'text-amber-800', 'border-amber-400');
+        btn.classList.remove('bg-green-100', 'text-green-800', 'border-green-400');
+        btn.classList.remove('bg-red-100', 'text-red-800', 'border-red-400');
+        
+        // Reset to default inactive styles based on button type
+        if (status === '') {
+            btn.classList.add('bg-gray-50', 'text-gray-700', 'border-gray-300');
+        } else if (status === 'in_progress') {
+            btn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-300');
+        } else if (status === 'planned') {
+            btn.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-300');
+        } else if (status === 'completed') {
+            btn.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
+        } else if (status === 'delayed') {
+            btn.classList.add('bg-red-50', 'text-red-700', 'border-red-300');
         }
     });
+    
+    // Then, set the active button
+    const activeBtn = statusFilters[activeStatus];
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        
+        // Remove all default styles first
+        activeBtn.classList.remove('bg-gray-50', 'text-gray-700', 'border-gray-300');
+        activeBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-300');
+        activeBtn.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-300');
+        activeBtn.classList.remove('bg-green-50', 'text-green-700', 'border-green-300');
+        activeBtn.classList.remove('bg-red-50', 'text-red-700', 'border-red-300');
+        
+        // Add active styles based on status
+        if (activeStatus === '') {
+            activeBtn.classList.add('bg-gray-100', 'text-gray-900', 'border-gray-400');
+        } else if (activeStatus === 'in_progress') {
+            activeBtn.classList.add('bg-blue-100', 'text-blue-800', 'border-blue-400');
+        } else if (activeStatus === 'planned') {
+            activeBtn.classList.add('bg-amber-100', 'text-amber-800', 'border-amber-400');
+        } else if (activeStatus === 'completed') {
+            activeBtn.classList.add('bg-green-100', 'text-green-800', 'border-green-400');
+        } else if (activeStatus === 'delayed') {
+            activeBtn.classList.add('bg-red-100', 'text-red-800', 'border-red-400');
+        }
+    }
 };
 
 // Define global functions IMMEDIATELY so inline handlers can use them
@@ -836,6 +845,11 @@ function escapeHtml(text) {
         
         // Setup event listeners first
         setupEventListeners();
+        
+        // Set initial active filter state (All is selected by default)
+        if (typeof window.updateActiveFilter === 'function') {
+            window.updateActiveFilter(window.currentStatusFilter || '');
+        }
         
         // Initialize filters - ensure all projects are visible initially
         filterProjects();
