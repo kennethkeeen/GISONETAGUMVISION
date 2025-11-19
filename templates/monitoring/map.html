@@ -384,9 +384,19 @@ window.hidePopupMap = function() {
                         <div class="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">ℹ️</div>
                         <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wide">Project Info</h3>
                     </div>
-                    <div class="bg-white rounded-lg p-2 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase mb-1">Description</div>
-                        <div class="text-xs font-medium text-gray-800" id="details-description">No description</div>
+                    <div class="space-y-2">
+                        <div class="bg-white rounded-lg p-2 shadow-sm">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Description</div>
+                            <div class="text-xs font-medium text-gray-800" id="details-description">No description</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-2 shadow-sm">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Date Started</div>
+                            <div class="text-xs font-medium text-gray-800" id="details-start-date">—</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-2 shadow-sm">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Date Ended</div>
+                            <div class="text-xs font-medium text-gray-800" id="details-end-date">—</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1385,8 +1395,23 @@ window.openDetailsModal = function(id) {
         if (detailsDescription) detailsDescription.textContent = project.description || 'No description';
         if (detailsLatitude) detailsLatitude.textContent = project.latitude || '';
         if (detailsLongitude) detailsLongitude.textContent = project.longitude || '';
-        if (detailsStartDate) detailsStartDate.textContent = project.start_date || '';
-        if (detailsEndDate) detailsEndDate.textContent = project.end_date || '';
+        // Format dates for display
+        if (detailsStartDate) {
+            if (project.start_date) {
+                const startDate = new Date(project.start_date);
+                detailsStartDate.textContent = isNaN(startDate.getTime()) ? project.start_date : startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } else {
+                detailsStartDate.textContent = '—';
+            }
+        }
+        if (detailsEndDate) {
+            if (project.end_date) {
+                const endDate = new Date(project.end_date);
+                detailsEndDate.textContent = isNaN(endDate.getTime()) ? project.end_date : endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } else {
+                detailsEndDate.textContent = '—';
+            }
+        }
 
         // Display assigned engineers
         if (assignedEngineersElement) {
