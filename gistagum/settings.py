@@ -288,7 +288,7 @@ if SPACES_CONFIGURED:
     # Set MEDIA_ROOT to empty since we're using Spaces
     MEDIA_ROOT = ''
     
-    print("✅ DigitalOcean Spaces configured for media storage")
+    print("DigitalOcean Spaces configured for media storage")
     print(f"   Bucket: {AWS_STORAGE_BUCKET_NAME}")
     print(f"   Region: {AWS_S3_REGION_NAME}")
     print(f"   Endpoint: {AWS_S3_ENDPOINT_URL}")
@@ -299,7 +299,7 @@ else:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
     
     if USE_SPACES:
-        print("⚠️  WARNING: USE_SPACES is enabled but Spaces credentials are missing. Using local storage.")
+        print("WARNING: USE_SPACES is enabled but Spaces credentials are missing. Using local storage.")
     else:
         print("INFO: Using local file storage for media files")
 
@@ -355,21 +355,21 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no
 EMAIL_CREDENTIALS_CONFIGURED = all([EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD])
 
 # Debug email configuration
-print(f"📧 Email Configuration Check:")
-print(f"   EMAIL_HOST: {'✅ Set' if EMAIL_HOST else '❌ Missing'}")
-print(f"   EMAIL_HOST_USER: {'✅ Set' if EMAIL_HOST_USER else '❌ Missing'}")
-print(f"   EMAIL_HOST_PASSWORD: {'✅ Set' if EMAIL_HOST_PASSWORD else '❌ Missing'}")
+print(f"Email Configuration Check:")
+print(f"   EMAIL_HOST: {'Set' if EMAIL_HOST else 'Missing'}")
+print(f"   EMAIL_HOST_USER: {'Set' if EMAIL_HOST_USER else 'Missing'}")
+print(f"   EMAIL_HOST_PASSWORD: {'Set' if EMAIL_HOST_PASSWORD else 'Missing'}")
 print(f"   EMAIL_PORT: {EMAIL_PORT}")
 print(f"   EMAIL_USE_TLS: {EMAIL_USE_TLS}")
 
 if EMAIL_CREDENTIALS_CONFIGURED:
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-    print(f"   ✅ Using SMTP backend: {EMAIL_BACKEND}")
-    print(f"   📤 SMTP Server: {EMAIL_HOST}:{EMAIL_PORT}")
+    print(f"   Using SMTP backend: {EMAIL_BACKEND}")
+    print(f"   SMTP Server: {EMAIL_HOST}:{EMAIL_PORT}")
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    print(f"   ⚠️  Email credentials not fully configured; using console email backend.")
-    print(f"   📝 Password reset emails will appear in server logs (not sent via SMTP).")
+    print(f"   WARNING: Email credentials not fully configured; using console email backend.")
+    print(f"   Password reset emails will appear in server logs (not sent via SMTP).")
     if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
         import logging
         logger = logging.getLogger(__name__)

@@ -66,17 +66,17 @@ class Command(BaseCommand):
         ).exclude(zone_type='')
         
         total_projects = projects_with_zones.count()
-        self.stdout.write(f'\n📊 Found {total_projects} projects with zone types')
+        self.stdout.write(f'\nFound {total_projects} projects with zone types')
         
         if total_projects == 0:
-            self.stdout.write(self.style.WARNING('⚠ No projects with zone types found!'))
+            self.stdout.write(self.style.WARNING('No projects with zone types found!'))
             return
         
         # Export 1: Raw Project Data (CSV) - For running algorithm in Colab
         if export_format in ['both', 'csv']:
             csv_filename = os.path.join(output_dir, f'projects_zone_data_{timestamp}.csv')
             
-            self.stdout.write(f'\n📝 Exporting raw project data to CSV...')
+            self.stdout.write(f'\nExporting raw project data to CSV...')
             
             with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
                 fieldnames = ['id', 'name', 'zone_type', 'status', 'project_cost', 
@@ -97,14 +97,14 @@ class Command(BaseCommand):
                         'created_at': project.created_at.isoformat() if project.created_at else ''
                     })
             
-            self.stdout.write(self.style.SUCCESS(f'✅ CSV exported: {csv_filename}'))
+            self.stdout.write(self.style.SUCCESS(f'CSV exported: {csv_filename}'))
             self.stdout.write(f'   Contains {total_projects} projects')
         
         # Export 2: Aggregated Zone Analytics (JSON) - Matching API response
         if export_format in ['both', 'json']:
             json_filename = os.path.join(output_dir, f'zone_analytics_{timestamp}.json')
             
-            self.stdout.write(f'\n📊 Calculating zone analytics...')
+            self.stdout.write(f'\nCalculating zone analytics...')
             
             # Aggregate by zone_type (same algorithm as API)
             zone_stats = projects_with_zones.values('zone_type').annotate(
@@ -140,11 +140,11 @@ class Command(BaseCommand):
             with open(json_filename, 'w', encoding='utf-8') as jsonfile:
                 json.dump(output, jsonfile, indent=2, ensure_ascii=False)
             
-            self.stdout.write(self.style.SUCCESS(f'✅ JSON exported: {json_filename}'))
+            self.stdout.write(self.style.SUCCESS(f'JSON exported: {json_filename}'))
             self.stdout.write(f'   Contains {len(zones)} zone types')
             
             # Display summary
-            self.stdout.write(f'\n📈 Zone Distribution Summary:')
+            self.stdout.write(f'\nZone Distribution Summary:')
             for zone in zones:
                 self.stdout.write(f'   {zone["zone_type"]:8} ({zone["display_name"]:30}): {zone["total_projects"]:3} projects')
         
@@ -168,13 +168,13 @@ class Command(BaseCommand):
                     summary_file.write(f'Planned: {zone["planned"]:2} | ')
                     summary_file.write(f'Delayed: {zone["delayed"]:2}\n')
         
-        self.stdout.write(self.style.SUCCESS(f'\n✅ Summary exported: {summary_filename}'))
+        self.stdout.write(self.style.SUCCESS(f'\nSummary exported: {summary_filename}'))
         
         self.stdout.write(self.style.SUCCESS('\n' + '=' * 70))
         self.stdout.write(self.style.SUCCESS('EXPORT COMPLETE!'))
         self.stdout.write(self.style.SUCCESS('=' * 70))
-        self.stdout.write(f'\n📁 Files saved in: {os.path.abspath(output_dir)}')
-        self.stdout.write(f'\n💡 Next steps:')
+        self.stdout.write(f'\nFiles saved in: {os.path.abspath(output_dir)}')
+        self.stdout.write(f'\nNext steps:')
         self.stdout.write(f'   1. Upload the CSV file to Google Colab')
         self.stdout.write(f'   2. Use the JSON file to verify results')
         self.stdout.write(f'   3. Run the algorithm in Colab with your real data!')

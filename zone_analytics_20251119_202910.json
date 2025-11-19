@@ -1,0 +1,76 @@
+{
+  "export_date": "2025-11-19T20:29:10.153007",
+  "total_projects": 132,
+  "zones": [
+    {
+      "zone_type": "AGRO",
+      "display_name": "Agro-Industrial",
+      "total_projects": 60,
+      "completed": 21,
+      "in_progress": 16,
+      "planned": 10,
+      "delayed": 13,
+      "total_cost": 318322385.0
+    },
+    {
+      "zone_type": "C-1",
+      "display_name": "Major Commercial",
+      "total_projects": 35,
+      "completed": 9,
+      "in_progress": 12,
+      "planned": 10,
+      "delayed": 4,
+      "total_cost": 180584962.0
+    },
+    {
+      "zone_type": "C-2",
+      "display_name": "Minor Commercial",
+      "total_projects": 19,
+      "completed": 6,
+      "in_progress": 5,
+      "planned": 2,
+      "delayed": 6,
+      "total_cost": 91166219.0
+    },
+    {
+      "zone_type": "I-1",
+      "display_name": "Heavy Industrial",
+      "total_projects": 1,
+      "completed": 0,
+      "in_progress": 0,
+      "planned": 0,
+      "delayed": 1,
+      "total_cost": 1000000.0
+    },
+    {
+      "zone_type": "R-1",
+      "display_name": "Low Density Residential",
+      "total_projects": 9,
+      "completed": 3,
+      "in_progress": 2,
+      "planned": 2,
+      "delayed": 2,
+      "total_cost": 27177352.0
+    },
+    {
+      "zone_type": "R-2",
+      "display_name": "Medium Density Residential",
+      "total_projects": 7,
+      "completed": 1,
+      "in_progress": 4,
+      "planned": 0,
+      "delayed": 2,
+      "total_cost": 42303182.0
+    },
+    {
+      "zone_type": "R-3",
+      "display_name": "High Density Residential",
+      "total_projects": 1,
+      "completed": 1,
+      "in_progress": 0,
+      "planned": 0,
+      "delayed": 0,
+      "total_cost": 5020000.0
+    }
+  ]
+}

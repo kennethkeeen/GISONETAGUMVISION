@@ -1,0 +1,16 @@
+======================================================================
+ZONE ANALYTICS DATA EXPORT SUMMARY
+======================================================================
+
+Export Date: 2025-11-19 19:06:09
+Total Projects: 99
+
+Zone Distribution:
+----------------------------------------------------------------------
+AGRO     | Agro-Industrial                | Total:  52 | Completed: 19 | In Progress: 13 | Planned:  9 | Delayed: 11
+C-1      | Major Commercial               | Total:  32 | Completed:  7 | In Progress: 12 | Planned:  9 | Delayed:  4
+C-2      | Minor Commercial               | Total:  10 | Completed:  5 | In Progress:  2 | Planned:  1 | Delayed:  2
+I-1      | Heavy Industrial               | Total:   1 | Completed:  0 | In Progress:  0 | Planned:  0 | Delayed:  1
+R-1      | Low Density Residential        | Total:   2 | Completed:  0 | In Progress:  1 | Planned:  1 | Delayed:  0
+R-2      | Medium Density Residential     | Total:   1 | Completed:  0 | In Progress:  0 | Planned:  0 | Delayed:  1
+R-3      | High Density Residential       | Total:   1 | Completed:  1 | In Progress:  0 | Planned:  0 | Delayed:  0
