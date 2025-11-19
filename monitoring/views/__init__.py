@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from .finance_manager import finance_dashboard, finance_projects, finance_cost_management, finance_notifications
 from .engineer_management import (
     engineer_list, engineer_create, engineer_detail,
@@ -820,23 +821,35 @@ def map_view(request):
         return HttpResponseServerError('An error occurred while loading the map view.')
 
 @login_required
+@csrf_exempt
 def overall_project_metrics_api(request):
     """API endpoint to fetch overall project metrics - accessible to all authenticated users"""
     try:
         from projeng.models import Project, ProjectProgress
         from django.db.models import Max
         from django.utils import timezone
+        import logging
+        
+        logger = logging.getLogger(__name__)
         
         # Role-based queryset - get ALL projects (not just those with coordinates)
         if is_head_engineer(request.user) or is_finance_manager(request.user):
-            projects = Project.objects.all()
+            projects_qs = Project.objects.all()
+            logger.info(f'User {request.user.username} is head engineer or finance manager, fetching all projects')
         elif is_project_engineer(request.user):
-            projects = Project.objects.filter(assigned_engineers=request.user)
+            projects_qs = Project.objects.filter(assigned_engineers=request.user)
+            logger.info(f'User {request.user.username} is project engineer, fetching assigned projects')
         else:
-            projects = Project.objects.none()
+            projects_qs = Project.objects.none()
+            logger.warning(f'User {request.user.username} has no recognized role, returning empty queryset')
+        
+        # Convert queryset to list to ensure consistent evaluation
+        projects_list = list(projects_qs)
+        project_count = len(projects_list)
+        logger.info(f'Found {project_count} projects for user {request.user.username}')
         
         # Get latest progress for all projects
-        project_ids = [p.id for p in projects]
+        project_ids = [p.id for p in projects_list]
         latest_progress = {}
         if project_ids:
             latest_progress_qs = ProjectProgress.objects.filter(
@@ -862,10 +875,10 @@ def overall_project_metrics_api(request):
         planned_count = 0
         delayed_count = 0
         
-        for p in projects:
+        for p in projects_list:
             total_projects += 1
             progress = latest_progress.get(p.id, 0)
-            stored_status = p.status or ''
+            stored_status = (p.status or '').lower().strip()
             
             # Calculate actual status dynamically
             # Priority: completed > delayed > in_progress > planned
@@ -880,26 +893,35 @@ def overall_project_metrics_api(request):
                 in_progress_count += 1
             elif stored_status in ['planned', 'pending']:
                 planned_count += 1
+            else:
+                # If status doesn't match any category, default to planned or log it
+                logger.warning(f'Project {p.id} ({p.name}) has unrecognized status: "{p.status}", defaulting to planned')
+                planned_count += 1
+        
+        metrics = {
+            'total_projects': total_projects,
+            'completed': completed_count,
+            'in_progress': in_progress_count,
+            'planned': planned_count,
+            'delayed': delayed_count
+        }
+        
+        logger.info(f'Metrics calculated for user {request.user.username}: {metrics}')
         
         return JsonResponse({
             'success': True,
-            'metrics': {
-                'total_projects': total_projects,
-                'completed': completed_count,
-                'in_progress': in_progress_count,
-                'planned': planned_count,
-                'delayed': delayed_count
-            }
+            'metrics': metrics
         })
     except Exception as e:
         import logging
+        import traceback
         logger = logging.getLogger(__name__)
-        logger.error(f'Error in overall_project_metrics_api: {str(e)}', exc_info=True)
+        error_trace = traceback.format_exc()
+        logger.error(f'Error in overall_project_metrics_api: {str(e)}\n{error_trace}')
         return JsonResponse({
             'success': False,
             'error': str(e)
         }, status=500)
-        return HttpResponseServerError(f'Server Error: {str(e)}')
 
 @login_required
 @prevent_project_engineer_access
