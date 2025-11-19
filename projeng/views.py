@@ -259,6 +259,7 @@ def dashboard(request):
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def my_projects_view(request):
     from django.db.models import Max
+    from django.utils import timezone
     
     # Build base queryset
     if is_head_engineer(request.user):
@@ -266,15 +267,14 @@ def my_projects_view(request):
     else:
         projects_queryset = Project.objects.filter(assigned_engineers=request.user)
     
-    delayed_count = projects_queryset.filter(status='delayed').count()
-    
     # Get all project IDs first for efficient querying
     project_ids = list(projects_queryset.values_list('id', flat=True))
     
-    # Initialize dictionaries for storing latest update times
+    # Initialize dictionaries for storing latest update times and progress
     progress_times = {}
     cost_times = {}
     document_times = {}
+    latest_progress_percent = {}
     
     # Only query if we have projects
     if project_ids:
@@ -282,8 +282,22 @@ def my_projects_view(request):
         latest_progress = ProjectProgress.objects.filter(
             project_id__in=project_ids
         ).values('project_id').annotate(
-            max_time=Max('created_at')
-        ).values_list('project_id', 'max_time')
+            max_time=Max('created_at'),
+            max_date=Max('date'),
+            max_created=Max('created_at')
+        )
+        
+        # Get latest progress percentage for delay calculation
+        for item in latest_progress:
+            latest = ProjectProgress.objects.filter(
+                project_id=item['project_id'],
+                date=item['max_date'],
+                created_at=item['max_created']
+            ).order_by('-created_at').first()
+            if latest:
+                progress_times[item['project_id']] = latest.created_at
+                if latest.percentage_complete is not None:
+                    latest_progress_percent[item['project_id']] = int(latest.percentage_complete)
         
         # Get latest cost times
         latest_costs = ProjectCost.objects.filter(
@@ -300,16 +314,43 @@ def my_projects_view(request):
         ).values_list('project_id', 'max_time')
         
         # Build dictionaries for quick lookup
-        progress_times = dict(latest_progress)
         cost_times = dict(latest_costs)
         document_times = dict(latest_documents)
     
     # Get projects with prefetch for efficient access
     projects = projects_queryset.select_related('created_by').prefetch_related('assigned_engineers')
     
-    # Calculate the most recent update time for each project
+    # Calculate status counts and delayed status dynamically
+    today = timezone.now().date()
+    delayed_count = 0
+    
+    # Calculate the most recent update time and status for each project
     projects_with_updates = []
     for project in projects:
+        # Get latest progress percentage
+        progress = latest_progress_percent.get(project.id, 0)
+        stored_status = project.status or ''
+        
+        # Calculate actual status dynamically (same logic as head engineer module)
+        calculated_status = stored_status
+        if progress >= 99:
+            calculated_status = 'completed'
+        elif stored_status == 'delayed':
+            calculated_status = 'delayed'
+            delayed_count += 1
+        elif progress < 99 and project.end_date and project.end_date < today and stored_status in ['in_progress', 'ongoing']:
+            calculated_status = 'delayed'
+            delayed_count += 1
+        elif stored_status in ['in_progress', 'ongoing']:
+            calculated_status = 'in_progress'
+        elif stored_status in ['planned', 'pending']:
+            calculated_status = 'planned'
+        elif stored_status == 'completed':
+            calculated_status = 'completed'
+        
+        # Store calculated status on project object for template filtering
+        project.calculated_status = calculated_status
+        
         # If project status is "planned", always show "None" for last update
         # Last update should only be shown when status is not "planned"
         if project.status == 'planned':
