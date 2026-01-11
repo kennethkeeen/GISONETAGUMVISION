@@ -36,9 +36,23 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'insecure-dev-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
-# Clean up ALLOWED_HOSTS - remove empty strings
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
+raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0')
+# Split by comma, trim, and normalize wildcard notation.
+# Django supports leading-dot notation for subdomains (e.g. ".ondigitalocean.app"),
+# but does NOT treat "*.example.com" specially. Many platforms/documentation use "*.",
+# so we normalize "*.example.com" -> ".example.com".
+ALLOWED_HOSTS = []
+for host in raw_allowed_hosts.split(','):
+    h = host.strip()
+    if not h:
+        continue
+    if h.startswith('*.') and len(h) > 2:
+        h = f".{h[2:]}"
+    ALLOWED_HOSTS.append(h)
+
+# De-duplicate while preserving order
+seen_hosts = set()
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if not (h in seen_hosts or seen_hosts.add(h))]
 
 # CSRF Trusted Origins - critical for multi-user access
 csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
@@ -466,6 +480,28 @@ if DEBUG:
             'django.db.backends': {
                 'level': 'DEBUG',
                 'handlers': ['console'],
+            },
+        },
+    }
+else:
+    # Minimal production logging. Ensure DisallowedHost shows up in runtime logs
+    # so host/ALLOWED_HOSTS issues are diagnosable in App Platform.
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {'class': 'logging.StreamHandler'},
+        },
+        'loggers': {
+            'django.security.DisallowedHost': {
+                'handlers': ['console'],
+                'level': 'WARNING',
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console'],
+                'level': 'WARNING',
+                'propagate': True,
             },
         },
     }
