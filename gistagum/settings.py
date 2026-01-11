@@ -36,7 +36,21 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'insecure-dev-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
 
-raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0')
+# NOTE:
+# DigitalOcean App Platform sometimes ends up not applying env vars the way you expect
+# (app-level vs component-level). To avoid downtime from DisallowedHost, we provide a
+# safe production fallback host list when ALLOWED_HOSTS is missing/empty.
+raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '').strip()
+if not raw_allowed_hosts:
+    # Prefer a configurable primary domain if provided.
+    primary_domain = os.environ.get('PRIMARY_DOMAIN', '').strip()
+    default_hosts = ['localhost', '127.0.0.1', '0.0.0.0', '.ondigitalocean.app']
+    if primary_domain:
+        default_hosts.extend([primary_domain, f'www.{primary_domain}'])
+    else:
+        # Project default domain (can still be overridden by ALLOWED_HOSTS env var)
+        default_hosts.extend(['onetagumvision.com', 'www.onetagumvision.com'])
+    raw_allowed_hosts = ','.join(default_hosts)
 # Split by comma, trim, and normalize wildcard notation.
 # Django supports leading-dot notation for subdomains (e.g. ".ondigitalocean.app"),
 # but does NOT treat "*.example.com" specially. Many platforms/documentation use "*.",
