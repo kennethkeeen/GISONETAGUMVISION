@@ -68,19 +68,46 @@ for host in raw_allowed_hosts.split(','):
 seen_hosts = set()
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if not (h in seen_hosts or seen_hosts.add(h))]
 
+# Production safety net:
+# Always allow the primary domain + www + DigitalOcean app subdomains in production,
+# even if env vars are misapplied (app-level vs component-level overrides).
+if not DEBUG:
+    primary_domain = os.environ.get('PRIMARY_DOMAIN', '').strip() or 'onetagumvision.com'
+    must_allow = [
+        primary_domain,
+        f'www.{primary_domain}',
+        '.ondigitalocean.app',
+    ]
+    for h in must_allow:
+        if h and h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h)
+
+# Print effective ALLOWED_HOSTS for easy debugging in App Platform logs (no secrets).
+print(f"Effective ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+
 # CSRF Trusted Origins - critical for multi-user access
 csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 if csrf_origins:
     CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
 else:
-    # Default: allow all origins from ALLOWED_HOSTS (for development)
-    # In production, set CSRF_TRUSTED_ORIGINS explicitly
-    CSRF_TRUSTED_ORIGINS = []
-    for host in ALLOWED_HOSTS:
-        if host and host not in ['localhost', '127.0.0.1', '0.0.0.0']:
-            # Add both http and https versions
-            CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
-            CSRF_TRUSTED_ORIGINS.append(f'http://{host}')
+    # Development: build from ALLOWED_HOSTS.
+    # Production: prefer explicit origins; provide a safe fallback for the primary domain.
+    if DEBUG:
+        CSRF_TRUSTED_ORIGINS = []
+        for host in ALLOWED_HOSTS:
+            if host and host not in ['localhost', '127.0.0.1', '0.0.0.0']:
+                # Skip leading-dot hosts (e.g. ".ondigitalocean.app") — not a valid origin.
+                if host.startswith('.'):
+                    continue
+                CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
+                CSRF_TRUSTED_ORIGINS.append(f'http://{host}')
+    else:
+        primary_domain = os.environ.get('PRIMARY_DOMAIN', '').strip() or 'onetagumvision.com'
+        CSRF_TRUSTED_ORIGINS = [
+            f'https://{primary_domain}',
+            f'https://www.{primary_domain}',
+            'https://*.ondigitalocean.app',
+        ]
 
 # Application definition
 INSTALLED_APPS = [
