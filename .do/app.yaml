@@ -41,10 +41,10 @@ services:
     value: "false"
   - key: ALLOWED_HOSTS
     scope: RUN_AND_BUILD_TIME
-    value: '*.ondigitalocean.app'
+    value: 'onetagumvision.com,www.onetagumvision.com,*.ondigitalocean.app'
   - key: CSRF_TRUSTED_ORIGINS
     scope: RUN_AND_BUILD_TIME
-    value: https://*.ondigitalocean.app
+    value: 'https://onetagumvision.com,https://www.onetagumvision.com,https://*.ondigitalocean.app'
   - key: DATABASE_URL
     scope: RUN_AND_BUILD_TIME
     value: ${gistagum-db.DATABASE_URL}
