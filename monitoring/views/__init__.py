@@ -2526,7 +2526,7 @@ def head_engineer_notifications(request):
 @head_engineer_required
 def export_project_comprehensive_pdf(request, pk):
     """Export comprehensive project report (Progress + Budget) as PDF"""
-    from projeng.models import Project, ProjectProgress, ProjectCost
+    from projeng.models import Project, ProjectProgress, ProjectCost, BudgetRequest
     from django.utils import timezone
     from datetime import timedelta
     
@@ -2563,6 +2563,15 @@ def export_project_comprehensive_pdf(request, pk):
     
     # Assigned engineers
     assigned_engineers = project.assigned_engineers.all()
+
+    # Budget requests (additional budget) history
+    budget_requests = (
+        BudgetRequest.objects
+        .filter(project=project)
+        .select_related('requested_by', 'reviewed_by')
+        .prefetch_related('attachments')
+        .order_by('created_at')
+    )
     
     # If xhtml2pdf is unavailable, return a friendly message
     if pisa is None:
@@ -2586,6 +2595,7 @@ def export_project_comprehensive_pdf(request, pk):
         'days_remaining': days_remaining,
         'cost_breakdown': dict(cost_breakdown),
         'assigned_engineers': assigned_engineers,
+        'budget_requests': budget_requests,
         'generated_by': request.user.get_full_name() or request.user.username,
         'generated_at': timezone.now(),
     }
@@ -2606,7 +2616,7 @@ def export_project_comprehensive_pdf(request, pk):
 @head_engineer_required
 def export_project_comprehensive_excel(request, pk):
     """Export comprehensive project report (Progress + Budget) as Excel"""
-    from projeng.models import Project, ProjectProgress, ProjectCost
+    from projeng.models import Project, ProjectProgress, ProjectCost, BudgetRequest
     from django.utils import timezone
     from collections import defaultdict
     
@@ -2701,6 +2711,29 @@ def export_project_comprehensive_excel(request, pk):
             update.percentage_complete,
             f'{budget_used_pct:.2f}%',
             f'{efficiency:.2f}'
+        ])
+
+    # Sheet 6: Budget Requests
+    ws6 = wb.create_sheet("Budget Requests")
+    ws6.append(['Created At', 'Requested Amount', 'Status', 'Approved Amount', 'Requested By', 'Reviewed By', 'Reviewed At', 'Decision Notes', 'Proof Count'])
+    budget_requests = (
+        BudgetRequest.objects
+        .filter(project=project)
+        .select_related('requested_by', 'reviewed_by')
+        .prefetch_related('attachments')
+        .order_by('created_at')
+    )
+    for br in budget_requests:
+        ws6.append([
+            timezone.localtime(br.created_at).strftime('%Y-%m-%d %H:%M') if br.created_at else '',
+            float(br.requested_amount) if br.requested_amount else 0,
+            br.get_status_display(),
+            float(br.approved_amount) if br.approved_amount else '',
+            (br.requested_by.get_full_name() or br.requested_by.username) if br.requested_by else '',
+            (br.reviewed_by.get_full_name() or br.reviewed_by.username) if br.reviewed_by else '',
+            timezone.localtime(br.reviewed_at).strftime('%Y-%m-%d %H:%M') if br.reviewed_at else '',
+            br.decision_notes or '',
+            br.attachments.count() if hasattr(br, 'attachments') else 0,
         ])
     
     # Save to response

@@ -7,7 +7,11 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 import json
 # from django.contrib.gis.geos import GEOSGeometry  # Temporarily disabled
-from .models import Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument, Notification, BarangayMetadata, ZoningZone
+from .models import (
+    Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, ProjectDocument,
+    Notification, BarangayMetadata, ZoningZone,
+    BudgetRequest, BudgetRequestAttachment, BudgetRequestStatusHistory
+)
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
 from django.db.models import Sum, Avg, Count, Max
@@ -672,6 +676,43 @@ def project_detail_view(request, pk):
                 'icon': 'currency-dollar',
                 'color': 'yellow'
             })
+
+        # Add budget requests (additional budget) to activity history
+        budget_requests = (
+            BudgetRequest.objects
+            .filter(project=project)
+            .select_related('requested_by', 'reviewed_by')
+            .prefetch_related('attachments', 'history')
+            .order_by('-created_at')
+        )
+        for br in budget_requests:
+            activity_log.append({
+                'type': 'budget_request',
+                'timestamp': br.created_at,
+                'user': br.requested_by,
+                'message': f'Budget request submitted: ₱{float(br.requested_amount):,.2f} ({br.get_status_display()})',
+                'description': br.reason,
+                'requested_amount': br.requested_amount,
+                'status': br.status,
+                'icon': 'clipboard',
+                'color': 'indigo'
+            })
+            if br.reviewed_at and br.reviewed_by and br.status in ['approved', 'rejected', 'cancelled']:
+                activity_log.append({
+                    'type': 'budget_request_decision',
+                    'timestamp': br.reviewed_at,
+                    'user': br.reviewed_by,
+                    'message': (
+                        f'Budget request {br.get_status_display().lower()}'
+                        + (f': ₱{float(br.approved_amount):,.2f} approved' if br.status == 'approved' and br.approved_amount else '')
+                    ),
+                    'description': br.decision_notes,
+                    'status': br.status,
+                    'approved_amount': br.approved_amount,
+                    'decision_notes': br.decision_notes,
+                    'icon': 'check-circle' if br.status == 'approved' else 'x-circle',
+                    'color': 'green' if br.status == 'approved' else 'red'
+                })
         
         # Add document uploads
         documents = ProjectDocument.objects.filter(project=project).select_related('uploaded_by').order_by('-uploaded_at')
@@ -815,6 +856,7 @@ def project_detail_view(request, pk):
             'status_choices': Project.STATUS_CHOICES,
             'activity_log': activity_log,
             'documents': documents,  # Pass documents for dedicated section
+            'budget_requests': budget_requests,
             'progress_timeline_data': progress_timeline_data,
             'progress_dates': progress_dates_json,
             'progress_percentages': progress_percentages_json,
@@ -2550,6 +2592,83 @@ def zone_analytics_api(request):
     return JsonResponse({
         'zones': zones
     })
+
+
+@login_required
+@user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
+def create_budget_request(request, project_id):
+    """
+    Create a BudgetRequest (additional budget) with optional proof attachments.
+    This is the persistent (model-based) request flow used for OJT/deployment readiness.
+    """
+    project = get_object_or_404(Project, pk=project_id)
+
+    # Permissions: head engineers can access all; project engineers only if assigned
+    if not is_head_engineer(request.user) and request.user not in project.assigned_engineers.all():
+        return HttpResponseForbidden("You are not assigned to this project.")
+
+    if request.method != 'POST':
+        return redirect('projeng:projeng_project_detail', pk=project_id)
+
+    requested_amount_raw = (request.POST.get('requested_amount') or '').strip()
+    reason = (request.POST.get('reason') or '').strip()
+    proofs = request.FILES.getlist('proofs')
+
+    if not requested_amount_raw:
+        messages.error(request, "Requested amount is required.")
+        return redirect('projeng:projeng_project_detail', pk=project_id)
+    if not reason:
+        messages.error(request, "Reason/justification is required.")
+        return redirect('projeng:projeng_project_detail', pk=project_id)
+
+    from decimal import Decimal, InvalidOperation
+    try:
+        requested_amount = Decimal(requested_amount_raw)
+    except (InvalidOperation, ValueError):
+        messages.error(request, "Invalid amount format.")
+        return redirect('projeng:projeng_project_detail', pk=project_id)
+
+    if requested_amount <= 0:
+        messages.error(request, "Requested amount must be greater than 0.")
+        return redirect('projeng:projeng_project_detail', pk=project_id)
+
+    br = BudgetRequest.objects.create(
+        project=project,
+        requested_by=request.user,
+        requested_amount=requested_amount,
+        reason=reason,
+        status='pending',
+    )
+
+    BudgetRequestStatusHistory.objects.create(
+        budget_request=br,
+        from_status=None,
+        to_status='pending',
+        action_by=request.user,
+        notes='Budget request submitted'
+    )
+
+    for f in proofs:
+        BudgetRequestAttachment.objects.create(
+            budget_request=br,
+            file=f,
+            uploaded_by=request.user
+        )
+
+    # Notify Finance Managers + Head Engineers
+    from .utils import format_project_display, notify_finance_managers, notify_head_engineers
+    project_display = format_project_display(project)
+    requester_name = request.user.get_full_name() or request.user.username
+    msg = (
+        f"📌 Budget Request Submitted: {project_display} "
+        f"Requested increase: ₱{float(requested_amount):,.2f}. "
+        f"Submitted by {requester_name}."
+    )
+    notify_finance_managers(msg, check_duplicates=False)
+    notify_head_engineers(msg, check_duplicates=False)
+
+    messages.success(request, "Budget request submitted successfully.")
+    return redirect('projeng:projeng_project_detail', pk=project_id)
 
 
 @login_required

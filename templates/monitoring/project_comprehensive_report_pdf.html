@@ -343,6 +343,58 @@
     {% endif %}
 
     <div class="section">
+        <div class="section-title">BUDGET REQUEST HISTORY</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Requested Amount</th>
+                    <th>Status</th>
+                    <th>Approved Amount</th>
+                    <th>Requested By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if budget_requests %}
+                    {% for br in budget_requests %}
+                    <tr>
+                        <td>{{ br.created_at|date:"M d, Y" }}</td>
+                        <td>₱{{ br.requested_amount|floatformat:2 }}</td>
+                        <td>{{ br.get_status_display }}</td>
+                        <td>
+                            {% if br.approved_amount %}
+                                ₱{{ br.approved_amount|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ br.requested_by.get_full_name|default:br.requested_by.username|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5">
+                            <strong>Reason:</strong> {{ br.reason|default:"-" }}<br>
+                            {% if br.decision_notes %}
+                                <strong>Decision Notes:</strong> {{ br.decision_notes }}<br>
+                            {% endif %}
+                            {% if br.attachments.all %}
+                                <strong>Proof:</strong>
+                                {% for att in br.attachments.all %}
+                                    {{ att.file.name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center;">No budget requests available</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
         <div class="section-title">PROGRESS HISTORY</div>
         <table>
             <thead>

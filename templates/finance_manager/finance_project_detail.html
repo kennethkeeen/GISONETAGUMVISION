@@ -125,52 +125,60 @@
             </div>
         </div>
 
-        <!-- Budget Request Information from Head Engineer -->
-        {% if budget_request_info %}
-        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-blue-200 p-6 mb-6">
+        <!-- Pending Budget Request (Model-based) -->
+        {% if pending_budget_request %}
+        <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl shadow-lg border-2 border-indigo-200 p-6 mb-6">
             <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center mr-4">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m2 8H7a2 2 0 01-2-2V6a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2z"></path>
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900">Budget Review Request</h3>
-                    <p class="text-sm text-gray-600">From Head Engineer</p>
+                    <h3 class="text-xl font-bold text-gray-900">Pending Budget Request</h3>
+                    <p class="text-sm text-gray-600">Waiting for Finance Manager decision</p>
                 </div>
             </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {% if budget_request_info.head_engineer_name %}
                 <div class="bg-white rounded-lg p-4 shadow-sm">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Requested By</p>
-                    <p class="text-lg font-semibold text-gray-900">{{ budget_request_info.head_engineer_name }}</p>
+                    <p class="text-lg font-semibold text-gray-900">
+                        {{ pending_budget_request.requested_by.get_full_name|default:pending_budget_request.requested_by.username }}
+                    </p>
                 </div>
-                {% endif %}
-                {% if budget_request_info.requested_amount %}
                 <div class="bg-white rounded-lg p-4 shadow-sm">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Requested Amount</p>
-                    <p class="text-2xl font-bold text-blue-600">₱{{ budget_request_info.requested_amount|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-indigo-700">₱{{ pending_budget_request.requested_amount|floatformat:2|intcomma }}</p>
                 </div>
-                {% endif %}
-                {% if budget_request_info.notification_date %}
                 <div class="bg-white rounded-lg p-4 shadow-sm">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Request Date</p>
-                    <p class="text-sm font-medium text-gray-900">{{ budget_request_info.notification_date|date:"F d, Y" }}</p>
-                    <p class="text-xs text-gray-500">{{ budget_request_info.notification_date|date:"g:i A" }}</p>
+                    <p class="text-sm font-medium text-gray-900">{{ pending_budget_request.created_at|date:"F d, Y" }}</p>
+                    <p class="text-xs text-gray-500">{{ pending_budget_request.created_at|date:"g:i A" }}</p>
                 </div>
-                {% endif %}
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Proof</p>
+                    {% if pending_budget_request.attachments.all %}
+                        <div class="flex flex-col gap-1">
+                            {% for att in pending_budget_request.attachments.all %}
+                                <a href="{{ att.file.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium">Attachment {{ forloop.counter }}</a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500">—</p>
+                    {% endif %}
+                </div>
             </div>
-            {% if budget_request_info.assessment %}
+
             <div class="mt-4 bg-white rounded-lg p-4 shadow-sm">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Assessment & Recommendation</p>
-                <p class="text-gray-800 leading-relaxed">{{ budget_request_info.assessment }}</p>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Reason / Justification</p>
+                <p class="text-gray-800 leading-relaxed">{{ pending_budget_request.reason }}</p>
             </div>
-            {% endif %}
         </div>
         {% endif %}
 
         <!-- Budget Management Actions (only show if there's a pending budget request) -->
-        {% if budget_request_info %}
+        {% if pending_budget_request %}
         <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-6">
             <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
                 <svg class="w-6 h-6 mr-2 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,6 +313,9 @@
         </div>
         <form method="post" action="{% url 'approve_budget_request' project_id=project.id %}">
             {% csrf_token %}
+            {% if pending_budget_request %}
+                <input type="hidden" name="budget_request_id" value="{{ pending_budget_request.id }}">
+            {% endif %}
             <div class="p-6">
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <div class="grid grid-cols-2 gap-4">
@@ -378,6 +389,9 @@
         </div>
         <form method="post" action="{% url 'reject_budget_request' project_id=project.id %}">
             {% csrf_token %}
+            {% if pending_budget_request %}
+                <input type="hidden" name="budget_request_id" value="{{ pending_budget_request.id }}">
+            {% endif %}
             <div class="p-6">
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Current Budget</p>

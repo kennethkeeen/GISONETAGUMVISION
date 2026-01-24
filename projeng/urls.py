@@ -25,6 +25,7 @@ urlpatterns = [
     path('projects/<int:pk>/export-report/', views.export_project_report, name='projeng_export_project_report'),
     path('projects/<int:pk>/add-progress/', views.add_progress_update, name='projeng_add_progress_update'),
     path('projects/<int:pk>/add-cost/', views.add_cost_entry, name='projeng_add_cost_entry'),
+    path('projects/<int:project_id>/budget-request/', views.create_budget_request, name='projeng_create_budget_request'),
     path('projects/<int:project_id>/send-budget-alert/', views.send_budget_alert, name='send_budget_alert'),
     path('dashboard/progress-over-time-data/', views.dashboard_progress_over_time_data, name='projeng_dashboard_progress_over_time_data'),
     path('dashboard/budget-utilization-data/', views.dashboard_budget_utilization_data, name='projeng_dashboard_budget_utilization_data'),

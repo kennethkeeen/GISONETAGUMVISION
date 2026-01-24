@@ -6,7 +6,9 @@ from .models import (
     Layer, Project, ProjectProgress, ProjectCost, ProgressPhoto, 
     BarangayMetadata, ZoningZone, ProjectMilestone,
     ProjectType, ZoneAllowedUse, ZoneRecommendation,
-    UserSpatialAssignment
+    UserSpatialAssignment,
+    BudgetRequest, BudgetRequestAttachment, BudgetRequestStatusHistory,
+    LandSuitabilityAnalysis, SuitabilityCriteria
 )
 from django.contrib.auth.models import Group
 
@@ -93,6 +95,50 @@ class ProjectCostAdmin(admin.ModelAdmin):
             'fields': ('created_by', 'created_at')
         }),
     )
+
+
+@admin.register(BudgetRequest)
+class BudgetRequestAdmin(admin.ModelAdmin):
+    list_display = ('project', 'status', 'requested_amount', 'approved_amount', 'requested_by', 'reviewed_by', 'created_at')
+    list_filter = ('status', 'created_at', 'reviewed_at')
+    search_fields = ('project__name', 'project__prn', 'requested_by__username', 'reason', 'decision_notes')
+    readonly_fields = ('created_at', 'updated_at', 'reviewed_at')
+    list_select_related = ('project', 'requested_by', 'reviewed_by')
+
+
+@admin.register(BudgetRequestAttachment)
+class BudgetRequestAttachmentAdmin(admin.ModelAdmin):
+    list_display = ('budget_request', 'uploaded_by', 'uploaded_at')
+    list_filter = ('uploaded_at',)
+    search_fields = ('budget_request__project__name', 'budget_request__project__prn')
+    readonly_fields = ('uploaded_at',)
+    list_select_related = ('budget_request', 'uploaded_by')
+
+
+@admin.register(BudgetRequestStatusHistory)
+class BudgetRequestStatusHistoryAdmin(admin.ModelAdmin):
+    list_display = ('budget_request', 'from_status', 'to_status', 'action_by', 'created_at')
+    list_filter = ('to_status', 'created_at')
+    search_fields = ('budget_request__project__name', 'budget_request__project__prn', 'notes')
+    readonly_fields = ('created_at',)
+    list_select_related = ('budget_request', 'action_by')
+
+
+@admin.register(SuitabilityCriteria)
+class SuitabilityCriteriaAdmin(admin.ModelAdmin):
+    list_display = ('name', 'project_type', 'is_active', 'created_at', 'updated_at')
+    list_filter = ('project_type', 'is_active')
+    search_fields = ('name',)
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(LandSuitabilityAnalysis)
+class LandSuitabilityAnalysisAdmin(admin.ModelAdmin):
+    list_display = ('project', 'overall_score', 'suitability_category', 'analyzed_at', 'analysis_version')
+    list_filter = ('suitability_category', 'analysis_version', 'analyzed_at')
+    search_fields = ('project__name', 'project__prn', 'project__barangay')
+    readonly_fields = ('analyzed_at', 'updated_at')
+    list_select_related = ('project',)
 
 @admin.register(ProgressPhoto)
 class ProgressPhotoAdmin(admin.ModelAdmin):

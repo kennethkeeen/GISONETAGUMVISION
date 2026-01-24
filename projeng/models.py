@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 # Import custom storage backend
 def get_media_storage():
@@ -229,6 +230,206 @@ class ProjectCost(models.Model):
 
     def __str__(self):
         return f"{self.project.name} - {self.get_cost_type_display()} ({self.amount})"
+
+
+class BudgetRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='budget_requests')
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='budget_requests_made')
+    requested_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+        help_text="Requested budget increase amount"
+    )
+    reason = models.TextField(help_text="Justification / assessment for requesting additional budget")
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
+
+    approved_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0.01)],
+        help_text="Approved budget increase amount (can be different from requested)"
+    )
+    decision_notes = models.TextField(blank=True, null=True, help_text="Notes/reason for approval or rejection")
+
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='budget_requests_reviewed'
+    )
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['project', 'status']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"BudgetRequest({self.project_id}) {self.status} ₱{self.requested_amount}"
+
+
+class BudgetRequestAttachment(models.Model):
+    budget_request = models.ForeignKey(BudgetRequest, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='budget_request_proofs/', storage=MEDIA_STORAGE)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"Attachment for BudgetRequest {self.budget_request_id}"
+
+
+class BudgetRequestStatusHistory(models.Model):
+    budget_request = models.ForeignKey(BudgetRequest, on_delete=models.CASCADE, related_name='history')
+    from_status = models.CharField(max_length=20, blank=True, null=True)
+    to_status = models.CharField(max_length=20)
+    action_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Budget Request Status History"
+
+    def __str__(self):
+        return f"BudgetRequest {self.budget_request_id}: {self.from_status} → {self.to_status}"
+
+
+class SuitabilityCriteria(models.Model):
+    """Configurable criteria and weights for land suitability analysis"""
+
+    PROJECT_TYPE_CHOICES = [
+        ('all', 'All Project Types'),
+        ('residential', 'Residential'),
+        ('commercial', 'Commercial'),
+        ('industrial', 'Industrial'),
+        ('infrastructure', 'Infrastructure'),
+        ('institutional', 'Institutional'),
+    ]
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        default='default',
+        help_text="Name of criteria configuration"
+    )
+
+    weight_zoning = models.FloatField(default=0.30, help_text="Weight for zoning compliance (0-1)")
+    weight_flood_risk = models.FloatField(default=0.25, help_text="Weight for flood risk (0-1)")
+    weight_infrastructure = models.FloatField(default=0.20, help_text="Weight for infrastructure access (0-1)")
+    weight_elevation = models.FloatField(default=0.15, help_text="Weight for elevation suitability (0-1)")
+    weight_economic = models.FloatField(default=0.05, help_text="Weight for economic alignment (0-1)")
+    weight_population = models.FloatField(default=0.05, help_text="Weight for population density (0-1)")
+
+    project_type = models.CharField(
+        max_length=20,
+        choices=PROJECT_TYPE_CHOICES,
+        default='all',
+        help_text="Project type this criteria applies to"
+    )
+
+    parameters = models.JSONField(
+        default=dict,
+        blank=True,
+        null=True,
+        help_text="Additional parameters for scoring (thresholds, ranges, etc.)"
+    )
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Suitability Criteria"
+        verbose_name_plural = "Suitability Criteria"
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_project_type_display()})"
+
+    def clean(self):
+        total = (
+            (self.weight_zoning or 0) +
+            (self.weight_flood_risk or 0) +
+            (self.weight_infrastructure or 0) +
+            (self.weight_elevation or 0) +
+            (self.weight_economic or 0) +
+            (self.weight_population or 0)
+        )
+        if abs(total - 1.0) > 0.01:
+            raise ValidationError(f"Weights must sum to 1.0, currently sum to {total:.2f}")
+
+
+class LandSuitabilityAnalysis(models.Model):
+    """Stores cached land suitability analysis results for a project"""
+
+    SUITABILITY_CATEGORY_CHOICES = [
+        ('highly_suitable', 'Highly Suitable (80-100)'),
+        ('suitable', 'Suitable (60-79)'),
+        ('moderately_suitable', 'Moderately Suitable (40-59)'),
+        ('marginally_suitable', 'Marginally Suitable (20-39)'),
+        ('not_suitable', 'Not Suitable (0-19)'),
+    ]
+
+    project = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='suitability_analysis',
+        help_text="Project being analyzed"
+    )
+
+    overall_score = models.FloatField(help_text="Overall suitability score (0-100)")
+    suitability_category = models.CharField(
+        max_length=30,
+        choices=SUITABILITY_CATEGORY_CHOICES,
+        help_text="Suitability category based on score"
+    )
+
+    zoning_compliance_score = models.FloatField(help_text="Zoning compliance score (0-100)")
+    flood_risk_score = models.FloatField(help_text="Flood risk assessment score (0-100, higher = less risk)")
+    infrastructure_access_score = models.FloatField(help_text="Infrastructure access score (0-100)")
+    elevation_suitability_score = models.FloatField(help_text="Elevation suitability score (0-100)")
+    economic_alignment_score = models.FloatField(help_text="Economic zone alignment score (0-100)")
+    population_density_score = models.FloatField(help_text="Population density appropriateness score (0-100)")
+
+    has_flood_risk = models.BooleanField(default=False)
+    has_slope_risk = models.BooleanField(default=False)
+    has_zoning_conflict = models.BooleanField(default=False)
+    has_infrastructure_gap = models.BooleanField(default=False)
+
+    recommendations = models.JSONField(default=list, help_text="List of recommendations for improving suitability")
+    constraints = models.JSONField(default=list, help_text="List of constraints or limitations")
+
+    analyzed_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    analysis_version = models.CharField(max_length=20, default='1.0', help_text="Version of analysis algorithm used")
+
+    class Meta:
+        verbose_name = "Land Suitability Analysis"
+        verbose_name_plural = "Land Suitability Analyses"
+        ordering = ['-analyzed_at']
+
+    def __str__(self):
+        return f"{self.project.name} - {self.get_suitability_category_display()} ({self.overall_score:.1f})"
 
 class ProgressPhoto(models.Model):
     progress_update = models.ForeignKey(ProjectProgress, on_delete=models.CASCADE, related_name='photos')

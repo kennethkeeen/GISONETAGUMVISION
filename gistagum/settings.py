@@ -227,19 +227,30 @@ if DATABASE_URL and DATABASE_URL.strip():
             }
         }
 else:
-    # Use local Postgres for development when no DATABASE_URL is set
+    # Local development when no DATABASE_URL is set.
+    # Prefer local Postgres only if credentials are provided; otherwise fall back to SQLite
+    # so the project can run out-of-the-box.
     # IMPORTANT: Do not hardcode local DB credentials in the repo.
-    # Configure via environment variables (or a local, untracked .env file).
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'gistagumnew'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
+    db_password = os.environ.get('DB_PASSWORD', '').strip()
+    if db_password:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.environ.get('DB_NAME', 'gistagumnew'),
+                'USER': os.environ.get('DB_USER', 'postgres'),
+                'PASSWORD': db_password,
+                'HOST': os.environ.get('DB_HOST', 'localhost'),
+                'PORT': os.environ.get('DB_PORT', '5432'),
+            }
         }
-    }
+    else:
+        # SQLite fallback (recommended for quick local runs)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

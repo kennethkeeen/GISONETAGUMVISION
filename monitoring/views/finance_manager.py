@@ -463,86 +463,23 @@ def finance_project_detail(request, project_id):
         for cost in costs:
             cost_by_type[cost.get_cost_type_display()] += float(cost.amount)
         
-        # Get the most recent Budget Review Request notification for this project
-        # to extract requested amount and assessment
-        budget_request_info = None
-        try:
-            from projeng.models import Notification
-            from django.contrib.auth.models import User
-            
-            # Get Finance Managers
-            finance_managers = User.objects.filter(groups__name='Finance Manager').distinct()
-            
-            # Find the most recent Budget Review Request notification for this project
-            # that was sent to any Finance Manager
-            from django.db.models import Q
-            # Build query to match project name or PRN
-            project_query = Q(message__icontains=project.name)
-            if project.prn:
-                project_query |= Q(message__icontains=project.prn)
-            
-            notifications = Notification.objects.filter(
-                recipient__in=finance_managers,
-                message__icontains='Budget Review Request'
-            ).filter(project_query).order_by('-created_at')
-            
-            if notifications.exists():
-                latest_request_notification = notifications.first()
-                request_date = latest_request_notification.created_at
-                message = latest_request_notification.message
-                
-                # Check if there's a newer "Budget Increase Approved" or "Budget Increase Rejected" notification
-                # If there is, the request has already been processed, so don't show the buttons
-                # Note: Approval/Rejection notifications are sent to Head Engineers, but we check all notifications
-                # to see if a response has been made for this project
-                response_notifications = Notification.objects.filter(
-                    created_at__gt=request_date
-                ).filter(
-                    Q(message__icontains='Budget Increase Approved') | 
-                    Q(message__icontains='Budget Increase Rejected') |
-                    Q(message__icontains='✅ Budget Increase Approved') |
-                    Q(message__icontains='❌ Budget Increase Rejected')
-                ).filter(project_query).order_by('-created_at')
-                
-                # Only show budget request info if there's no response yet
-                if not response_notifications.exists():
-                    # Parse the notification message to extract requested amount and assessment
-                    import re
-                    
-                    # Extract requested budget increase amount
-                    requested_amount = None
-                    amount_match = re.search(r'Requested budget increase:\s*₱([\d,]+\.?\d*)', message)
-                    if amount_match:
-                        try:
-                            amount_str = amount_match.group(1).replace(',', '')
-                            requested_amount = float(amount_str)
-                        except (ValueError, AttributeError):
-                            pass
-                    
-                    # Extract assessment message
-                    assessment = None
-                    assessment_match = re.search(r'Assessment from [^:]+:\s*(.+?)(?:\.\s*$|$)', message)
-                    if assessment_match:
-                        assessment = assessment_match.group(1).strip()
-                        # Clean up common endings
-                        if assessment.endswith('.'):
-                            assessment = assessment[:-1]
-                    
-                    # Extract Head Engineer name
-                    head_engineer_name = None
-                    engineer_match = re.search(r'Assessment from ([^:]+):', message)
-                    if engineer_match:
-                        head_engineer_name = engineer_match.group(1).strip()
-                    
-                    if requested_amount or assessment:
-                        budget_request_info = {
-                            'requested_amount': requested_amount,
-                            'assessment': assessment,
-                            'head_engineer_name': head_engineer_name,
-                            'notification_date': latest_request_notification.created_at,
-                        }
-        except Exception as e:
-            logger.error(f"Error extracting budget request info: {str(e)}", exc_info=True)
+        # Budget Requests (model-based, with statuses + attachments + history)
+        from projeng.models import BudgetRequest
+        pending_budget_request = (
+            BudgetRequest.objects
+            .filter(project=project, status='pending')
+            .select_related('requested_by')
+            .prefetch_related('attachments')
+            .order_by('-created_at')
+            .first()
+        )
+        budget_requests = (
+            BudgetRequest.objects
+            .filter(project=project)
+            .select_related('requested_by', 'reviewed_by')
+            .prefetch_related('attachments', 'history')
+            .order_by('-created_at')
+        )
         
         context = {
             'project': project,
@@ -553,7 +490,8 @@ def finance_project_detail(request, project_id):
             'project_budget': project_budget,
             'threshold': threshold,
             'cost_by_type': dict(cost_by_type),
-            'budget_request_info': budget_request_info,
+            'pending_budget_request': pending_budget_request,
+            'budget_requests': budget_requests,
         }
         return render(request, 'finance_manager/finance_project_detail.html', context)
     except Exception as e:
