@@ -170,6 +170,28 @@ window.setBarangayFilter = function(barangay) {
         window.filterProjects();
     }
 };
+
+// Panel #4: server-side filters (project type + cost range)
+window.applyServerFilters = function() {
+    const p = new URLSearchParams(window.location.search);
+    const typeVal = (document.getElementById('project-type-filter')?.value || '').trim();
+    const minVal = (document.getElementById('cost-min-filter')?.value || '').trim();
+    const maxVal = (document.getElementById('cost-max-filter')?.value || '').trim();
+
+    if (typeVal) p.set('project_type', typeVal); else p.delete('project_type');
+    if (minVal) p.set('cost_min', minVal); else p.delete('cost_min');
+    if (maxVal) p.set('cost_max', maxVal); else p.delete('cost_max');
+
+    window.location.search = '?' + p.toString();
+};
+
+window.clearServerFilters = function() {
+    const p = new URLSearchParams(window.location.search);
+    p.delete('project_type');
+    p.delete('cost_min');
+    p.delete('cost_max');
+    window.location.search = '?' + p.toString();
+};
 </script>
 {% endblock %}
 
@@ -248,6 +270,39 @@ window.setBarangayFilter = function(barangay) {
                         <option value="combined" {% if scope == 'combined' %}selected{% endif %}>Combined</option>
                         <option value="own" {% if scope == 'own' %}selected{% endif %}>Own (created by me)</option>
                     </select>
+                </div>
+
+                <!-- Panel #4: Project Type + Cost Range filters (server-side) -->
+                <div class="w-full lg:w-auto">
+                    <select id="project-type-filter"
+                            class="w-full lg:w-64 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                        <option value="">All Project Types</option>
+                        {% for pt in project_type_options %}
+                            <option value="{{ pt.id }}" {% if selected_project_type|default:'' == pt.id|stringformat:'s' %}selected{% endif %}>
+                                {{ pt.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="w-full lg:w-auto flex gap-2">
+                    <input id="cost-min-filter" type="number" step="0.01" min="0"
+                           placeholder="Cost min" value="{{ cost_min|default:'' }}"
+                           class="w-full lg:w-40 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                    <input id="cost-max-filter" type="number" step="0.01" min="0"
+                           placeholder="Cost max" value="{{ cost_max|default:'' }}"
+                           class="w-full lg:w-40 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                </div>
+                <div class="w-full lg:w-auto flex gap-2">
+                    <button type="button"
+                            onclick="window.applyServerFilters && window.applyServerFilters()"
+                            class="w-full lg:w-auto px-4 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold">
+                        Apply
+                    </button>
+                    <button type="button"
+                            onclick="window.clearServerFilters && window.clearServerFilters()"
+                            class="w-full lg:w-auto px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-semibold">
+                        Clear
+                    </button>
                 </div>
             </div>
             

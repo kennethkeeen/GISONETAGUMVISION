@@ -265,10 +265,13 @@ def dashboard(request):
 def my_projects_view(request):
     from django.db.models import Max
     from django.utils import timezone
+    from decimal import Decimal, InvalidOperation
+    from projeng.models import ProjectType
     
     # Build base queryset
     if is_head_engineer(request.user):
         projects_queryset = Project.objects.all()
+        scope = (request.GET.get('scope') or 'all').strip().lower()
     else:
         # Panel #24: allow filtering "combined" vs "own" projects
         scope = (request.GET.get('scope') or 'assigned').strip().lower()
@@ -282,6 +285,33 @@ def my_projects_view(request):
             # default: assigned projects only
             scope = 'assigned'
             projects_queryset = Project.objects.filter(assigned_engineers=request.user)
+
+    # Panel #4: additional filters (project cost + type)
+    selected_project_type = (request.GET.get('project_type') or '').strip()
+    cost_min_raw = (request.GET.get('cost_min') or '').strip()
+    cost_max_raw = (request.GET.get('cost_max') or '').strip()
+
+    if selected_project_type:
+        try:
+            projects_queryset = projects_queryset.filter(project_type_id=int(selected_project_type))
+        except Exception:
+            # Ignore invalid input rather than breaking the page
+            selected_project_type = ''
+
+    def _to_decimal(val: str):
+        if not val:
+            return None
+        try:
+            return Decimal(val)
+        except (InvalidOperation, ValueError):
+            return None
+
+    cost_min = _to_decimal(cost_min_raw)
+    cost_max = _to_decimal(cost_max_raw)
+    if cost_min is not None:
+        projects_queryset = projects_queryset.filter(project_cost__gte=cost_min)
+    if cost_max is not None:
+        projects_queryset = projects_queryset.filter(project_cost__lte=cost_max)
     
     # Get all project IDs first for efficient querying
     project_ids = list(projects_queryset.values_list('id', flat=True))
@@ -405,11 +435,17 @@ def my_projects_view(request):
         project.calculated_last_update = last_update
         projects_with_updates.append(project)
     
+    project_type_options = ProjectType.objects.order_by('name')
+
     return render(request, 'projeng/my_projects.html', {
         'projects': projects_with_updates,
         'delayed_count': delayed_count,
         'planned_pending_count': planned_pending_count,
         'scope': request.GET.get('scope', 'assigned'),
+        'project_type_options': project_type_options,
+        'selected_project_type': selected_project_type,
+        'cost_min': cost_min_raw,
+        'cost_max': cost_max_raw,
     })
 
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
