@@ -2058,6 +2058,68 @@ def export_project_timeline_pdf(request, pk):
         costs = ProjectCost.objects.filter(project=projeng_project).order_by('date')
     else:
         costs = ProjectCost.objects.filter(project=project).order_by('date') if hasattr(project, 'projectcost_set') else []
+
+    # Compute consistent summary metrics for clearer report presentation (panel #27/#29)
+    total_cost = sum([float(c.amount) for c in costs]) if costs else 0.0
+    budget = float(getattr(project, 'project_cost', 0) or 0)
+    remaining_budget = (budget - total_cost) if budget > 0 else 0.0
+    budget_utilization = (total_cost / budget * 100) if budget > 0 else 0.0
+    budget_used_pct = float(budget_utilization) if budget_utilization else 0.0
+
+    latest_progress = progress_updates.last() if progress_updates else None
+    total_progress = latest_progress.percentage_complete if latest_progress else 0
+
+    today = timezone.now().date()
+    total_days = (project.end_date - project.start_date).days if getattr(project, 'start_date', None) and getattr(project, 'end_date', None) else 0
+    days_elapsed = (today - project.start_date).days if getattr(project, 'start_date', None) else 0
+    days_remaining = (total_days - days_elapsed) if total_days > 0 else 0
+
+    expected_progress = None
+    progress_variance = None
+    performance_ratio = None
+    if getattr(project, 'start_date', None) and getattr(project, 'end_date', None) and total_days > 0:
+        elapsed_days = max(0, min(total_days, days_elapsed))
+        expected_progress = min(100.0, (elapsed_days / total_days) * 100.0)
+        progress_variance = float(total_progress) - float(expected_progress)
+        performance_ratio = (float(total_progress) / float(expected_progress)) if expected_progress > 0 else None
+
+    efficiency_ratio = (float(total_progress) / budget_used_pct) if budget_used_pct > 0 else None
+
+    budget_status_label = 'UNDER BUDGET'
+    if budget_used_pct > 100:
+        budget_status_label = 'OVER BUDGET'
+    elif budget_used_pct >= 90:
+        budget_status_label = 'AT RISK'
+
+    # Achieve Satisfaction (0-100), same basis as comprehensive report
+    satisfaction_score = None
+    satisfaction_label = 'N/A'
+    try:
+        budget_component = None
+        if efficiency_ratio is not None:
+            budget_component = max(0.0, 100.0 - min(100.0, abs(1.0 - float(efficiency_ratio)) * 100.0))
+        schedule_component = None
+        if progress_variance is not None:
+            schedule_component = max(0.0, 100.0 - abs(float(progress_variance)))
+        if budget_component is not None and schedule_component is not None:
+            base = (0.5 * schedule_component) + (0.5 * budget_component)
+        elif budget_component is not None:
+            base = budget_component
+        else:
+            base = None
+        if base is not None and budget_used_pct > 100:
+            base = base - 10.0
+        if base is not None:
+            satisfaction_score = round(max(0.0, min(100.0, float(base))), 1)
+            if satisfaction_score >= 85:
+                satisfaction_label = 'High'
+            elif satisfaction_score >= 70:
+                satisfaction_label = 'Moderate'
+            else:
+                satisfaction_label = 'Low'
+    except Exception:
+        satisfaction_score = None
+        satisfaction_label = 'N/A'
     
     # If xhtml2pdf is unavailable, return a friendly message
     if pisa is None:
@@ -2071,7 +2133,21 @@ def export_project_timeline_pdf(request, pk):
         'projeng_project': projeng_project,
         'progress_updates': progress_updates,
         'costs': costs,
-        'total_cost': sum([float(c.amount) for c in costs]) if costs else 0,
+        'total_cost': total_cost,
+        'budget': budget,
+        'remaining_budget': remaining_budget,
+        'budget_utilization': budget_utilization,
+        'budget_status_label': budget_status_label,
+        'total_progress': total_progress,
+        'expected_progress': expected_progress,
+        'progress_variance': progress_variance,
+        'performance_ratio': performance_ratio,
+        'efficiency_ratio': efficiency_ratio,
+        'satisfaction_score': satisfaction_score,
+        'satisfaction_label': satisfaction_label,
+        'days_elapsed': days_elapsed,
+        'total_days': total_days,
+        'days_remaining': days_remaining,
     }
     html = template.render(context)
     
@@ -2566,8 +2642,12 @@ def export_budget_reports_pdf(request):
     if selected_end_date:
         projects = projects.filter(end_date__lte=selected_end_date)
     
-    # Prepare project data
-    project_data = []
+    # Prepare project data (format to match template expectations)
+    project_rows = []
+    total_budget = 0.0
+    total_spent = 0.0
+    over_budget_count = 0
+    under_budget_count = 0
     for project in projects:
         costs = ProjectCost.objects.filter(project=project)
         spent = sum([float(c.amount) for c in costs]) if costs else 0
@@ -2575,24 +2655,43 @@ def export_budget_reports_pdf(request):
         remaining = budget - spent
         utilization = (spent / budget * 100) if budget > 0 else 0
         over_under = 'Over' if spent > budget else 'Under'
-        
-        project_data.append({
-            'project': project,
-            'budget': budget,
-            'spent': spent,
-            'remaining': remaining,
-            'utilization': utilization,
-            'over_under': over_under,
+
+        total_budget += budget
+        total_spent += spent
+        if over_under == 'Over':
+            over_budget_count += 1
+        else:
+            under_budget_count += 1
+
+        # Template `budget_reports_pdf.html` expects capitalized keys (and one odd key: Utilization__)
+        project_rows.append({
+            'Project_Name': project.name or '',
+            'PRN': project.prn or '',
+            'Barangay': project.barangay or '',
+            'Budget': f'₱{budget:,.2f}',
+            'Spent': f'₱{spent:,.2f}',
+            'Remaining': f'₱{remaining:,.2f}',
+            'Utilization__': f'{utilization:.2f}%',
+            'Status': project.get_status_display() or '',
+            'Over_Under': over_under,
         })
     
     # If xhtml2pdf is unavailable, return a friendly message
     if pisa is None:
         return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
     
-    # Render the HTML template for the PDF
-    template_path = 'monitoring/budget_reports_pdf.html'
+    # Render the HTML template for the PDF (use the detailed layout)
+    template_path = 'monitoring/budget_report_pdf.html'
     template = get_template(template_path)
-    context = {'project_data': project_data}
+    context = {
+        'project_data': project_rows,
+        'total_projects': len(project_rows),
+        'total_budget': total_budget,
+        'total_spent': total_spent,
+        'over_budget_count': over_budget_count,
+        'under_budget_count': under_budget_count,
+        'report_date': timezone.now().strftime('%B %d, %Y %H:%M'),
+    }
     html = template.render(context)
     
     # Create a PDF

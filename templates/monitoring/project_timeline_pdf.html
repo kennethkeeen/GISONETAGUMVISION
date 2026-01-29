@@ -98,11 +98,19 @@
         </div>
         <div class="info-row">
             <span class="info-label">Budget:</span>
-            <span>₱{{ project.project_cost|default:0|floatformat:2|intcomma }}</span>
+            <span>₱{{ budget|floatformat:2|intcomma }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Total Spent:</span>
             <span>₱{{ total_cost|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Remaining Budget:</span>
+            <span>₱{{ remaining_budget|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Budget Utilization:</span>
+            <span>{{ budget_utilization|floatformat:2 }}% ({{ budget_status_label }})</span>
         </div>
         <div class="info-row">
             <span class="info-label">Assigned Engineers:</span>
@@ -114,6 +122,40 @@
                 {% else %}
                     N/A
                 {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <h2>Performance & Satisfaction Summary</h2>
+    <div class="project-info">
+        <div class="info-row">
+            <span class="info-label">Latest Progress:</span>
+            <span>{{ total_progress|default:0 }}%</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Expected Progress:</span>
+            <span>{% if expected_progress is not None %}{{ expected_progress|floatformat:2 }}%{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Progress Variance:</span>
+            <span>{% if progress_variance is not None %}{{ progress_variance|floatformat:2 }}%{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Performance Ratio:</span>
+            <span>{% if performance_ratio is not None %}{{ performance_ratio|floatformat:2 }}{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Efficiency Ratio:</span>
+            <span>{% if efficiency_ratio is not None %}{{ efficiency_ratio|floatformat:2 }}{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Achieve Satisfaction:</span>
+            <span>{% if satisfaction_score is not None %}{{ satisfaction_score|floatformat:1 }} / 100 ({{ satisfaction_label }}){% else %}N/A{% endif %}</span>
+        </div>
+        <div class="info-row" style="font-size: 9pt; color: #6b7280;">
+            <span class="info-label">Basis:</span>
+            <span>
+                Efficiency = Progress ÷ Budget Used %; Performance = Progress ÷ Expected; Satisfaction = avg(schedule alignment, budget alignment) with over-budget penalty.
             </span>
         </div>
     </div>
