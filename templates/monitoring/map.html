@@ -2560,22 +2560,25 @@ function initSourceOfFundsUX() {
     if (fundsSelect.dataset.fundsUx === '1') return;
     fundsSelect.dataset.fundsUx = '1';
 
-    const ensureOption = (val) => {
+    const ensureOptionEverywhere = (val) => {
         const v = (val || '').trim();
         if (!v) return;
-        const has = Array.from(fundsSelect.options).some(o => (o.value || '').trim() === v);
-        if (!has) {
-            const opt = document.createElement('option');
-            opt.value = v;
-            opt.textContent = v;
-            fundsSelect.appendChild(opt);
-        }
+        const allSelects = Array.from(document.querySelectorAll('select[name="source_of_funds"]'));
+        allSelects.forEach(sel => {
+            const has = Array.from(sel.options).some(o => (o.value || '').trim() === v);
+            if (!has) {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                sel.appendChild(opt);
+            }
+        });
         fundsSelect.value = v;
     };
 
     fundsNew.addEventListener('input', () => {
         const v = (fundsNew.value || '').trim();
-        if (v) ensureOption(v);
+        if (v) ensureOptionEverywhere(v);
     });
 
     fundsSelect.addEventListener('change', () => {

@@ -777,22 +777,27 @@ function initSourceOfFundsUX() {
     if (fundsSelect.dataset.fundsUx === '1') return;
     fundsSelect.dataset.fundsUx = '1';
 
-    const ensureOption = (val) => {
+    const ensureOptionEverywhere = (val) => {
         const v = (val || '').trim();
         if (!v) return;
-        const has = Array.from(fundsSelect.options).some(o => (o.value || '').trim() === v);
-        if (!has) {
-            const opt = document.createElement('option');
-            opt.value = v;
-            opt.textContent = v;
-            fundsSelect.appendChild(opt);
-        }
+        // Update ALL "source_of_funds" selects on the page (modal + filter dropdowns)
+        const allSelects = Array.from(document.querySelectorAll('select[name="source_of_funds"]'));
+        allSelects.forEach(sel => {
+            const has = Array.from(sel.options).some(o => (o.value || '').trim() === v);
+            if (!has) {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                sel.appendChild(opt);
+            }
+        });
+        // Ensure the modal select is set (this satisfies the required constraint)
         fundsSelect.value = v;
     };
 
     fundsNew.addEventListener('input', () => {
         const v = (fundsNew.value || '').trim();
-        if (v) ensureOption(v);
+        if (v) ensureOptionEverywhere(v);
     });
 
     fundsSelect.addEventListener('change', () => {
