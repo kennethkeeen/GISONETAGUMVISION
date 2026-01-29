@@ -584,6 +584,13 @@
                 {% else %}
                     N/A
                 {% endif %}
+                <br>
+                <strong>Achieve Satisfaction:</strong>
+                {% if satisfaction_score is not None %}
+                    {{ satisfaction_score|floatformat:1 }} / 100 ({{ satisfaction_label }})
+                {% else %}
+                    N/A
+                {% endif %}
             </div>
 
             <div style="font-size: 8pt; color: #6b7280; margin-top: 8px;">
@@ -591,6 +598,11 @@
                 - Budget Used % = (Total Spent ÷ Total Budget) × 100<br>
                 - Efficiency Ratio = Actual Progress % ÷ Budget Used %<br>
                 - Performance Ratio (Schedule) = Actual Progress % ÷ Expected Progress % (based on time elapsed)
+                <br>
+                - Achieve Satisfaction (0–100) = average of (Schedule Alignment, Budget Alignment), with an over-budget penalty<br>
+                &nbsp;&nbsp;• Schedule Alignment = 100 − |Progress Variance|<br>
+                &nbsp;&nbsp;• Budget Alignment = 100 − (|1 − Efficiency Ratio| × 100) (clamped 0–100)<br>
+                &nbsp;&nbsp;• If Budget Used % &gt; 100, subtract 10 points
             </div>
         </div>
     </div>

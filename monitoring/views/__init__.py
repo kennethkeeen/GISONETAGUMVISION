@@ -2790,6 +2790,40 @@ def export_project_comprehensive_pdf(request, pk):
             performance_label = 'On schedule'
         else:
             performance_label = 'Behind schedule'
+
+    # Panel #29: Achieve Satisfaction (0-100) based on schedule + budget alignment
+    satisfaction_score = None
+    satisfaction_label = 'N/A'
+    try:
+        budget_component = None
+        if efficiency_ratio is not None:
+            budget_component = max(0.0, 100.0 - min(100.0, abs(1.0 - float(efficiency_ratio)) * 100.0))
+
+        schedule_component = None
+        if progress_variance is not None:
+            schedule_component = max(0.0, 100.0 - abs(float(progress_variance)))
+
+        if budget_component is not None and schedule_component is not None:
+            base = (0.5 * schedule_component) + (0.5 * budget_component)
+        elif budget_component is not None:
+            base = budget_component
+        else:
+            base = None
+
+        if base is not None and budget_used_pct > 100:
+            base = base - 10.0  # over-budget penalty
+
+        if base is not None:
+            satisfaction_score = round(max(0.0, min(100.0, float(base))), 1)
+            if satisfaction_score >= 85:
+                satisfaction_label = 'High'
+            elif satisfaction_score >= 70:
+                satisfaction_label = 'Moderate'
+            else:
+                satisfaction_label = 'Low'
+    except Exception:
+        satisfaction_score = None
+        satisfaction_label = 'N/A'
     
     # Cost breakdown by category
     from collections import defaultdict
@@ -2834,6 +2868,8 @@ def export_project_comprehensive_pdf(request, pk):
         'performance_ratio': performance_ratio,
         'budget_status_label': budget_status_label,
         'performance_label': performance_label,
+        'satisfaction_score': satisfaction_score,
+        'satisfaction_label': satisfaction_label,
         'days_elapsed': days_elapsed,
         'total_days': total_days,
         'days_remaining': days_remaining,
@@ -2890,6 +2926,51 @@ def export_project_comprehensive_excel(request, pk):
     budget = float(project.project_cost) if project.project_cost else 0
     remaining_budget = budget - total_cost
     budget_utilization = (total_cost / budget * 100) if budget > 0 else 0
+
+    # Ratios + satisfaction (same definitions as PDF)
+    budget_used_pct = float(budget_utilization) if budget_utilization else 0.0
+    efficiency_ratio = (float(total_progress) / budget_used_pct) if budget_used_pct > 0 else None
+
+    today = timezone.now().date()
+    days_elapsed = (today - project.start_date).days if project.start_date else 0
+    total_days = (project.end_date - project.start_date).days if project.start_date and project.end_date else 0
+    expected_progress = None
+    progress_variance = None
+    performance_ratio = None
+    if project.start_date and project.end_date and total_days > 0:
+        elapsed_days = max(0, min(total_days, days_elapsed))
+        expected_progress = min(100.0, (elapsed_days / total_days) * 100.0)
+        progress_variance = float(total_progress) - float(expected_progress)
+        performance_ratio = (float(total_progress) / float(expected_progress)) if expected_progress > 0 else None
+
+    satisfaction_score = None
+    satisfaction_label = 'N/A'
+    try:
+        budget_component = None
+        if efficiency_ratio is not None:
+            budget_component = max(0.0, 100.0 - min(100.0, abs(1.0 - float(efficiency_ratio)) * 100.0))
+        schedule_component = None
+        if progress_variance is not None:
+            schedule_component = max(0.0, 100.0 - abs(float(progress_variance)))
+        if budget_component is not None and schedule_component is not None:
+            base = (0.5 * schedule_component) + (0.5 * budget_component)
+        elif budget_component is not None:
+            base = budget_component
+        else:
+            base = None
+        if base is not None and budget_used_pct > 100:
+            base = base - 10.0
+        if base is not None:
+            satisfaction_score = round(max(0.0, min(100.0, float(base))), 1)
+            if satisfaction_score >= 85:
+                satisfaction_label = 'High'
+            elif satisfaction_score >= 70:
+                satisfaction_label = 'Moderate'
+            else:
+                satisfaction_label = 'Low'
+    except Exception:
+        satisfaction_score = None
+        satisfaction_label = 'N/A'
     
     # Create Excel workbook
     wb = openpyxl.Workbook()
@@ -2913,6 +2994,13 @@ def export_project_comprehensive_excel(request, pk):
     ws1.append(['Total Spent', f'₱{total_cost:,.2f}'])
     ws1.append(['Remaining', f'₱{remaining_budget:,.2f}'])
     ws1.append(['Utilization', f'{budget_utilization:.2f}%'])
+    ws1.append([])
+    ws1.append(['PERFORMANCE & SATISFACTION'])
+    ws1.append(['Expected Progress (Timeline)', f'{expected_progress:.2f}%' if expected_progress is not None else 'N/A'])
+    ws1.append(['Progress Variance', f'{progress_variance:.2f}%' if progress_variance is not None else 'N/A'])
+    ws1.append(['Performance Ratio (Actual ÷ Expected)', f'{performance_ratio:.2f}' if performance_ratio is not None else 'N/A'])
+    ws1.append(['Efficiency Ratio (Progress ÷ Budget Used %)', f'{float(efficiency_ratio):.2f}' if efficiency_ratio is not None else 'N/A'])
+    ws1.append(['Achieve Satisfaction', f'{satisfaction_score:.1f} ({satisfaction_label})' if satisfaction_score is not None else 'N/A'])
     
     # Sheet 2: Progress Details
     ws2 = wb.create_sheet("Progress Details")
@@ -3048,6 +3136,51 @@ def export_project_comprehensive_csv(request, pk):
     budget = float(project.project_cost) if project.project_cost else 0
     remaining_budget = budget - total_cost
     budget_utilization = (total_cost / budget * 100) if budget > 0 else 0
+
+    # Ratios + satisfaction (same definitions as PDF)
+    budget_used_pct = float(budget_utilization) if budget_utilization else 0.0
+    efficiency_ratio = (float(total_progress) / budget_used_pct) if budget_used_pct > 0 else None
+
+    today = timezone.now().date()
+    days_elapsed = (today - project.start_date).days if project.start_date else 0
+    total_days = (project.end_date - project.start_date).days if project.start_date and project.end_date else 0
+    expected_progress = None
+    progress_variance = None
+    performance_ratio = None
+    if project.start_date and project.end_date and total_days > 0:
+        elapsed_days = max(0, min(total_days, days_elapsed))
+        expected_progress = min(100.0, (elapsed_days / total_days) * 100.0)
+        progress_variance = float(total_progress) - float(expected_progress)
+        performance_ratio = (float(total_progress) / float(expected_progress)) if expected_progress > 0 else None
+
+    satisfaction_score = None
+    satisfaction_label = 'N/A'
+    try:
+        budget_component = None
+        if efficiency_ratio is not None:
+            budget_component = max(0.0, 100.0 - min(100.0, abs(1.0 - float(efficiency_ratio)) * 100.0))
+        schedule_component = None
+        if progress_variance is not None:
+            schedule_component = max(0.0, 100.0 - abs(float(progress_variance)))
+        if budget_component is not None and schedule_component is not None:
+            base = (0.5 * schedule_component) + (0.5 * budget_component)
+        elif budget_component is not None:
+            base = budget_component
+        else:
+            base = None
+        if base is not None and budget_used_pct > 100:
+            base = base - 10.0
+        if base is not None:
+            satisfaction_score = round(max(0.0, min(100.0, float(base))), 1)
+            if satisfaction_score >= 85:
+                satisfaction_label = 'High'
+            elif satisfaction_score >= 70:
+                satisfaction_label = 'Moderate'
+            else:
+                satisfaction_label = 'Low'
+    except Exception:
+        satisfaction_score = None
+        satisfaction_label = 'N/A'
     
     # Create CSV response
     response = HttpResponse(content_type='text/csv')
@@ -3077,6 +3210,13 @@ def export_project_comprehensive_csv(request, pk):
     writer.writerow(['Total Spent', f'₱{total_cost:,.2f}'])
     writer.writerow(['Remaining', f'₱{remaining_budget:,.2f}'])
     writer.writerow(['Utilization', f'{budget_utilization:.2f}%'])
+    writer.writerow([])
+    writer.writerow(['PERFORMANCE & SATISFACTION'])
+    writer.writerow(['Expected Progress (Timeline)', f'{expected_progress:.2f}%' if expected_progress is not None else 'N/A'])
+    writer.writerow(['Progress Variance', f'{progress_variance:.2f}%' if progress_variance is not None else 'N/A'])
+    writer.writerow(['Performance Ratio (Actual ÷ Expected)', f'{performance_ratio:.2f}' if performance_ratio is not None else 'N/A'])
+    writer.writerow(['Efficiency Ratio (Progress ÷ Budget Used %)', f'{float(efficiency_ratio):.2f}' if efficiency_ratio is not None else 'N/A'])
+    writer.writerow(['Achieve Satisfaction', f'{satisfaction_score:.1f} ({satisfaction_label})' if satisfaction_score is not None else 'N/A'])
     writer.writerow([])
     
     # Progress Details
