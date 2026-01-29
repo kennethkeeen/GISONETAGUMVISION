@@ -2462,6 +2462,7 @@ function initializeModalButtons() {
         newForm.onsubmit = handleSubmit;
         newForm.addEventListener('submit', handleSubmit, false);
         newForm.addEventListener('submit', handleSubmit, true);
+        if (typeof initSourceOfFundsUX === 'function') initSourceOfFundsUX();
         console.log('Form submission handler initialized');
     } else {
         console.warn('Form not found');
@@ -2548,6 +2549,41 @@ function initAssignedEngineersSelectorOnce() {
 window.renderAssignedEngineerChips = renderAssignedEngineerChips;
 window.filterAssignedEngineersOptions = filterAssignedEngineersOptions;
 window.initAssignedEngineersSelectorOnce = initAssignedEngineersSelectorOnce;
+
+// Source of funds UX: if user types "new", auto-select it to satisfy required dropdown
+function initSourceOfFundsUX() {
+    const form = document.getElementById('project-form');
+    if (!form) return;
+    const fundsSelect = form.querySelector('select[name="source_of_funds"]');
+    const fundsNew = form.querySelector('input[name="source_of_funds_new"]');
+    if (!fundsSelect || !fundsNew) return;
+    if (fundsSelect.dataset.fundsUx === '1') return;
+    fundsSelect.dataset.fundsUx = '1';
+
+    const ensureOption = (val) => {
+        const v = (val || '').trim();
+        if (!v) return;
+        const has = Array.from(fundsSelect.options).some(o => (o.value || '').trim() === v);
+        if (!has) {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v;
+            fundsSelect.appendChild(opt);
+        }
+        fundsSelect.value = v;
+    };
+
+    fundsNew.addEventListener('input', () => {
+        const v = (fundsNew.value || '').trim();
+        if (v) ensureOption(v);
+    });
+
+    fundsSelect.addEventListener('change', () => {
+        if ((fundsSelect.value || '').trim()) {
+            fundsNew.value = '';
+        }
+    });
+}
 
 function populateEngineers() {
     // Get fresh reference to element

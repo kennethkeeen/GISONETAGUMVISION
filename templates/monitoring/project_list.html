@@ -768,6 +768,40 @@ const assignedEngineersSelect = document.getElementById('assigned-engineers-sele
 const assignedEngineersSearch = document.getElementById('assigned-engineers-search');
 const assignedEngineersChips = document.getElementById('assigned-engineers-chips');
 
+// Source of funds UX: if user types "new", auto-select it to satisfy required dropdown
+function initSourceOfFundsUX() {
+    if (!projectForm) return;
+    const fundsSelect = projectForm.querySelector('select[name="source_of_funds"]');
+    const fundsNew = projectForm.querySelector('input[name="source_of_funds_new"]');
+    if (!fundsSelect || !fundsNew) return;
+    if (fundsSelect.dataset.fundsUx === '1') return;
+    fundsSelect.dataset.fundsUx = '1';
+
+    const ensureOption = (val) => {
+        const v = (val || '').trim();
+        if (!v) return;
+        const has = Array.from(fundsSelect.options).some(o => (o.value || '').trim() === v);
+        if (!has) {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v;
+            fundsSelect.appendChild(opt);
+        }
+        fundsSelect.value = v;
+    };
+
+    fundsNew.addEventListener('input', () => {
+        const v = (fundsNew.value || '').trim();
+        if (v) ensureOption(v);
+    });
+
+    fundsSelect.addEventListener('change', () => {
+        if ((fundsSelect.value || '').trim()) {
+            fundsNew.value = '';
+        }
+    });
+}
+
 function _normalizeText(val) {
     return (val || '').toString().trim().toLowerCase();
 }
@@ -848,6 +882,7 @@ function showModal() {
         projectModal.classList.remove('opacity-0', 'pointer-events-none');
         setTimeout(() => projectModal.classList.add('opacity-100'), 10);
     }
+    initSourceOfFundsUX();
 }
 function hideModal() {
     if (projectModal) {
