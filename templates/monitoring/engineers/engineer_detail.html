@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% block content %}
-<div class="flex flex-col items-center w-full px-2 py-8 md:px-6 md:py-12">
+<div class="flex flex-col items-center w-full px-4 py-8 lg:px-8 lg:py-12">
     <!-- Back Button -->
-    <div class="w-full max-w-6xl mb-4">
+    <div class="w-full max-w-screen-2xl mb-4">
         <a href="{% url 'engineer_list' %}" class="text-blue-600 hover:text-blue-800 flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -15,14 +15,14 @@
     <!-- Messages -->
     {% if messages %}
         {% for message in messages %}
-            <div class="w-full max-w-6xl mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+            <div class="w-full max-w-screen-2xl mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
                 {{ message }}
             </div>
         {% endfor %}
     {% endif %}
 
     <!-- Profile Section -->
-    <div class="w-full max-w-6xl bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="w-full max-w-screen-2xl bg-white rounded-lg shadow-lg p-6 mb-6">
         <div class="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
             <div class="flex-shrink-0">
                 <div class="h-20 w-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
@@ -77,7 +77,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+    <div class="w-full max-w-screen-2xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-3xl font-bold text-gray-900">{{ total_projects }}</div>
             <div class="text-sm text-gray-600">Total Projects</div>
@@ -108,7 +108,7 @@
     </div>
 
     <!-- Assigned Projects Table -->
-    <div class="w-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
+    <div class="w-full max-w-screen-2xl bg-white rounded-lg shadow-lg overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <h3 class="text-lg font-semibold text-gray-900">Assigned Projects</h3>
