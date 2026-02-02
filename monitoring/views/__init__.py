@@ -1648,41 +1648,97 @@ def project_engineer_analytics(request, pk):
 @login_required
 @head_engineer_required
 def head_engineer_analytics(request):
-    from projeng.models import Project, ProjectProgress
-    from django.contrib.auth.models import User
+    from projeng.models import Project, ProjectProgress, SourceOfFunds, ProjectType
+    from django.db.models import Max, Q
     from django.core.paginator import Paginator
-    import json
-    # Get all projects
-    projects = Project.objects.all()
-    
-    # Apply search filter
-    search_query = request.GET.get('search', '').strip()
-    if search_query:
-        projects = projects.filter(name__icontains=search_query)
-    
-    # Apply barangay filter
-    barangay_filter = request.GET.get('barangay', '')
-    if barangay_filter:
-        projects = projects.filter(barangay=barangay_filter)
-    
-    # Get status filter (but don't apply yet - we need to calculate status first)
-    status_filter = request.GET.get('status', '')
-    
-    # Count totals (before filtering for pagination) - calculate dynamically
     from django.utils import timezone
-    from django.db.models import Max
-    all_projects = Project.objects.all()
-    total_projects_all = all_projects.count()
-    
-    # Get latest progress for all projects to calculate delayed status
-    all_project_ids = list(all_projects.values_list('id', flat=True))
+    from decimal import Decimal, InvalidOperation
+    import json
+
+    # Base queryset (will be narrowed by filters)
+    base_projects = Project.objects.all()
+
+    # Seed SourceOfFunds master list if empty (so dropdown isn't blank)
+    if not SourceOfFunds.objects.exists():
+        existing_sources = (
+            Project.objects.exclude(source_of_funds__isnull=True)
+            .exclude(source_of_funds='')
+            .values_list('source_of_funds', flat=True)
+            .distinct()
+        )
+        for name in existing_sources:
+            cleaned = (name or '').strip()
+            if cleaned and not SourceOfFunds.objects.filter(name__iexact=cleaned).exists():
+                SourceOfFunds.objects.create(name=cleaned)
+
+    source_of_funds_options = SourceOfFunds.objects.filter(is_active=True).order_by('name')
+    project_type_options = ProjectType.objects.all().order_by('name')
+
+    # Read filters (match Head Engineer filter bar)
+    barangay_filter = (request.GET.get('barangay') or '').strip()
+    status_filter = (request.GET.get('status') or '').strip()
+    duration_filter = (request.GET.get('duration') or '').strip()
+    source_of_funds_filter = (request.GET.get('source_of_funds') or '').strip()
+    project_type_filter = (request.GET.get('project_type') or '').strip()
+    cost_min_raw = (request.GET.get('cost_min') or '').strip()
+    cost_max_raw = (request.GET.get('cost_max') or '').strip()
+    search_query = (request.GET.get('search') or '').strip()
+
+    # Apply NON-status filters first (so summary cards reflect this scope)
+    if barangay_filter:
+        base_projects = base_projects.filter(barangay=barangay_filter)
+
+    if source_of_funds_filter:
+        base_projects = base_projects.filter(source_of_funds__iexact=source_of_funds_filter)
+
+    if project_type_filter:
+        try:
+            base_projects = base_projects.filter(project_type_id=int(project_type_filter))
+        except (TypeError, ValueError):
+            project_type_filter = ''
+
+    if cost_min_raw:
+        try:
+            base_projects = base_projects.filter(project_cost__gte=Decimal(cost_min_raw))
+        except (InvalidOperation, ValueError):
+            cost_min_raw = ''
+    if cost_max_raw:
+        try:
+            base_projects = base_projects.filter(project_cost__lte=Decimal(cost_max_raw))
+        except (InvalidOperation, ValueError):
+            cost_max_raw = ''
+
+    if search_query:
+        base_projects = base_projects.filter(
+            Q(name__icontains=search_query) |
+            Q(prn__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(barangay__icontains=search_query)
+        )
+
+    # Duration filter (based on project duration start_date→end_date)
+    if duration_filter:
+        projects_with_dates = base_projects.filter(start_date__isnull=False, end_date__isnull=False)
+        matching_ids = []
+        for proj in projects_with_dates.only('id', 'start_date', 'end_date'):
+            if not proj.start_date or not proj.end_date:
+                continue
+            duration_days = (proj.end_date - proj.start_date).days
+            if duration_filter == 'lt6' and duration_days < 180:
+                matching_ids.append(proj.id)
+            elif duration_filter == '6to12' and 180 <= duration_days <= 365:
+                matching_ids.append(proj.id)
+            elif duration_filter == 'gt12' and duration_days > 365:
+                matching_ids.append(proj.id)
+        base_projects = base_projects.filter(id__in=matching_ids) if matching_ids else base_projects.none()
+
+    # Build latest progress map for the current filtered scope (for cards + status filtering)
+    filtered_ids = list(base_projects.values_list('id', flat=True))
     latest_progress_all = {}
-    if all_project_ids:
-        latest_progress_qs = ProjectProgress.objects.filter(
-            project_id__in=all_project_ids
-        ).values('project_id').annotate(
+    if filtered_ids:
+        latest_progress_qs = ProjectProgress.objects.filter(project_id__in=filtered_ids).values('project_id').annotate(
             latest_date=Max('date'),
-            latest_created=Max('created_at')
+            latest_created=Max('created_at'),
         )
         for item in latest_progress_qs:
             latest = ProjectProgress.objects.filter(
@@ -1692,24 +1748,19 @@ def head_engineer_analytics(request):
             ).order_by('-created_at').first()
             if latest and latest.percentage_complete is not None:
                 latest_progress_all[item['project_id']] = int(latest.percentage_complete)
-    
-    # Calculate status counts dynamically for summary cards
+
     today = timezone.now().date()
+    total_projects_all = base_projects.count()
     completed_projects = 0
     ongoing_projects = 0
     planned_projects = 0
     delayed_projects = 0
-    
-    # Dictionary to store calculated statuses for all projects (for filtering)
+
     calculated_statuses = {}
-    
-    # Get all projects as a list to iterate (more efficient)
-    all_projects_list = list(all_projects)
-    for p in all_projects_list:
+    for p in list(base_projects):
         progress = latest_progress_all.get(p.id, 0)
         stored_status = p.status or ''
-        
-        # Calculate actual status dynamically
+
         calculated_status = stored_status
         if progress >= 99:
             calculated_status = 'completed'
@@ -1729,44 +1780,14 @@ def head_engineer_analytics(request):
         elif stored_status == 'completed':
             calculated_status = 'completed'
             completed_projects += 1
-        
+
         calculated_statuses[p.id] = calculated_status
     
-    # Now apply status filter based on calculated statuses (after search/barangay filters)
+    # Apply status filter on top of the filtered base scope
+    projects = base_projects
     if status_filter:
-        # Get filtered project IDs (projects that match search and barangay)
-        filtered_project_ids = set(projects.values_list('id', flat=True))
-        
-        if status_filter == 'in_progress':
-            # Filter to only projects that are in_progress (excluding delayed)
-            matching_ids = [pid for pid, status in calculated_statuses.items() 
-                          if status == 'in_progress' and pid in filtered_project_ids]
-            if matching_ids:
-                projects = projects.filter(id__in=matching_ids)
-            else:
-                projects = projects.none()
-        elif status_filter == 'delayed':
-            # Filter to only projects that are delayed
-            matching_ids = [pid for pid, status in calculated_statuses.items() 
-                          if status == 'delayed' and pid in filtered_project_ids]
-            if matching_ids:
-                projects = projects.filter(id__in=matching_ids)
-            else:
-                projects = projects.none()
-        elif status_filter == 'completed':
-            matching_ids = [pid for pid, status in calculated_statuses.items() 
-                          if status == 'completed' and pid in filtered_project_ids]
-            if matching_ids:
-                projects = projects.filter(id__in=matching_ids)
-            else:
-                projects = projects.none()
-        elif status_filter == 'planned':
-            matching_ids = [pid for pid, status in calculated_statuses.items() 
-                          if status == 'planned' and pid in filtered_project_ids]
-            if matching_ids:
-                projects = projects.filter(id__in=matching_ids)
-            else:
-                projects = projects.none()
+        matching_ids = [pid for pid, st in calculated_statuses.items() if st == status_filter]
+        projects = projects.filter(id__in=matching_ids) if matching_ids else projects.none()
     
     # Order by created_at descending
     projects = projects.order_by('-created_at')
@@ -1886,6 +1907,13 @@ def head_engineer_analytics(request):
         'barangay_filter': barangay_filter,
         'search_query': search_query,
         'user_role': 'head_engineer',
+        'duration_filter': duration_filter,
+        'source_of_funds_filter': source_of_funds_filter,
+        'source_of_funds_options': source_of_funds_options,
+        'project_type_options': project_type_options,
+        'project_type_filter': project_type_filter,
+        'cost_min': cost_min_raw,
+        'cost_max': cost_max_raw,
     }
     return render(request, 'monitoring/analytics.html', context)
 
