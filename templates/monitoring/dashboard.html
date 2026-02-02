@@ -185,7 +185,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="projectStatusChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="projectStatus">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -225,7 +225,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="collabStatusChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="collab">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -248,7 +248,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="budgetUtilizationChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="budgetUtilization">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -271,7 +271,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="costBreakdownChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="costBreakdown">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -294,10 +294,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="monthlySpendingChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="monthlySpending">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
 
@@ -314,7 +317,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="projectsPerMonthChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="projectsPerMonth">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -345,7 +348,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="projectsByZoneChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="projectsByZone">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -369,7 +372,7 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="zoneCostChart"></canvas>
                 </div>
-                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100" data-chart-id="zoneCost">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
                     <div class="chart-period-buttons flex justify-center gap-2">
                         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
@@ -394,28 +397,99 @@
         const calcPercent = (value, total) => total > 0 ? ((value / total) * 100) : 0;
         const fmtMoney = (value) => '₱' + Number(value || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-        // Chart period (for Spending + Cost Breakdown); shared by all charts, shown below each chart
-        let chartPeriod = 'month';
-        const getPeriod = () => chartPeriod;
-        function setPeriodButtonsActive(period) {
-            document.querySelectorAll('.chart-period-buttons').forEach(container => {
-                container.querySelectorAll('.chart-period-btn').forEach(btn => {
-                    const p = btn.getAttribute('data-period');
-                    if (p === period) {
-                        btn.classList.remove('border-gray-200', 'text-gray-600', 'bg-transparent');
-                        btn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
-                    } else {
-                        btn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
-                        btn.classList.add('border-gray-200', 'text-gray-600');
-                    }
-                });
+        // Chart period: each chart has its own period (no shared control)
+        const chartPeriods = {
+            projectStatus: 'month',
+            collab: 'month',
+            budgetUtilization: 'month',
+            costBreakdown: 'month',
+            monthlySpending: 'month',
+            projectsPerMonth: 'month',
+            projectsByZone: 'month',
+            zoneCost: 'month'
+        };
+        function getPeriod(chartId) { return chartPeriods[chartId] || 'month'; }
+        function setPeriodButtonsActiveInWrap(wrap, period) {
+            if (!wrap) return;
+            wrap.querySelectorAll('.chart-period-btn').forEach(btn => {
+                const p = btn.getAttribute('data-period');
+                if (p === period) {
+                    btn.classList.remove('border-gray-200', 'text-gray-600', 'bg-transparent');
+                    btn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+                } else {
+                    btn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
+                    btn.classList.add('border-gray-200', 'text-gray-600');
+                }
             });
         }
-        document.querySelectorAll('.chart-period-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                chartPeriod = this.getAttribute('data-period') || 'month';
-                setPeriodButtonsActive(chartPeriod);
-                loadPeriodCharts();
+        function loadOneChart(chartId) {
+            const period = getPeriod(chartId);
+            if (chartId === 'budgetUtilization') {
+                fetch(`{% url "dashboard_budget_utilization_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
+                            if (budgetUtilChart) budgetUtilChart.destroy();
+                            budgetUtilChart = new Chart(ctx, {
+                                type: 'bar', data: data,
+                                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                                    scales: { x: { beginAtZero: true, title: { display: true, text: 'Budget Utilization (%)' }, ticks: { callback: v => v + '%' } } },
+                                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'Utilization: ' + c.parsed.x.toFixed(1) + '%' } } }
+                                }
+                            });
+                        } catch (e) { console.error('Error rendering budget utilization chart:', e); }
+                    }).catch(e => console.error('Error fetching budget utilization data:', e));
+            } else if (chartId === 'collab') {
+                fetch(`{% url "dashboard_collab_analytics_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => { try { drawCollabCharts(data.barangay || {}, data.status || {}); } catch (e) { console.error('Error drawing collab charts:', e); } })
+                    .catch(e => console.error('Error fetching collab analytics:', e));
+            } else if (chartId === 'costBreakdown') {
+                fetch(`{% url "dashboard_cost_breakdown_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+                            if (costBreakdownChart) costBreakdownChart.destroy();
+                            costBreakdownChart = new Chart(ctx, {
+                                type: 'doughnut', data: data,
+                                options: { responsive: true, maintainAspectRatio: false, plugins: {
+                                    legend: { position: 'bottom' },
+                                    tooltip: { callbacks: { label: c => { const t = c.dataset.data.reduce((a,b)=>a+b,0); return c.label + ': ' + fmtMoney(c.parsed) + ' (' + calcPercent(c.parsed, t).toFixed(1) + '%)'; } } }
+                                } }
+                            });
+                        } catch (e) { console.error('Error rendering cost breakdown chart:', e); }
+                    }).catch(e => console.error('Error fetching cost breakdown data:', e));
+            } else if (chartId === 'monthlySpending') {
+                fetch(`{% url "dashboard_monthly_spending_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('monthlySpendingChart').getContext('2d');
+                            if (spendingChart) spendingChart.destroy();
+                            spendingChart = new Chart(ctx, {
+                                type: 'line', data: data,
+                                options: { responsive: true, maintainAspectRatio: false,
+                                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Spending (₱)' }, ticks: { callback: v => '₱' + Number(v).toLocaleString('en-US') } } },
+                                    plugins: { legend: { display: true, position: 'top' }, tooltip: { callbacks: { label: c => 'Spending: ' + fmtMoney(c.parsed.y) } } }
+                                }
+                            });
+                        } catch (e) { console.error('Error rendering spending chart:', e); }
+                    }).catch(e => console.error('Error fetching spending data:', e));
+            }
+        }
+        document.querySelectorAll('.chart-period-wrap').forEach(wrap => {
+            const chartId = wrap.getAttribute('data-chart-id');
+            if (!chartId) return;
+            setPeriodButtonsActiveInWrap(wrap, getPeriod(chartId));
+            wrap.querySelectorAll('.chart-period-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const period = this.getAttribute('data-period') || 'month';
+                    chartPeriods[chartId] = period;
+                    setPeriodButtonsActiveInWrap(wrap, period);
+                    loadOneChart(chartId);
+                });
             });
         });
 
@@ -514,140 +588,12 @@
             }
         }
 
-        // Chart 4: Budget Utilization + Collab Barangay/Status — load with period (initial + on period change)
-        // Chart 5: Cost Breakdown by Type
-        async function loadPeriodCharts() {
-            const period = getPeriod();
-
-            // Budget Utilization (functional with period)
-            fetch(`{% url "dashboard_budget_utilization_data" %}?period=${encodeURIComponent(period)}`)
-             .then(response => response.json())
-             .then(data => {
-                 try {
-                     const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
-                     if (budgetUtilChart) budgetUtilChart.destroy();
-                     budgetUtilChart = new Chart(ctx, {
-                         type: 'bar',
-                         data: data,
-                         options: {
-                             responsive: true,
-                             maintainAspectRatio: false,
-                             indexAxis: 'y',
-                             scales: {
-                                 x: {
-                                     beginAtZero: true,
-                                     title: { display: true, text: 'Budget Utilization (%)' },
-                                     ticks: { callback: function(value) { return value + '%'; } }
-                                 }
-                             },
-                             plugins: {
-                                 legend: { display: false },
-                                 tooltip: { callbacks: { label: function(context) { return 'Utilization: ' + context.parsed.x.toFixed(1) + '%'; } } }
-                             }
-                         }
-                     });
-                 } catch (e) {
-                     console.error('Error rendering budget utilization chart:', e);
-                 }
-             })
-             .catch(e => console.error('Error fetching budget utilization data:', e));
-
-            // Collab Analytics (Barangay + Status) — functional with period
-            fetch(`{% url "dashboard_collab_analytics_data" %}?period=${encodeURIComponent(period)}`)
-             .then(response => response.json())
-             .then(data => {
-                 try {
-                     drawCollabCharts(data.barangay || {}, data.status || {});
-                 } catch (e) {
-                     console.error('Error drawing collab charts:', e);
-                 }
-             })
-             .catch(e => console.error('Error fetching collab analytics:', e));
-
-            // Cost Breakdown
-            fetch(`{% url "dashboard_cost_breakdown_data" %}?period=${encodeURIComponent(period)}`)
-             .then(response => response.json())
-             .then(data => {
-                 try {
-                     const ctx = document.getElementById('costBreakdownChart').getContext('2d');
-                     if (costBreakdownChart) costBreakdownChart.destroy();
-                     costBreakdownChart = new Chart(ctx, {
-                         type: 'doughnut',
-                         data: data,
-                         options: {
-                             responsive: true,
-                             maintainAspectRatio: false,
-                             plugins: {
-                                 legend: { position: 'bottom' },
-                                 tooltip: {
-                                     callbacks: {
-                                         label: function(context) {
-                                             const label = context.label || '';
-                                             const value = context.parsed || 0;
-                                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                             const percentage = calcPercent(value, total).toFixed(1);
-                                             return `${label}: ${fmtMoney(value)} (${percentage}%)`;
-                                         }
-                                     }
-                                 }
-                             }
-                         }
-                     });
-                 } catch (error) {
-                     console.error('Error rendering cost breakdown chart:', error);
-                     document.getElementById('costBreakdownChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-                 }
-             })
-             .catch(error => {
-                 console.error('Error fetching cost breakdown data:', error);
-                 document.getElementById('costBreakdownChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-             });
-
-            // Spending Trend
-            fetch(`{% url "dashboard_monthly_spending_data" %}?period=${encodeURIComponent(period)}`)
-             .then(response => response.json())
-             .then(data => {
-                 try {
-                     const ctx = document.getElementById('monthlySpendingChart').getContext('2d');
-                     if (spendingChart) spendingChart.destroy();
-                     spendingChart = new Chart(ctx, {
-                         type: 'line',
-                         data: data,
-                         options: {
-                             responsive: true,
-                             maintainAspectRatio: false,
-                             scales: {
-                                 y: {
-                                     beginAtZero: true,
-                                     title: { display: true, text: 'Spending (₱)' },
-                                     ticks: {
-                                         callback: function(value) {
-                                             return '₱' + Number(value).toLocaleString('en-US');
-                                         }
-                                     }
-                                 }
-                             },
-                             plugins: {
-                                 legend: { display: true, position: 'top' },
-                                 tooltip: {
-                                     callbacks: {
-                                         label: function(context) {
-                                             return `Spending: ${fmtMoney(context.parsed.y)}`;
-                                         }
-                                     }
-                                 }
-                             }
-                         }
-                     });
-                 } catch (error) {
-                     console.error('Error rendering spending chart:', error);
-                     document.getElementById('monthlySpendingChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-                 }
-             })
-             .catch(error => {
-                 console.error('Error fetching spending data:', error);
-                 document.getElementById('monthlySpendingChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-             });
+        // Initial load: load each period-driven chart with its own period (default 'month')
+        function loadPeriodCharts() {
+            loadOneChart('budgetUtilization');
+            loadOneChart('collab');
+            loadOneChart('costBreakdown');
+            loadOneChart('monthlySpending');
         }
 
         loadPeriodCharts();
