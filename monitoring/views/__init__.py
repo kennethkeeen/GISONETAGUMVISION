@@ -196,7 +196,7 @@ def dashboard(request):
         # Sort keys for consistent chart order
         collab_by_barangay = {k: collab_by_barangay[k] for k in sorted(collab_by_barangay.keys())}
         collab_by_status = {k: collab_by_status[k] for k in sorted(collab_by_status.keys())}
-        
+
         # Calculate completion rate
         completion_rate = 0.0
         if project_count > 0:
@@ -226,23 +226,35 @@ def dashboard(request):
 @login_required
 @prevent_project_engineer_access
 def dashboard_budget_utilization_data(request):
-    """API endpoint for Budget Utilization by Project chart"""
+    """API endpoint for Budget Utilization by Project chart (supports period: week/month/year)"""
     from projeng.models import Project, ProjectCost
     from django.db.models import Sum
     from django.http import JsonResponse
-    
+    from datetime import timedelta
+
     if is_head_engineer(request.user) or is_finance_manager(request.user):
         projects = Project.objects.filter(project_cost__isnull=False).exclude(project_cost=0)
     else:
         projects = Project.objects.none()
-    
-    # Calculate budget utilization for each project
+
+    # Optional period filter: only include costs within the selected period
+    period = (request.GET.get('period') or 'month').strip().lower()
+    now = timezone.now().date()
+    if period == 'week':
+        start_date = now - timedelta(days=7)
+    elif period == 'year':
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = now - timedelta(days=30)
+
+    # Calculate budget utilization for each project (costs within period vs full budget)
     project_data = []
     for project in projects:
-        total_cost = ProjectCost.objects.filter(project=project).aggregate(
-            total=Sum('amount')
-        )['total'] or 0
-        
+        total_cost = ProjectCost.objects.filter(
+            project=project,
+            date__gte=start_date
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
         if project.project_cost and float(project.project_cost) > 0:
             utilization = (float(total_cost) / float(project.project_cost)) * 100
             project_data.append({
@@ -283,6 +295,47 @@ def dashboard_budget_utilization_data(request):
             'borderWidth': 1
         }]
     })
+
+
+@login_required
+@prevent_project_engineer_access
+def dashboard_collab_analytics_data(request):
+    """API endpoint for Projects per Barangay and Projects per Status, filtered by period (week/month/year)."""
+    from projeng.models import Project
+    from django.http import JsonResponse
+    from datetime import timedelta
+    from collections import defaultdict
+
+    if not (is_head_engineer(request.user) or is_finance_manager(request.user)):
+        return JsonResponse({'barangay': {}, 'status': {}})
+
+    period = (request.GET.get('period') or 'month').strip().lower()
+    now = timezone.now().date()
+    if period == 'week':
+        start_date = now - timedelta(days=7)
+    elif period == 'year':
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = now - timedelta(days=30)
+
+    projects = Project.objects.filter(created_at__date__gte=start_date)
+    collab_by_barangay = defaultdict(int)
+    collab_by_status = defaultdict(int)
+    for p in projects:
+        if p.barangay and isinstance(p.barangay, str) and p.barangay.strip():
+            collab_by_barangay[p.barangay.strip()] += 1
+        if p.status and isinstance(p.status, str) and p.status.strip():
+            status = (
+                'Ongoing' if p.status in ['in_progress', 'ongoing'] else
+                'Planned' if p.status in ['planned', 'pending'] else
+                'Completed' if p.status == 'completed' else
+                'Delayed' if p.status == 'delayed' else p.status.title()
+            )
+            collab_by_status[status] += 1
+    collab_by_barangay = {k: collab_by_barangay[k] for k in sorted(collab_by_barangay.keys())}
+    collab_by_status = {k: collab_by_status[k] for k in sorted(collab_by_status.keys())}
+    return JsonResponse({'barangay': collab_by_barangay, 'status': dict(collab_by_status)})
+
 
 @login_required
 @prevent_project_engineer_access

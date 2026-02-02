@@ -185,10 +185,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="projectStatusChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
 
@@ -222,10 +225,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="collabStatusChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
 
@@ -242,6 +248,14 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="budgetUtilizationChart"></canvas>
                 </div>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Chart 5: Cost Breakdown by Type -->
@@ -257,10 +271,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="costBreakdownChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
 
@@ -297,10 +314,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="projectsPerMonthChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -325,10 +345,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="projectsByZoneChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
 
@@ -346,10 +369,13 @@
                 <div class="chart-container" style="position: relative; height:300px; width:100%">
                     <canvas id="zoneCostChart"></canvas>
                 </div>
-                <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                    <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
-                    <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
-                    <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                <div class="chart-period-wrap mt-4 pt-3 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">Chart period</p>
+                    <div class="chart-period-buttons flex justify-center gap-2">
+                        <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Weekly</button>
+                        <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-blue-500 bg-blue-50 text-blue-700">Monthly</button>
+                        <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50">Yearly</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -398,6 +424,8 @@
         let costBreakdownChart = null;
         let spendingChart = null;
         let projectsPerMonthChart = null;
+        let collabBarangayChart = null;
+        let collabStatusChart = null;
 
         // Chart 1: Overall Status Distribution (doughnut)
         const statusCtx = document.getElementById('projectStatusChart').getContext('2d');
@@ -447,136 +475,94 @@
             }
         });
 
-        // Collaborative Projects per Barangay Chart
-        const collabBarangayElem = document.getElementById('collab-barangay-data');
-        if (collabBarangayElem) {
-          const collabBarangayLabels = JSON.parse(collabBarangayElem.textContent);
-          const collabBarangayData = Object.values(collabBarangayLabels);
-          const collabBarangayKeys = Object.keys(collabBarangayLabels);
-          if (collabBarangayKeys.length > 0) {
-            const collabBarangayCtx = document.getElementById('collabBarangayChart').getContext('2d');
-            new Chart(collabBarangayCtx, {
-              type: 'bar',
-              data: {
-                labels: collabBarangayKeys,
-                datasets: [{
-                  label: 'Collaborative Projects',
-                  data: collabBarangayData,
-                  backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                  borderColor: 'rgba(59, 130, 246, 1)',
-                  borderWidth: 1
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, stepSize: 1 } }
-              }
-            });
-          } else {
-            document.getElementById('collabBarangayChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No collaborative projects found.</div>';
-          }
+        // Helper: draw Barangay and Status charts from API data (used on load and when period changes)
+        function drawCollabCharts(barangayData, statusData) {
+            const barCtx = document.getElementById('collabBarangayChart');
+            const statusCtx = document.getElementById('collabStatusChart');
+            if (!barCtx || !statusCtx) return;
+            if (collabBarangayChart) { collabBarangayChart.destroy(); collabBarangayChart = null; }
+            if (collabStatusChart) { collabStatusChart.destroy(); collabStatusChart = null; }
+            const barKeys = Object.keys(barangayData);
+            const barVals = Object.values(barangayData);
+            if (barKeys.length > 0) {
+                collabBarangayChart = new Chart(barCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: barKeys,
+                        datasets: [{ label: 'Projects', data: barVals, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, stepSize: 1 } } }
+                });
+            }
+            const statusKeys = Object.keys(statusData);
+            const statusVals = Object.values(statusData);
+            if (statusKeys.length > 0) {
+                collabStatusChart = new Chart(statusCtx.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: statusKeys,
+                        datasets: [{
+                            label: 'Projects',
+                            data: statusVals,
+                            backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(251, 191, 36, 0.7)', 'rgba(139, 92, 246, 0.7)', 'rgba(239, 68, 68, 0.7)'],
+                            borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)', 'rgba(251, 191, 36, 1)', 'rgba(139, 92, 246, 1)', 'rgba(239, 68, 68, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
         }
 
-        // Collaborative Projects per Status Chart
-        const collabStatusElem = document.getElementById('collab-status-data');
-        if (collabStatusElem) {
-          const collabStatusLabels = JSON.parse(collabStatusElem.textContent);
-          const collabStatusData = Object.values(collabStatusLabels);
-          const collabStatusKeys = Object.keys(collabStatusLabels);
-          if (collabStatusKeys.length > 0) {
-            const collabStatusCtx = document.getElementById('collabStatusChart').getContext('2d');
-            new Chart(collabStatusCtx, {
-              type: 'pie',
-              data: {
-                labels: collabStatusKeys,
-                datasets: [{
-                  label: 'Collaborative Projects',
-                  data: collabStatusData,
-                  backgroundColor: [
-                    'rgba(59, 130, 246, 0.7)',
-                    'rgba(34, 197, 94, 0.7)',
-                    'rgba(251, 191, 36, 0.7)',
-                    'rgba(139, 92, 246, 0.7)',
-                    'rgba(239, 68, 68, 0.7)'
-                  ],
-                  borderColor: [
-                    'rgba(59, 130, 246, 1)',
-                    'rgba(34, 197, 94, 1)',
-                    'rgba(251, 191, 36, 1)',
-                    'rgba(139, 92, 246, 1)',
-                    'rgba(239, 68, 68, 1)'
-                  ],
-                  borderWidth: 1
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-              }
-            });
-          } else {
-            document.getElementById('collabStatusChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No collaborative projects found.</div>';
-          }
-        }
-
-        // Chart 4: Budget Utilization by Project
-        fetch('{% url "dashboard_budget_utilization_data" %}')
-         .then(response => response.json())
-         .then(data => {
-             try {
-                 const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
-                 if (budgetUtilChart) budgetUtilChart.destroy();
-                 budgetUtilChart = new Chart(ctx, {
-                     type: 'bar',
-                     data: data,
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         indexAxis: 'y',
-                         scales: {
-                             x: {
-                                 beginAtZero: true,
-                                 title: {
-                                     display: true,
-                                     text: 'Budget Utilization (%)'
-                                 },
-                                 ticks: {
-                                     callback: function(value) {
-                                         return value + '%';
-                                     }
-                                 }
-                             }
-                         },
-                         plugins: {
-                             legend: {
-                                 display: false
-                             },
-                             tooltip: {
-                                 callbacks: {
-                                     label: function(context) {
-                                         return 'Utilization: ' + context.parsed.x.toFixed(1) + '%';
-                                     }
-                                 }
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering budget utilization chart:', error);
-                 document.getElementById('budgetUtilizationChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-             }
-         })
-         .catch(error => {
-             console.error('Error fetching budget utilization data:', error);
-             document.getElementById('budgetUtilizationChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-         });
-
+        // Chart 4: Budget Utilization + Collab Barangay/Status — load with period (initial + on period change)
         // Chart 5: Cost Breakdown by Type
         async function loadPeriodCharts() {
             const period = getPeriod();
+
+            // Budget Utilization (functional with period)
+            fetch(`{% url "dashboard_budget_utilization_data" %}?period=${encodeURIComponent(period)}`)
+             .then(response => response.json())
+             .then(data => {
+                 try {
+                     const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
+                     if (budgetUtilChart) budgetUtilChart.destroy();
+                     budgetUtilChart = new Chart(ctx, {
+                         type: 'bar',
+                         data: data,
+                         options: {
+                             responsive: true,
+                             maintainAspectRatio: false,
+                             indexAxis: 'y',
+                             scales: {
+                                 x: {
+                                     beginAtZero: true,
+                                     title: { display: true, text: 'Budget Utilization (%)' },
+                                     ticks: { callback: function(value) { return value + '%'; } }
+                                 }
+                             },
+                             plugins: {
+                                 legend: { display: false },
+                                 tooltip: { callbacks: { label: function(context) { return 'Utilization: ' + context.parsed.x.toFixed(1) + '%'; } } }
+                             }
+                         }
+                     });
+                 } catch (e) {
+                     console.error('Error rendering budget utilization chart:', e);
+                 }
+             })
+             .catch(e => console.error('Error fetching budget utilization data:', e));
+
+            // Collab Analytics (Barangay + Status) — functional with period
+            fetch(`{% url "dashboard_collab_analytics_data" %}?period=${encodeURIComponent(period)}`)
+             .then(response => response.json())
+             .then(data => {
+                 try {
+                     drawCollabCharts(data.barangay || {}, data.status || {});
+                 } catch (e) {
+                     console.error('Error drawing collab charts:', e);
+                 }
+             })
+             .catch(e => console.error('Error fetching collab analytics:', e));
 
             // Cost Breakdown
             fetch(`{% url "dashboard_cost_breakdown_data" %}?period=${encodeURIComponent(period)}`)
