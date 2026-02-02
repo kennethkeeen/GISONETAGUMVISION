@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+import secrets
 
 # Import custom storage backend
 def get_media_storage():
@@ -95,6 +97,26 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+    def _generate_unique_prn(self) -> str:
+        """
+        Generate a human-friendly random PRN.
+        Example: PRN-260202-A1B2C3
+        """
+        date_part = timezone.now().strftime("%y%m%d")
+        # 6 hex chars; upper for readability
+        rand_part = secrets.token_hex(3).upper()
+        return f"PRN-{date_part}-{rand_part}"
+
+    def save(self, *args, **kwargs):
+        # Auto-generate PRN if left blank (panel suggestion)
+        if not (self.prn or "").strip():
+            # Ensure uniqueness at application level (DB does not enforce unique)
+            candidate = self._generate_unique_prn()
+            while Project.objects.filter(prn=candidate).exclude(pk=self.pk).exists():
+                candidate = self._generate_unique_prn()
+            self.prn = candidate
+        super().save(*args, **kwargs)
 
     def get_status_display_class(self):
         status_classes = {
