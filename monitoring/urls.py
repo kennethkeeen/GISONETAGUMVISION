@@ -37,6 +37,9 @@ urlpatterns = [
     path('projects/<int:pk>/export-comprehensive-pdf/', views.export_project_comprehensive_pdf, name='export_project_comprehensive_pdf'),
     path('projects/<int:pk>/export-comprehensive-excel/', views.export_project_comprehensive_excel, name='export_project_comprehensive_excel'),
     path('projects/<int:pk>/export-comprehensive-csv/', views.export_project_comprehensive_csv, name='export_project_comprehensive_csv'),
+
+    # API: create new ProjectType from UI (modal "Add new type")
+    path('api/project-types/create/', views.create_project_type_api, name='create_project_type_api'),
     path('finance/dashboard/', finance_dashboard, name='finance_dashboard'),
     path('finance/projects/', finance_projects, name='finance_projects'),
     path('finance/cost-management/', finance_cost_management, name='finance_cost_management'),

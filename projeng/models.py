@@ -723,7 +723,8 @@ class ProjectType(models.Model):
     ]
     
     name = models.CharField(max_length=100, unique=True)
-    code = models.CharField(max_length=50, unique=True, choices=PROJECT_TYPE_CHOICES)
+    # Allow custom codes beyond the seeded choices so Head Engineers can add new types from UI.
+    code = models.CharField(max_length=50, unique=True, db_index=True)
     description = models.TextField(blank=True)
     
     # Characteristics

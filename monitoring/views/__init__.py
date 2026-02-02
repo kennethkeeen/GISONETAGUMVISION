@@ -41,6 +41,47 @@ from gistagum.access_control import (
     get_user_dashboard_url
 )
 
+def _get_or_create_project_type_by_name(name: str):
+    """
+    Create (or return existing) ProjectType by name.
+    Used by the "Add new project type" UX in modals.
+    """
+    from django.utils.text import slugify
+    from projeng.models import ProjectType
+
+    cleaned = (name or "").strip()
+    if not cleaned:
+        return None
+
+    existing = ProjectType.objects.filter(name__iexact=cleaned).first()
+    if existing:
+        return existing
+
+    # Generate a stable unique code
+    base = (slugify(cleaned) or "custom").replace("-", "_")
+    base = (base or "custom")[:50]
+    code = base
+    if ProjectType.objects.filter(code__iexact=code).exists():
+        i = 2
+        while True:
+            suffix = f"_{i}"
+            code = (base[: max(1, 50 - len(suffix))] + suffix)[:50]
+            if not ProjectType.objects.filter(code__iexact=code).exists():
+                break
+            i += 1
+
+    # Use sensible defaults for required characteristics
+    return ProjectType.objects.create(
+        name=cleaned[:100],
+        code=code,
+        description="",
+        density_level="medium",
+        height_category=None,
+        requires_industrial=False,
+        requires_commercial=False,
+        requires_residential=False,
+    )
+
 def home(request):
     """
     Redirect to login page - no direct access to home
@@ -404,6 +445,14 @@ def project_list(request):
             from django.contrib import messages
             messages.error(request, 'Source of Funds is required.')
             return redirect('project_list')
+
+        # Allow "Add new project type" (ProjectType FK requires an ID)
+        new_project_type = (post_data.get('project_type_new') or '').strip()
+        selected_project_type = (post_data.get('project_type') or '').strip()
+        if new_project_type and not selected_project_type:
+            pt = _get_or_create_project_type_by_name(new_project_type)
+            if pt:
+                post_data['project_type'] = str(pt.id)
         
         # Check if this is an edit operation
         project_id = request.POST.get('project_id')
@@ -853,11 +902,35 @@ def project_list(request):
         'cost_max': cost_max_raw,
     })
 
+
+@login_required
+def create_project_type_api(request):
+    """Create a new ProjectType (or return existing) via AJAX."""
+    if request.method != 'POST':
+        return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
+    if not (is_head_engineer(request.user) or is_finance_manager(request.user) or request.user.is_superuser):
+        return JsonResponse({"success": False, "error": "Not allowed"}, status=403)
+
+    try:
+        payload = json.loads((request.body or b"{}").decode("utf-8"))
+    except Exception:
+        return JsonResponse({"success": False, "error": "Invalid JSON body"}, status=400)
+
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return JsonResponse({"success": False, "error": "Project type name is required"}, status=400)
+
+    pt = _get_or_create_project_type_by_name(name)
+    if not pt:
+        return JsonResponse({"success": False, "error": "Could not create project type"}, status=400)
+
+    return JsonResponse({"success": True, "id": pt.id, "name": pt.name, "code": pt.code})
+
 @login_required
 @prevent_project_engineer_access
 def map_view(request):
     try:
-        from projeng.models import SourceOfFunds
+        from projeng.models import SourceOfFunds, ProjectType
         if is_head_engineer(request.user) or is_finance_manager(request.user):
             projects = Project.objects.all()
         elif is_project_engineer(request.user):
@@ -1000,6 +1073,7 @@ def map_view(request):
             'projects_data': projects_data,
             'is_head_engineer': is_head_engineer(request.user),
             'source_of_funds_options': SourceOfFunds.objects.filter(is_active=True).order_by('name'),
+            'project_type_options': ProjectType.objects.all().order_by('name'),
         }
         return render(request, 'monitoring/map.html', context)
     except Exception as e:

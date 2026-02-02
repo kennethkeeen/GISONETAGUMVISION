@@ -325,6 +325,15 @@
                             <option value="in_progress">Ongoing</option>
                             <option value="completed">Completed</option>
                         </select>
+                        <label class="font-semibold text-gray-700">Project Type</label>
+                        <select name="project_type" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none">
+                            <option value="">Select project type (optional)</option>
+                            {% for pt in project_type_options %}
+                                <option value="{{ pt.id }}">{{ pt.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Or add new project type</label>
+                        <input type="text" name="project_type_new" class="rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" placeholder="Type new project type (optional)" />
                         <label class="font-semibold text-gray-700">Assigned Engineers</label>
                         <!-- Searchable engineer selector (panel #17) -->
                         <input
@@ -807,6 +816,82 @@ function initSourceOfFundsUX() {
     });
 }
 
+// Project type UX: allow adding new ProjectType and sync across dropdowns
+function initProjectTypeUX() {
+    if (!projectForm) return;
+    const typeSelect = projectForm.querySelector('select[name="project_type"]');
+    const typeNew = projectForm.querySelector('input[name="project_type_new"]');
+    if (!typeSelect || !typeNew) return;
+    if (typeSelect.dataset.ptUx === '1') return;
+    typeSelect.dataset.ptUx = '1';
+
+    const getCookie = (name) => {
+        const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return m ? decodeURIComponent(m[2]) : '';
+    };
+
+    const ensureOptionEverywhere = (id, label) => {
+        const allSelects = Array.from(document.querySelectorAll('select[name="project_type"]'));
+        allSelects.forEach(sel => {
+            const has = Array.from(sel.options).some(o => (o.value || '') === String(id));
+            if (!has) {
+                const opt = document.createElement('option');
+                opt.value = String(id);
+                opt.textContent = label;
+                sel.appendChild(opt);
+            }
+        });
+        typeSelect.value = String(id);
+    };
+
+    const createType = async (name) => {
+        const resp = await fetch("{% url 'create_project_type_api' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ name }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.success) {
+            const msg = (data && (data.error || data.message)) || 'Failed to create project type.';
+            throw new Error(msg);
+        }
+        return data;
+    };
+
+    const submitNew = async () => {
+        const name = (typeNew.value || '').trim();
+        if (!name) return;
+        try {
+            const data = await createType(name);
+            ensureOptionEverywhere(data.id, data.name || name);
+            typeNew.value = '';
+        } catch (e) {
+            console.error(e);
+            alert(e.message || 'Failed to create project type.');
+        }
+    };
+
+    typeNew.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitNew();
+        }
+    });
+    typeNew.addEventListener('blur', () => {
+        // Create on blur for mouse users
+        submitNew();
+    });
+    typeSelect.addEventListener('change', () => {
+        if ((typeSelect.value || '').trim()) {
+            typeNew.value = '';
+        }
+    });
+}
+
 function _normalizeText(val) {
     return (val || '').toString().trim().toLowerCase();
 }
@@ -888,6 +973,7 @@ function showModal() {
         setTimeout(() => projectModal.classList.add('opacity-100'), 10);
     }
     initSourceOfFundsUX();
+    initProjectTypeUX();
 }
 function hideModal() {
     if (projectModal) {
