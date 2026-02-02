@@ -153,9 +153,9 @@ def engineer_detail(request, engineer_id):
     # Scope: all (default), combined (shared with other engineers), own (engineer is sole assignee)
     filtered_projects = assigned_projects
     if scope_filter == 'own':
-        filtered_projects = filtered_projects.annotate(num_assignees=Count('assigned_engineers')).filter(num_assignees=1)
+        filtered_projects = filtered_projects.annotate(num_assignees=Count('assigned_engineers', distinct=True)).filter(num_assignees=1)
     elif scope_filter == 'combined':
-        filtered_projects = filtered_projects.annotate(num_assignees=Count('assigned_engineers')).filter(num_assignees__gt=1)
+        filtered_projects = filtered_projects.annotate(num_assignees=Count('assigned_engineers', distinct=True)).filter(num_assignees__gt=1)
 
     if search_query:
         filtered_projects = filtered_projects.filter(

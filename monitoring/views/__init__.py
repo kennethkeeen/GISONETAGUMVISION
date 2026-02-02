@@ -633,12 +633,14 @@ def project_list(request):
                 message = 'Project updated successfully!' if is_edit else 'Project created successfully!'
                 return JsonResponse({'success': True, 'message': message, 'project_id': project.id})
             
-            # Optionally add a success message or redirect
+            # Success message including assigned engineers so user can verify
             from django.contrib import messages
+            assigned = list(project.assigned_engineers.values_list('username', flat=True))
+            assigned_str = ', '.join(assigned) if assigned else 'None'
             if is_edit:
-                messages.success(request, 'Project updated successfully!')
+                messages.success(request, f'Project updated successfully! Assigned engineers: {assigned_str}.')
             else:
-                messages.success(request, 'Project created successfully!')
+                messages.success(request, f'Project created successfully! Assigned engineers: {assigned_str}.')
             return redirect('project_list')
         else:
             # Return JSON errors for AJAX requests

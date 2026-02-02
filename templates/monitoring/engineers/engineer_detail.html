@@ -228,7 +228,7 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 text-sm font-medium">
-                            <a href="{% url 'project_detail' project.id %}" class="text-blue-600 hover:text-blue-900">View</a>
+                            <a href="{% url 'monitoring_project_detail' pk=project.id %}" class="text-blue-600 hover:text-blue-900">View</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -238,6 +238,9 @@
         {% else %}
         <div class="px-6 py-12 text-center">
             <p class="text-gray-500">This engineer has no assigned projects.</p>
+            {% if scope_filter == 'combined' and total_projects > 0 %}
+            <p class="text-sm text-gray-400 mt-2">No projects with multiple engineers. Try <strong>All</strong> or <strong>Engineer's own</strong> in the Scope filter.</p>
+            {% endif %}
         </div>
         {% endif %}
     </div>
