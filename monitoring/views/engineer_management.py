@@ -7,7 +7,7 @@ from django.contrib.auth.models import User, Group
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
-from projeng.models import Project
+from projeng.models import Project, ProjectType
 from monitoring.forms import EngineerCreateForm, EngineerEditForm
 from gistagum.access_control import head_engineer_required
 
@@ -142,9 +142,56 @@ def engineer_detail(request, engineer_id):
     else:
         total_progress = 0
 
-    # Get project details for display
+    # Filters for the assigned projects list (include planned + extra filters)
+    search_query = (request.GET.get('search') or '').strip()
+    status_filter = (request.GET.get('status') or '').strip()
+    project_type_filter = (request.GET.get('project_type') or '').strip()
+    cost_min_raw = (request.GET.get('cost_min') or '').strip()
+    cost_max_raw = (request.GET.get('cost_max') or '').strip()
+
+    filtered_projects = assigned_projects
+
+    if search_query:
+        filtered_projects = filtered_projects.filter(
+            Q(name__icontains=search_query) |
+            Q(prn__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    if status_filter:
+        if status_filter == 'in_progress':
+            filtered_projects = filtered_projects.filter(status__in=['in_progress', 'ongoing'])
+        elif status_filter == 'planned':
+            filtered_projects = filtered_projects.filter(status__in=['planned', 'pending'])
+        else:
+            filtered_projects = filtered_projects.filter(status=status_filter)
+
+    if project_type_filter:
+        try:
+            filtered_projects = filtered_projects.filter(project_type_id=int(project_type_filter))
+        except (TypeError, ValueError):
+            project_type_filter = ''
+
+    # Cost range filters
+    from decimal import Decimal, InvalidOperation
+    if cost_min_raw:
+        try:
+            filtered_projects = filtered_projects.filter(project_cost__gte=Decimal(cost_min_raw))
+        except (InvalidOperation, ValueError):
+            cost_min_raw = ''
+    if cost_max_raw:
+        try:
+            filtered_projects = filtered_projects.filter(project_cost__lte=Decimal(cost_max_raw))
+        except (InvalidOperation, ValueError):
+            cost_max_raw = ''
+
+    filtered_projects = filtered_projects.select_related('project_type').order_by('-created_at')
+
+    project_type_options = ProjectType.objects.all().order_by('name')
+
+    # Get project details for display (filtered)
     projects_data = []
-    for project in assigned_projects:
+    for project in filtered_projects:
         projects_data.append({
             'id': project.id,
             'name': project.name,
@@ -158,6 +205,8 @@ def engineer_detail(request, engineer_id):
             'progress': project.progress or 0,
             'start_date': project.start_date,
             'end_date': project.end_date,
+            'project_type': project.project_type.name if getattr(project, 'project_type', None) else '',
+            'project_cost': project.project_cost,
         })
 
     context = {
@@ -169,6 +218,12 @@ def engineer_detail(request, engineer_id):
         'delayed_projects': delayed_projects,
         'total_progress': round(total_progress, 1),
         'projects': projects_data,
+        'project_type_options': project_type_options,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'project_type_filter': project_type_filter,
+        'cost_min': cost_min_raw,
+        'cost_max': cost_max_raw,
     }
     return render(request, 'monitoring/engineers/engineer_detail.html', context)
 
