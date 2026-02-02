@@ -265,7 +265,9 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label class="font-semibold text-gray-700">PRN</label>
-                                <input type="text" name="prn" placeholder="Auto-generated if left blank" class="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                                <input type="text" name="prn" readonly inputmode="none" aria-readonly="true"
+                                       class="mt-2 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-gray-700 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                                <p class="text-[11px] text-gray-500 mt-1">Auto-generated PRN (not editable)</p>
                             </div>
                             <div>
                                 <label class="font-semibold text-gray-700">Project Cost</label>
@@ -979,6 +981,33 @@ function showToast(message) {
     }
 }
 
+async function ensureAutoPrn() {
+    try {
+        if (!projectForm) return;
+        const mode = projectForm.getAttribute('data-mode') || 'add';
+        if (mode !== 'add') return; // keep existing PRN on edit
+        const prnInput = projectForm.elements ? projectForm.elements['prn'] : null;
+        if (!prnInput) return;
+        prnInput.readOnly = true;
+        // Always generate a fresh PRN when opening "Add Project"
+        prnInput.value = 'Generating...';
+        const res = await fetch('/dashboard/api/prn/generate/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        if (data && data.success && data.prn) {
+            prnInput.value = data.prn;
+        } else {
+            prnInput.value = '';
+            console.error('Failed to generate PRN:', data);
+        }
+    } catch (e) {
+        console.error('Failed to generate PRN:', e);
+        try {
+            const prnInput = projectForm && projectForm.elements ? projectForm.elements['prn'] : null;
+            if (prnInput) prnInput.value = '';
+        } catch (_) {}
+    }
+}
+
 function showModal() {
     if (projectModal) {
         projectModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -986,6 +1015,7 @@ function showModal() {
     }
     initSourceOfFundsUX();
     initProjectTypeUX();
+    ensureAutoPrn();
 }
 function hideModal() {
     if (projectModal) {

@@ -1776,7 +1776,9 @@ function formatDate(dateStr) {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label class="font-semibold text-gray-700">PRN</label>
-                            <input type="text" name="prn" placeholder="Auto-generated if left blank" class="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                            <input type="text" name="prn" readonly inputmode="none" aria-readonly="true"
+                                   class="mt-2 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-gray-700 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" />
+                            <p class="text-[11px] text-gray-500 mt-1">Auto-generated PRN (not editable)</p>
                         </div>
                         <div>
                             <label class="font-semibold text-gray-700">Project Cost</label>
@@ -2052,6 +2054,37 @@ function showModal() {
         if (typeof initializeModalButtons === 'function') {
             initializeModalButtons();
         }
+    }
+
+    // Ensure PRN is always auto-generated on Add mode
+    ensureAutoPrn();
+}
+
+async function ensureAutoPrn() {
+    try {
+        const form = document.getElementById('project-form');
+        if (!form) return;
+        const mode = form.getAttribute('data-mode') || 'add';
+        if (mode !== 'add') return; // keep PRN on edit
+        const prnInput = form.elements ? form.elements['prn'] : null;
+        if (!prnInput) return;
+        prnInput.readOnly = true;
+        prnInput.value = 'Generating...';
+        const res = await fetch('/dashboard/api/prn/generate/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        if (data && data.success && data.prn) {
+            prnInput.value = data.prn;
+        } else {
+            prnInput.value = '';
+            console.error('Failed to generate PRN:', data);
+        }
+    } catch (e) {
+        console.error('Failed to generate PRN:', e);
+        try {
+            const form = document.getElementById('project-form');
+            const prnInput = form && form.elements ? form.elements['prn'] : null;
+            if (prnInput) prnInput.value = '';
+        } catch (_) {}
     }
 }
 

@@ -40,6 +40,8 @@ urlpatterns = [
 
     # API: create new ProjectType from UI (modal "Add new type")
     path('api/project-types/create/', views.create_project_type_api, name='create_project_type_api'),
+    # API: generate a PRN for new projects (auto-generated PRN UX)
+    path('api/prn/generate/', views.generate_prn_api, name='generate_prn_api'),
     path('finance/dashboard/', finance_dashboard, name='finance_dashboard'),
     path('finance/projects/', finance_projects, name='finance_projects'),
     path('finance/cost-management/', finance_cost_management, name='finance_cost_management'),

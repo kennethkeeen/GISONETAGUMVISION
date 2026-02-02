@@ -926,6 +926,32 @@ def create_project_type_api(request):
 
     return JsonResponse({"success": True, "id": pt.id, "name": pt.name, "code": pt.code})
 
+
+@login_required
+def generate_prn_api(request):
+    """
+    Generate a unique PRN for new projects.
+    Used by the Add Project modal so PRN is visible but not editable.
+    """
+    if request.method != 'GET':
+        return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
+
+    if not (is_head_engineer(request.user) or is_finance_manager(request.user) or request.user.is_superuser):
+        return JsonResponse({"success": False, "error": "Not allowed"}, status=403)
+
+    from django.utils import timezone
+    import secrets
+    from projeng.models import Project
+
+    date_part = timezone.now().strftime("%y%m%d")
+    for _ in range(50):
+        rand_part = secrets.token_hex(3).upper()
+        candidate = f"PRN-{date_part}-{rand_part}"
+        if not Project.objects.filter(prn=candidate).exists():
+            return JsonResponse({"success": True, "prn": candidate})
+
+    return JsonResponse({"success": False, "error": "Could not generate PRN"}, status=500)
+
 @login_required
 @prevent_project_engineer_access
 def map_view(request):
