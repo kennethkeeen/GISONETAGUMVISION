@@ -1857,18 +1857,22 @@ function formatDate(dateStr) {
                             </div>
                         </div>
 
-                        <div>
-                            <label class="font-semibold text-gray-700">Assigned Engineers</label>
-                            <input
-                                type="text"
-                                id="assigned-engineers-search"
-                                class="mt-2 rounded-lg border border-gray-300 px-4 py-2.5 w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
-                                placeholder="Search engineer name..."
-                                autocomplete="off"
-                            />
-                            <div id="assigned-engineers-chips" class="mt-2 flex flex-wrap gap-2"></div>
-                            <select name="assigned_engineers" id="assigned-engineers-select" class="mt-2 rounded-lg border border-gray-300 px-4 py-2.5 w-full" multiple required style="height: 140px; min-width: 180px;">
-                                <!-- Options will be populated by JavaScript -->
+                        <div class="relative">
+                            <label class="font-semibold text-gray-700">Assigned Engineers <span class="text-red-500">*</span></label>
+                            <p class="text-xs text-gray-500 mt-0.5 mb-2">Type to search, then click a name to add. Remove with × on each chip.</p>
+                            <div id="assigned-engineers-chips" class="mb-2 flex flex-wrap gap-2 min-h-[2rem]"></div>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="assigned-engineers-search"
+                                    class="rounded-lg border border-gray-300 px-4 py-2.5 w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
+                                    placeholder="Search by name or username..."
+                                    autocomplete="off"
+                                />
+                                <div id="assigned-engineers-dropdown" class="absolute left-0 right-0 top-full mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden"></div>
+                            </div>
+                            <select name="assigned_engineers" id="assigned-engineers-select" class="sr-only" multiple required aria-hidden="true" tabindex="-1">
+                                <!-- Options populated by JS; kept for form submit -->
                             </select>
                         </div>
 
@@ -2566,43 +2570,93 @@ function renderAssignedEngineerChips() {
     });
 }
 
-function filterAssignedEngineersOptions() {
-    const selectEl = document.getElementById('assigned-engineers-select');
-    const searchEl = document.getElementById('assigned-engineers-search');
-    if (!selectEl || !searchEl) return;
+var _projectListEngineers = [];
 
+function getSelectedEngineerIds() {
+    const selectEl = document.getElementById('assigned-engineers-select');
+    if (!selectEl) return [];
+    return Array.from(selectEl.selectedOptions || []).map(o => o.value);
+}
+
+function buildAssignedEngineersDropdown() {
+    const dropdown = document.getElementById('assigned-engineers-dropdown');
+    const searchEl = document.getElementById('assigned-engineers-search');
+    const selectEl = document.getElementById('assigned-engineers-select');
+    if (!dropdown || !searchEl || !selectEl) return;
     const q = _normalizeText(searchEl.value);
-    Array.from(selectEl.options || []).forEach(opt => {
-        // Keep selected visible so users can always unselect
-        if (opt.selected) {
-            opt.hidden = false;
-            return;
-        }
-        const label = _normalizeText(opt.textContent);
-        opt.hidden = q ? !label.includes(q) : false;
+    const selectedIds = getSelectedEngineerIds();
+    const list = (_projectListEngineers || []).filter(function(e) {
+        if (selectedIds.indexOf(String(e.id)) !== -1) return false;
+        const label = _normalizeText((e.full_name || e.username || ''));
+        return !q || label.indexOf(q) !== -1;
     });
+    dropdown.innerHTML = '';
+    if (list.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'px-4 py-3 text-sm text-gray-500';
+        empty.textContent = selectedIds.length && !q ? 'All engineers already selected.' : 'No matching engineers.';
+        dropdown.appendChild(empty);
+    } else {
+        list.forEach(function(e) {
+            const label = e.full_name || e.username || ('#' + e.id);
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-0';
+            item.textContent = label;
+            item.dataset.id = e.id;
+            item.dataset.label = label;
+            item.addEventListener('click', function() {
+                const opt = Array.from(selectEl.options).find(function(o) { return o.value === String(e.id); });
+                if (opt) {
+                    opt.selected = true;
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                searchEl.value = '';
+                dropdown.classList.add('hidden');
+                buildAssignedEngineersDropdown();
+                renderAssignedEngineerChips();
+            });
+            dropdown.appendChild(item);
+        });
+    }
+}
+
+function showAssignedEngineersDropdown() {
+    const dropdown = document.getElementById('assigned-engineers-dropdown');
+    if (!dropdown) return;
+    buildAssignedEngineersDropdown();
+    dropdown.classList.remove('hidden');
 }
 
 function initAssignedEngineersSelectorOnce() {
     const selectEl = document.getElementById('assigned-engineers-select');
     const searchEl = document.getElementById('assigned-engineers-search');
+    const dropdown = document.getElementById('assigned-engineers-dropdown');
     if (!selectEl) return;
     if (selectEl.dataset.enhanced === '1') return;
     selectEl.dataset.enhanced = '1';
 
     if (searchEl) {
-        searchEl.addEventListener('input', filterAssignedEngineersOptions);
+        searchEl.addEventListener('focus', showAssignedEngineersDropdown);
+        searchEl.addEventListener('input', showAssignedEngineersDropdown);
+        searchEl.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (dropdown) dropdown.classList.add('hidden');
+            }, 200);
+        });
     }
-    selectEl.addEventListener('change', () => {
+    if (dropdown) {
+        dropdown.addEventListener('mousedown', function(e) { e.preventDefault(); });
+    }
+    selectEl.addEventListener('change', function() {
         renderAssignedEngineerChips();
-        filterAssignedEngineersOptions();
+        buildAssignedEngineersDropdown();
     });
     renderAssignedEngineerChips();
 }
 
 // Expose for other parts of this template
 window.renderAssignedEngineerChips = renderAssignedEngineerChips;
-window.filterAssignedEngineersOptions = filterAssignedEngineersOptions;
 window.initAssignedEngineersSelectorOnce = initAssignedEngineersSelectorOnce;
 
 // Source of funds UX: if user types "new", auto-select it to satisfy required dropdown
@@ -2780,6 +2834,7 @@ function populateEngineers() {
             // Check if response is an error object
             if (engineers && engineers.error) {
                 console.error('API returned error:', engineers.error);
+                _projectListEngineers = [];
                 const option = document.createElement('option');
                 option.textContent = 'Error: ' + engineers.error;
                 selectEl.appendChild(option);
@@ -2790,6 +2845,7 @@ function populateEngineers() {
             // Check if engineers is an array
             if (!Array.isArray(engineers)) {
                 console.error('Unexpected engineers data format:', engineers);
+                _projectListEngineers = [];
                 const option = document.createElement('option');
                 option.textContent = 'Error: Unexpected response format';
                 selectEl.appendChild(option);
@@ -2799,6 +2855,7 @@ function populateEngineers() {
             
             if (engineers.length === 0) {
                 console.warn('No engineers found');
+                _projectListEngineers = [];
                 const option = document.createElement('option');
                 option.textContent = 'No engineers available';
                 selectEl.appendChild(option);
@@ -2808,16 +2865,13 @@ function populateEngineers() {
             
             selectEl.disabled = false;
             const currentUsername = (window.currentUsername || '').trim().toLowerCase();
+            _projectListEngineers = engineers.filter(function(e) {
+                const u = (e.username || '').trim().toLowerCase();
+                return u !== currentUsername;
+            });
             
             let addedCount = 0;
-            engineers.forEach(engineer => {
-                const engineerUsername = (engineer.username || '').trim().toLowerCase();
-                // Skip current user
-                if (engineerUsername === currentUsername) {
-                    console.log('Skipping current user:', engineerUsername);
-                    return;
-                }
-                
+            _projectListEngineers.forEach(engineer => {
                 const option = document.createElement('option');
                 option.value = engineer.id;
                 option.textContent = engineer.full_name || engineer.username;
@@ -2833,12 +2887,8 @@ function populateEngineers() {
                 selectEl.appendChild(option);
             }
 
-            // Enhance selector UI (panel #17)
             if (typeof window.initAssignedEngineersSelectorOnce === 'function') {
                 window.initAssignedEngineersSelectorOnce();
-            }
-            if (typeof window.filterAssignedEngineersOptions === 'function') {
-                window.filterAssignedEngineersOptions();
             }
             if (typeof window.renderAssignedEngineerChips === 'function') {
                 window.renderAssignedEngineerChips();
@@ -2846,6 +2896,7 @@ function populateEngineers() {
         })
         .catch(err => {
             console.error('Failed to fetch engineers:', err);
+            _projectListEngineers = [];
             const selectEl = document.getElementById('assigned-engineers-select');
             if (selectEl) {
                 selectEl.innerHTML = '';
