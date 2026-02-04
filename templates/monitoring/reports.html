@@ -25,82 +25,83 @@
             </div>
         </div>
 
-        {# Main card: filters + table #}
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            {# Compact filter bar #}
-            <div class="p-4 border-b border-gray-100 bg-gray-50/50">
-                <form method="get" id="filter-form" class="flex flex-wrap items-end gap-3">
-                    <div class="min-w-[140px]">
-                        <label for="barangay-filter" class="block text-xs font-semibold text-gray-600 mb-1">Barangay</label>
-                        <select id="barangay-filter" name="barangay" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer">
-                            <option value="" {% if not selected_barangay %}selected{% endif %}>All Barangays</option>
-                            <option value="Apokon" {% if selected_barangay == 'Apokon' %}selected{% endif %}>Apokon</option>
-                            <option value="Bincungan" {% if selected_barangay == 'Bincungan' %}selected{% endif %}>Bincungan</option>
-                            <option value="Busaon" {% if selected_barangay == 'Busaon' %}selected{% endif %}>Busaon</option>
-                            <option value="Canocotan" {% if selected_barangay == 'Canocotan' %}selected{% endif %}>Canocotan</option>
-                            <option value="Cuambogan" {% if selected_barangay == 'Cuambogan' %}selected{% endif %}>Cuambogan</option>
-                            <option value="La Filipina" {% if selected_barangay == 'La Filipina' %}selected{% endif %}>La Filipina</option>
-                            <option value="Liboganon" {% if selected_barangay == 'Liboganon' %}selected{% endif %}>Liboganon</option>
-                            <option value="Madaum" {% if selected_barangay == 'Madaum' %}selected{% endif %}>Madaum</option>
-                            <option value="Magdum" {% if selected_barangay == 'Magdum' %}selected{% endif %}>Magdum</option>
-                            <option value="Magugpo East" {% if selected_barangay == 'Magugpo East' %}selected{% endif %}>Magugpo East</option>
-                            <option value="Magugpo North" {% if selected_barangay == 'Magugpo North' %}selected{% endif %}>Magugpo North</option>
-                            <option value="Magugpo Poblacion" {% if selected_barangay == 'Magugpo Poblacion' %}selected{% endif %}>Magugpo Poblacion</option>
-                            <option value="Magugpo South" {% if selected_barangay == 'Magugpo South' %}selected{% endif %}>Magugpo South</option>
-                            <option value="Magugpo West" {% if selected_barangay == 'Magugpo West' %}selected{% endif %}>Magugpo West</option>
-                            <option value="Mankilam" {% if selected_barangay == 'Mankilam' %}selected{% endif %}>Mankilam</option>
-                            <option value="New Balamban" {% if selected_barangay == 'New Balamban' %}selected{% endif %}>New Balamban</option>
-                            <option value="Nueva Fuerza" {% if selected_barangay == 'Nueva Fuerza' %}selected{% endif %}>Nueva Fuerza</option>
-                            <option value="Pagsabangan" {% if selected_barangay == 'Pagsabangan' %}selected{% endif %}>Pagsabangan</option>
-                            <option value="Pandapan" {% if selected_barangay == 'Pandapan' %}selected{% endif %}>Pandapan</option>
-                            <option value="San Agustin" {% if selected_barangay == 'San Agustin' %}selected{% endif %}>San Agustin</option>
-                            <option value="San Isidro" {% if selected_barangay == 'San Isidro' %}selected{% endif %}>San Isidro</option>
-                            <option value="San Miguel" {% if selected_barangay == 'San Miguel' %}selected{% endif %}>San Miguel</option>
-                            <option value="Visayan Village" {% if selected_barangay == 'Visayan Village' %}selected{% endif %}>Visayan Village</option>
-                        </select>
-                    </div>
-                    <div class="min-w-[120px]">
-                        <label for="status-filter" class="block text-xs font-semibold text-gray-600 mb-1">Status</label>
-                        <select id="status-filter" name="status" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer">
-                            <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
-                            <option value="planned" {% if selected_status == 'planned' %}selected{% endif %}>Planned</option>
-                            <option value="in_progress" {% if selected_status == 'in_progress' or selected_status == 'ongoing' %}selected{% endif %}>In Progress</option>
-                            <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
-                        </select>
-                    </div>
-                    <div class="min-w-[130px]">
-                        <label for="start-date-filter" class="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
-                        <input type="date" id="start-date-filter" name="start_date" value="{{ selected_start_date|default:'' }}" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    </div>
-                    <div class="min-w-[130px]">
-                        <label for="end-date-filter" class="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
-                        <input type="date" id="end-date-filter" name="end_date" value="{{ selected_end_date|default:'' }}" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" id="clear-filters-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Clear</button>
-                        <button type="button" id="export-button" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                            Export
-                        </button>
-                    </div>
-                </form>
-                <p id="result-count" class="text-sm text-gray-500 mt-3">Showing <strong id="result-count-num">0</strong> projects</p>
-            </div>
+        {# Filters card — same style as Project List / All Project Analytics #}
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-6">
+            <form method="get" id="filter-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div>
+                    <label for="barangay-filter" class="block text-sm font-semibold text-gray-700 mb-2">Barangay</label>
+                    <select id="barangay-filter" name="barangay" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300 cursor-pointer">
+                        <option value="" {% if not selected_barangay %}selected{% endif %}>All Barangays</option>
+                        <option value="Apokon" {% if selected_barangay == 'Apokon' %}selected{% endif %}>Apokon</option>
+                        <option value="Bincungan" {% if selected_barangay == 'Bincungan' %}selected{% endif %}>Bincungan</option>
+                        <option value="Busaon" {% if selected_barangay == 'Busaon' %}selected{% endif %}>Busaon</option>
+                        <option value="Canocotan" {% if selected_barangay == 'Canocotan' %}selected{% endif %}>Canocotan</option>
+                        <option value="Cuambogan" {% if selected_barangay == 'Cuambogan' %}selected{% endif %}>Cuambogan</option>
+                        <option value="La Filipina" {% if selected_barangay == 'La Filipina' %}selected{% endif %}>La Filipina</option>
+                        <option value="Liboganon" {% if selected_barangay == 'Liboganon' %}selected{% endif %}>Liboganon</option>
+                        <option value="Madaum" {% if selected_barangay == 'Madaum' %}selected{% endif %}>Madaum</option>
+                        <option value="Magdum" {% if selected_barangay == 'Magdum' %}selected{% endif %}>Magdum</option>
+                        <option value="Magugpo East" {% if selected_barangay == 'Magugpo East' %}selected{% endif %}>Magugpo East</option>
+                        <option value="Magugpo North" {% if selected_barangay == 'Magugpo North' %}selected{% endif %}>Magugpo North</option>
+                        <option value="Magugpo Poblacion" {% if selected_barangay == 'Magugpo Poblacion' %}selected{% endif %}>Magugpo Poblacion</option>
+                        <option value="Magugpo South" {% if selected_barangay == 'Magugpo South' %}selected{% endif %}>Magugpo South</option>
+                        <option value="Magugpo West" {% if selected_barangay == 'Magugpo West' %}selected{% endif %}>Magugpo West</option>
+                        <option value="Mankilam" {% if selected_barangay == 'Mankilam' %}selected{% endif %}>Mankilam</option>
+                        <option value="New Balamban" {% if selected_barangay == 'New Balamban' %}selected{% endif %}>New Balamban</option>
+                        <option value="Nueva Fuerza" {% if selected_barangay == 'Nueva Fuerza' %}selected{% endif %}>Nueva Fuerza</option>
+                        <option value="Pagsabangan" {% if selected_barangay == 'Pagsabangan' %}selected{% endif %}>Pagsabangan</option>
+                        <option value="Pandapan" {% if selected_barangay == 'Pandapan' %}selected{% endif %}>Pandapan</option>
+                        <option value="San Agustin" {% if selected_barangay == 'San Agustin' %}selected{% endif %}>San Agustin</option>
+                        <option value="San Isidro" {% if selected_barangay == 'San Isidro' %}selected{% endif %}>San Isidro</option>
+                        <option value="San Miguel" {% if selected_barangay == 'San Miguel' %}selected{% endif %}>San Miguel</option>
+                        <option value="Visayan Village" {% if selected_barangay == 'Visayan Village' %}selected{% endif %}>Visayan Village</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="status-filter" class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select id="status-filter" name="status" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300 cursor-pointer">
+                        <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+                        <option value="planned" {% if selected_status == 'planned' %}selected{% endif %}>Planned</option>
+                        <option value="in_progress" {% if selected_status == 'in_progress' or selected_status == 'ongoing' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="delayed" {% if selected_status == 'delayed' %}selected{% endif %}>Delayed</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="start-date-filter" class="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                    <input type="date" id="start-date-filter" name="start_date" value="{{ selected_start_date|default:'' }}" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
+                </div>
+                <div>
+                    <label for="end-date-filter" class="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                    <input type="date" id="end-date-filter" name="end_date" value="{{ selected_end_date|default:'' }}" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
+                </div>
+                <div class="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-2">
+                    <button type="button" id="clear-filters-btn" class="px-4 py-2.5 text-base font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition border-2 border-gray-200">Clear Filters</button>
+                    <button type="button" id="export-button" class="px-4 py-2.5 text-base font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition flex items-center gap-2 border-2 border-emerald-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Export
+                    </button>
+                </div>
+            </form>
+            <p id="result-count" class="text-sm text-gray-500 mt-4">Showing <strong id="result-count-num">0</strong> projects</p>
+        </div>
 
-            {# Table — full width of container, no horizontal scroll #}
+        {# Table card #}
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            {# Table — full width of container, no horizontal scroll; all content visible #}
             <div class="w-full">
                 <table id="projects-table" class="w-full divide-y divide-gray-200 table-fixed">
                     <colgroup>
-                        <col style="width:4%">
-                        <col style="width:11%">
-                        <col style="width:14%">
-                        <col style="width:22%">
-                        <col style="width:12%">
+                        <col style="width:3%">
                         <col style="width:10%">
                         <col style="width:12%">
-                        <col style="width:5%">
-                        <col style="width:5%">
-                        <col style="width:5%">
+                        <col style="width:18%">
+                        <col style="width:10%">
+                        <col style="width:11%">
+                        <col style="width:14%">
+                        <col style="width:6%">
+                        <col style="width:6%">
+                        <col style="width:10%">
                     </colgroup>
                     <thead class="bg-gray-50 sticky top-0 z-10">
                         <tr>
@@ -306,16 +307,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-50 transition';
             row.innerHTML =
-                '<td class="px-4 py-3 text-sm text-gray-900">' + (index + 1) + '</td>' +
-                '<td class="px-4 py-3 text-sm font-mono text-gray-700">' + escapeHtml(project.prn || '—') + '</td>' +
-                '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + escapeHtml(project.name || '—') + '</td>' +
-                '<td class="px-4 py-3 text-sm text-gray-600 break-words">' + escapeHtml(project.description || '—') + '</td>' +
-                '<td class="px-4 py-3 text-sm text-gray-700">' + escapeHtml(project.barangay || '—') + '</td>' +
-                '<td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">' + formatCost(project.project_cost) + '</td>' +
-                '<td class="px-4 py-3 text-sm text-gray-600">' + escapeHtml(project.source_of_funds || '—') + '</td>' +
-                '<td class="px-4 py-3 text-sm text-gray-600">' + formatDate(project.start_date) + '</td>' +
-                '<td class="px-4 py-3 text-sm text-gray-600">' + formatDate(project.end_date) + '</td>' +
-                '<td class="px-4 py-3">' + getStatusBadge(project.status) + '</td>';
+                '<td class="px-4 py-3 text-sm text-gray-900 align-top">' + (index + 1) + '</td>' +
+                '<td class="px-4 py-3 text-sm font-mono text-gray-700 break-words align-top">' + escapeHtml(project.prn || '—') + '</td>' +
+                '<td class="px-4 py-3 text-sm font-medium text-gray-900 break-words align-top">' + escapeHtml(project.name || '—') + '</td>' +
+                '<td class="px-4 py-3 text-sm text-gray-600 break-words align-top">' + escapeHtml(project.description || '—') + '</td>' +
+                '<td class="px-4 py-3 text-sm text-gray-700 break-words align-top">' + escapeHtml(project.barangay || '—') + '</td>' +
+                '<td class="px-4 py-3 text-sm text-gray-700 break-words align-top">' + formatCost(project.project_cost) + '</td>' +
+                '<td class="px-4 py-3 text-sm text-gray-600 break-words align-top">' + escapeHtml(project.source_of_funds || '—') + '</td>' +
+                '<td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap align-top">' + formatDate(project.start_date) + '</td>' +
+                '<td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap align-top">' + formatDate(project.end_date) + '</td>' +
+                '<td class="px-4 py-3 align-top">' + getStatusBadge(project.status) + '</td>';
             projectsTableBody.appendChild(row);
         });
     }
