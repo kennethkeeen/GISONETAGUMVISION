@@ -69,7 +69,7 @@
       <div class="chart-container" style="height: 320px;">
           <canvas id="progressOverTimeChart"></canvas>
       </div>
-      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100" data-chart-id="progressOverTime">
         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Weekly</button>
         <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-indigo-500 bg-indigo-50 text-indigo-700">Monthly</button>
         <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Yearly</button>
@@ -85,7 +85,7 @@
       <div class="chart-container" style="height: 280px;">
           <canvas id="budgetUtilizationChart"></canvas>
       </div>
-      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100" data-chart-id="budgetUtilization">
         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Weekly</button>
         <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-indigo-500 bg-indigo-50 text-indigo-700">Monthly</button>
         <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Yearly</button>
@@ -98,7 +98,7 @@
       <div class="chart-container" style="height: 280px;">
           <canvas id="costBreakdownChart"></canvas>
       </div>
-      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100" data-chart-id="costBreakdown">
         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Weekly</button>
         <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-indigo-500 bg-indigo-50 text-indigo-700">Monthly</button>
         <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Yearly</button>
@@ -111,7 +111,7 @@
       <div class="chart-container" style="height: 280px;">
           <canvas id="projectsByBarangayChart"></canvas>
       </div>
-      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+      <div class="chart-period-buttons flex justify-center gap-2 mt-4 pt-3 border-t border-gray-100" data-chart-id="projectsByBarangay">
         <button type="button" data-period="week" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Weekly</button>
         <button type="button" data-period="month" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-indigo-500 bg-indigo-50 text-indigo-700">Monthly</button>
         <button type="button" data-period="year" class="chart-period-btn px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50">Yearly</button>
@@ -155,139 +155,174 @@
 
 {% block extra_js %}
 {{ block.super }}
-<!-- Custom script for the chart -->
+<!-- Custom script for the charts with independent periods -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Analytics chart removed
+        // Per-chart period state (default: month)
+        const chartPeriods = {
+            progressOverTime: 'month',
+            budgetUtilization: 'month',
+            costBreakdown: 'month',
+            projectsByBarangay: 'month',
+        };
 
-        // Chart 2: Project Progress Over Time
-        fetch('{% url "projeng:projeng_dashboard_progress_over_time_data" %}')
-         .then(response => response.json())
-         .then(data => {
-             try {
-                 const ctx = document.getElementById('progressOverTimeChart').getContext('2d');
-                 new Chart(ctx, {
-                     type: 'line',
-                     data: data,
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         scales: {
-                             y: {
-                                 beginAtZero: true,
-                                 max: 100,
-                                 title: {
-                                     display: true,
-                                     text: 'Progress (%)'
-                                 }
-                             }
-                         },
-                         plugins: {
-                             legend: {
-                                 display: true
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering progress over time chart:', error);
-             }
-         })
-         .catch(error => console.error('Error fetching progress over time data:', error));
+        // Chart instances so we can destroy/redraw cleanly
+        let progressOverTimeChart = null;
+        let budgetUtilizationChart = null;
+        let costBreakdownChart = null;
+        let projectsByBarangayChart = null;
 
-        // Chart 3: Budget Utilization
-        fetch('{% url "projeng:projeng_dashboard_budget_utilization_data" %}')
-         .then(response => response.json())
-         .then(data => {
-             try {
-                 const ctx = document.getElementById('budgetUtilizationChart').getContext('2d');
-                 new Chart(ctx, {
-                     type: 'bar',
-                     data: data,
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         indexAxis: 'y',
-                         scales: {
-                             x: {
-                                 beginAtZero: true,
-                                 title: {
-                                     display: true,
-                                     text: 'Utilization (%)'
-                                 }
-                             }
-                         },
-                         plugins: {
-                             legend: {
-                                 display: false
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering budget utilization chart:', error);
-             }
-         })
-         .catch(error => console.error('Error fetching budget utilization data:', error));
+        function getPeriod(chartId) {
+            return chartPeriods[chartId] || 'month';
+        }
 
-        // Chart 4: Cost Breakdown by Type
-        fetch('{% url "projeng:projeng_dashboard_cost_breakdown_data" %}')
-         .then(response => response.json())
-         .then(data => {
-             try {
-                 const ctx = document.getElementById('costBreakdownChart').getContext('2d');
-                 new Chart(ctx, {
-                     type: 'doughnut',
-                     data: data,
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         plugins: {
-                             legend: {
-                                 position: 'bottom'
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering cost breakdown chart:', error);
-             }
-         })
-         .catch(error => console.error('Error fetching cost breakdown data:', error));
+        function setActiveButton(container, period) {
+            container.querySelectorAll('.chart-period-btn').forEach(btn => {
+                const isActive = (btn.dataset.period || 'month') === period;
+                btn.classList.toggle('border-indigo-500', isActive);
+                btn.classList.toggle('bg-indigo-50', isActive);
+                btn.classList.toggle('text-indigo-700', isActive);
+                if (!isActive) {
+                    btn.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-700');
+                }
+            });
+        }
 
-        // Chart 5: Projects by Barangay
-        fetch('{% url "projeng:projeng_dashboard_projects_by_barangay_data" %}')
-         .then(response => response.json())
-         .then(data => {
-             try {
-                 const ctx = document.getElementById('projectsByBarangayChart').getContext('2d');
-                 new Chart(ctx, {
-                     type: 'bar',
-                     data: data,
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         scales: {
-                             y: {
-                                 beginAtZero: true,
-                                 title: {
-                                     display: true,
-                                     text: 'Number of Projects'
-                                 }
-                             }
-                         },
-                         plugins: {
-                             legend: {
-                                 display: false
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering projects by barangay chart:', error);
-             }
-         })
-         .catch(error => console.error('Error fetching projects by barangay data:', error));
+        function loadChart(chartId) {
+            const period = getPeriod(chartId);
+
+            if (chartId === 'progressOverTime') {
+                fetch(`{% url "projeng:projeng_dashboard_progress_over_time_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('progressOverTimeChart');
+                            if (!ctx) return;
+                            if (progressOverTimeChart) progressOverTimeChart.destroy();
+                            progressOverTimeChart = new Chart(ctx.getContext('2d'), {
+                                type: 'line',
+                                data: data,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            max: 100,
+                                            title: { display: true, text: 'Progress (%)' }
+                                        }
+                                    },
+                                    plugins: {
+                                        legend: { display: true }
+                                    }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error rendering progress over time chart:', error);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching progress over time data:', error));
+            } else if (chartId === 'budgetUtilization') {
+                fetch(`{% url "projeng:projeng_dashboard_budget_utilization_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('budgetUtilizationChart');
+                            if (!ctx) return;
+                            if (budgetUtilizationChart) budgetUtilizationChart.destroy();
+                            budgetUtilizationChart = new Chart(ctx.getContext('2d'), {
+                                type: 'bar',
+                                data: data,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    indexAxis: 'y',
+                                    scales: {
+                                        x: {
+                                            beginAtZero: true,
+                                            title: { display: true, text: 'Utilization (%)' }
+                                        }
+                                    },
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error rendering budget utilization chart:', error);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching budget utilization data:', error));
+            } else if (chartId === 'costBreakdown') {
+                fetch(`{% url "projeng:projeng_dashboard_cost_breakdown_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('costBreakdownChart');
+                            if (!ctx) return;
+                            if (costBreakdownChart) costBreakdownChart.destroy();
+                            costBreakdownChart = new Chart(ctx.getContext('2d'), {
+                                type: 'doughnut',
+                                data: data,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { position: 'bottom' } }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error rendering cost breakdown chart:', error);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching cost breakdown data:', error));
+            } else if (chartId === 'projectsByBarangay') {
+                fetch(`{% url "projeng:projeng_dashboard_projects_by_barangay_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('projectsByBarangayChart');
+                            if (!ctx) return;
+                            if (projectsByBarangayChart) projectsByBarangayChart.destroy();
+                            projectsByBarangayChart = new Chart(ctx.getContext('2d'), {
+                                type: 'bar',
+                                data: data,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            title: { display: true, text: 'Number of Projects' }
+                                        }
+                                    },
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error rendering projects by barangay chart:', error);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching projects by barangay data:', error));
+            }
+        }
+
+        // Wire up buttons so each chart's period only affects that chart
+        document.querySelectorAll('.chart-period-buttons[data-chart-id]').forEach(container => {
+            const chartId = container.getAttribute('data-chart-id');
+            if (!chartId) return;
+
+            setActiveButton(container, getPeriod(chartId));
+
+            container.querySelectorAll('.chart-period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const period = btn.dataset.period || 'month';
+                    chartPeriods[chartId] = period;
+                    setActiveButton(container, period);
+                    loadChart(chartId);
+                });
+            });
+        });
+
+        // Initial load for all charts with their default periods
+        ['progressOverTime', 'budgetUtilization', 'costBreakdown', 'projectsByBarangay'].forEach(loadChart);
     });
 </script>
 <script>
