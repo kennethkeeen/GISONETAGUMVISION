@@ -1742,50 +1742,81 @@ def add_cost_entry(request, pk):
 @login_required
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def dashboard_progress_over_time_data(request):
-    """API endpoint for Project Progress Over Time chart"""
+    """API endpoint for Project Progress Over Time chart (week/month/year)."""
     from .models import Project, ProjectProgress
-    from django.db.models import Avg
     from datetime import datetime, timedelta
     from collections import defaultdict
+    from django.utils import timezone
     
     if is_head_engineer(request.user):
         projects = Project.objects.all()
     else:
         projects = Project.objects.filter(assigned_engineers=request.user)
     
-    # Get progress updates for the last 6 months
-    six_months_ago = timezone.now().date() - timedelta(days=180)
+    # Determine period: week / month / year (default month)
+    period = (request.GET.get('period') or 'month').strip().lower()
+    today = timezone.now().date()
+    if period == 'year':
+        start_date = today - timedelta(days=365 * 5)
+        bucket_fmt = '%Y'  # year
+        label_fmt = '%Y'
+    elif period == 'week':
+        # Last 12 weeks
+        start_date = today - timedelta(days=7 * 12)
+        bucket_fmt = '%G-%V'  # ISO year-week
+        label_fmt = 'Wk %V %b %d'
+    else:
+        # Default: last 12 months
+        start_date = today - timedelta(days=365)
+        bucket_fmt = '%Y-%m'
+        label_fmt = '%b %Y'
+
+    # Get progress updates since start_date
     progress_updates = ProjectProgress.objects.filter(
         project__in=projects,
-        date__gte=six_months_ago
+        date__gte=start_date
     ).order_by('date')
     
-    # Group by month
-    monthly_progress = defaultdict(list)
+    # Group by bucket depending on period
+    bucket_progress = defaultdict(list)
     for update in progress_updates:
-        month_key = update.date.strftime('%Y-%m')
-        monthly_progress[month_key].append(update.percentage_complete)
+        # Guard against missing dates / percentages
+        if not update.date or update.percentage_complete is None:
+            continue
+        if period == 'week':
+            iso_year, iso_week, _ = update.date.isocalendar()
+            bucket_key = f"{iso_year}-{iso_week:02d}"
+        else:
+            bucket_key = update.date.strftime(bucket_fmt)
+        bucket_progress[bucket_key].append(update.percentage_complete)
     
-    # Calculate average progress per month
-    months = sorted(monthly_progress.keys())
-    avg_progress = [sum(monthly_progress[m]) / len(monthly_progress[m]) for m in months] if months else []
+    # Calculate average progress per bucket
+    buckets = sorted(bucket_progress.keys())
+    avg_progress = [sum(bucket_progress[b]) / len(bucket_progress[b]) for b in buckets] if buckets else []
     
-    # Format month labels
-    month_labels = []
-    for m in months:
+    # Format labels
+    labels = []
+    for key in buckets:
         try:
-            dt = datetime.strptime(m, '%Y-%m')
-            month_labels.append(dt.strftime('%b %Y'))
+            if period == 'year':
+                dt = datetime.strptime(key, '%Y')
+            elif period == 'week':
+                year, week = map(int, key.split('-'))
+                # ISO week to date (Monday of that week)
+                dt = datetime.fromisocalendar(year, week, 1)
+            else:
+                dt = datetime.strptime(key, '%Y-%m')
+            labels.append(dt.strftime(label_fmt))
         except ValueError:
-            month_labels.append(m)
+            labels.append(key)
     
     # If no data, return empty chart
-    if not month_labels:
-        month_labels = ['No Data']
+    if not labels:
+        labels = ['No Data']
         avg_progress = [0]
     
     return JsonResponse({
-        'labels': month_labels,
+    'labels': labels,
         'datasets': [{
             'label': 'Average Progress (%)',
             'data': avg_progress,
@@ -1798,9 +1829,11 @@ def dashboard_progress_over_time_data(request):
 
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def dashboard_budget_utilization_data(request):
-    """API endpoint for Budget Utilization chart"""
+    """API endpoint for Budget Utilization chart (week/month/year)."""
     from .models import Project, ProjectCost
     from django.db.models import Sum
+    from datetime import timedelta
+    from django.utils import timezone
     
     if is_head_engineer(request.user):
         projects = Project.objects.filter(project_cost__isnull=False)
@@ -1809,11 +1842,24 @@ def dashboard_budget_utilization_data(request):
             assigned_engineers=request.user,
             project_cost__isnull=False
         )
-    
+
+    # Period window based on ProjectCost.date
+    period = (request.GET.get('period') or 'month').strip().lower()
+    today = timezone.now().date()
+    if period == 'year':
+        start_date = today - timedelta(days=365 * 5)
+    elif period == 'week':
+        start_date = today - timedelta(days=7 * 12)
+    else:
+        start_date = today - timedelta(days=365)
+
     # Calculate budget utilization for each project
     project_data = []
     for project in projects:
-        total_cost = ProjectCost.objects.filter(project=project).aggregate(
+        total_cost = ProjectCost.objects.filter(
+            project=project,
+            date__gte=start_date
+        ).aggregate(
             total=Sum('amount')
         )['total'] or 0
         
@@ -1854,18 +1900,31 @@ def dashboard_budget_utilization_data(request):
 
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def dashboard_cost_breakdown_data(request):
-    """API endpoint for Cost Breakdown by Type chart"""
+    """API endpoint for Cost Breakdown by Type chart (week/month/year)."""
     from .models import Project, ProjectCost
     from django.db.models import Sum
+    from datetime import timedelta
+    from django.utils import timezone
     
     if is_head_engineer(request.user):
         projects = Project.objects.all()
     else:
         projects = Project.objects.filter(assigned_engineers=request.user)
-    
+
+    # Period window for costs
+    period = (request.GET.get('period') or 'month').strip().lower()
+    today = timezone.now().date()
+    if period == 'year':
+        start_date = today - timedelta(days=365 * 5)
+    elif period == 'week':
+        start_date = today - timedelta(days=7 * 12)
+    else:
+        start_date = today - timedelta(days=365)
+
     # Get cost breakdown by type
     cost_by_type = ProjectCost.objects.filter(
-        project__in=projects
+        project__in=projects,
+        date__gte=start_date
     ).values('cost_type').annotate(
         total=Sum('amount')
     ).order_by('-total')
@@ -1896,19 +1955,31 @@ def dashboard_cost_breakdown_data(request):
 
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def dashboard_projects_by_barangay_data(request):
-    """API endpoint for Projects by Barangay chart"""
+    """API endpoint for Projects by Barangay chart (week/month/year)."""
     from .models import Project
     from django.db.models import Count
+    from datetime import timedelta
+    from django.utils import timezone
     
     if is_head_engineer(request.user):
         projects = Project.objects.all()
     else:
         projects = Project.objects.filter(assigned_engineers=request.user)
-    
+
+    # Time window based on project start_date
+    period = (request.GET.get('period') or 'month').strip().lower()
+    today = timezone.now().date()
+    if period == 'year':
+        start_date = today - timedelta(days=365 * 5)
+    elif period == 'week':
+        start_date = today - timedelta(days=7 * 12)
+    else:
+        start_date = today - timedelta(days=365)
+
+    projects = projects.filter(start_date__isnull=False, start_date__gte=start_date)
+
     # Count projects by barangay
-    barangay_counts = projects.filter(
-        barangay__isnull=False
-    ).values('barangay').annotate(
+    barangay_counts = projects.values('barangay').annotate(
         count=Count('id')
     ).order_by('-count')[:10]  # Top 10 barangays
     
