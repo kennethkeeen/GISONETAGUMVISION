@@ -209,7 +209,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-gray-800">Projects per Barangay</h3>
                     </div>
-                    <div class="chart-period-wrap flex items-center gap-2 flex-shrink-0" data-chart-id="collab">
+                    <div class="chart-period-wrap flex items-center gap-2 flex-shrink-0" data-chart-id="collabBarangay">
                         <label for="period-collab" class="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Chart period</label>
                         <select id="period-collab" class="chart-period-select px-3 py-2 rounded-lg text-sm font-medium border-2 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <option value="week">Weekly</option>
@@ -235,7 +235,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-gray-800">Projects per Status</h3>
                     </div>
-                    <div class="chart-period-wrap flex items-center gap-2 flex-shrink-0" data-chart-id="collab">
+                    <div class="chart-period-wrap flex items-center gap-2 flex-shrink-0" data-chart-id="collabStatus">
                         <label for="period-collab-status" class="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Chart period</label>
                         <select id="period-collab-status" class="chart-period-select px-3 py-2 rounded-lg text-sm font-medium border-2 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             <option value="week">Weekly</option>
@@ -426,7 +426,8 @@
         // Chart period: each chart has its own period (no shared control)
         const chartPeriods = {
             projectStatus: 'month',
-            collab: 'month',
+            collabBarangay: 'month',
+            collabStatus: 'month',
             budgetUtilization: 'month',
             costBreakdown: 'month',
             monthlySpending: 'month',
@@ -443,7 +444,38 @@
         }
         function loadOneChart(chartId) {
             const period = getPeriod(chartId);
-            if (chartId === 'budgetUtilization') {
+            if (chartId === 'projectStatus') {
+                fetch(`{% url "dashboard_collab_analytics_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        try {
+                            const statusData = data.status || {};
+                            const order = ['Completed', 'In Progress', 'Ongoing', 'Planned', 'Delayed'];
+                            const labels = [];
+                            const values = [];
+                            order.forEach(l => { if (statusData[l] !== undefined) { labels.push(l === 'Ongoing' ? 'In Progress' : l); values.push(statusData[l]); } });
+                            Object.keys(statusData).filter(k => !order.includes(k)).forEach(k => { labels.push(k); values.push(statusData[k]); });
+                            if (!labels.length) { labels.push('No Data'); values.push(0); }
+                            const ctx = document.getElementById('projectStatusChart');
+                            if (!ctx) return;
+                            if (projectStatusChart) projectStatusChart.destroy();
+                            projectStatusChart = new Chart(ctx.getContext('2d'), {
+                                type: 'doughnut',
+                                data: {
+                                    labels,
+                                    datasets: [{
+                                        label: 'Projects',
+                                        data: values,
+                                        backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(251, 191, 36, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(139, 92, 246, 0.8)'],
+                                        borderColor: ['rgba(34, 197, 94, 1)', 'rgba(59, 130, 246, 1)', 'rgba(251, 191, 36, 1)', 'rgba(239, 68, 68, 1)', 'rgba(139, 92, 246, 1)'],
+                                        borderWidth: 1
+                                    }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: c => { const t = c.dataset.data.reduce((a,b)=>a+b,0); return c.label + ': ' + c.parsed + ' (' + (t ? ((c.parsed/t)*100).toFixed(1) : 0) + '%)'; } } } } }
+                            });
+                        } catch (e) { console.error('Error rendering project status chart:', e); }
+                    }).catch(e => console.error('Error fetching project status data:', e));
+            } else if (chartId === 'budgetUtilization') {
                 fetch(`{% url "dashboard_budget_utilization_data" %}?period=${encodeURIComponent(period)}`)
                     .then(r => r.json())
                     .then(data => {
@@ -459,10 +491,15 @@
                             });
                         } catch (e) { console.error('Error rendering budget utilization chart:', e); }
                     }).catch(e => console.error('Error fetching budget utilization data:', e));
-            } else if (chartId === 'collab') {
+            } else if (chartId === 'collabBarangay') {
                 fetch(`{% url "dashboard_collab_analytics_data" %}?period=${encodeURIComponent(period)}`)
                     .then(r => r.json())
-                    .then(data => { try { drawCollabCharts(data.barangay || {}, data.status || {}); } catch (e) { console.error('Error drawing collab charts:', e); } })
+                    .then(data => { try { drawCollabBarangayOnly(data.barangay || {}); } catch (e) { console.error('Error drawing collab barangay chart:', e); } })
+                    .catch(e => console.error('Error fetching collab analytics:', e));
+            } else if (chartId === 'collabStatus') {
+                fetch(`{% url "dashboard_collab_analytics_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => { try { drawCollabStatusOnly(data.status || {}); } catch (e) { console.error('Error drawing collab status chart:', e); } })
                     .catch(e => console.error('Error fetching collab analytics:', e));
             } else if (chartId === 'costBreakdown') {
                 fetch(`{% url "dashboard_cost_breakdown_data" %}?period=${encodeURIComponent(period)}`)
@@ -496,6 +533,30 @@
                             });
                         } catch (e) { console.error('Error rendering spending chart:', e); }
                     }).catch(e => console.error('Error fetching spending data:', e));
+            } else if (chartId === 'projectsPerMonth') {
+                fetch(`{% url "dashboard_projects_created_data" %}?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        try {
+                            const ctx = document.getElementById('projectsPerMonthChart').getContext('2d');
+                            if (projectsPerMonthChart) projectsPerMonthChart.destroy();
+                            projectsPerMonthChart = new Chart(ctx, {
+                                type: 'bar',
+                                data: { labels: data.labels || [], datasets: data.datasets || [{ label: 'Projects Created', data: [] }] },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                            });
+                        } catch (e) { console.error('Error rendering projects per month chart:', e); }
+                    }).catch(e => console.error('Error fetching projects created data:', e));
+            } else if (chartId === 'projectsByZone') {
+                fetch(`/projeng/api/zone-analytics/?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => { try { drawProjectsByZoneChart(data.zones || []); } catch (e) { console.error('Error drawing projects by zone chart:', e); } })
+                    .catch(e => console.error('Error fetching zone analytics:', e));
+            } else if (chartId === 'zoneCost') {
+                fetch(`/projeng/api/zone-analytics/?period=${encodeURIComponent(period)}`)
+                    .then(r => r.json())
+                    .then(data => { try { drawZoneCostChart(data.zones || []); } catch (e) { console.error('Error drawing zone cost chart:', e); } })
+                    .catch(e => console.error('Error fetching zone analytics:', e));
             }
         }
         document.querySelectorAll('.chart-period-wrap').forEach(wrap => {
@@ -513,19 +574,23 @@
         });
 
         // Chart instances to avoid overlap on refresh
+        let projectStatusChart = null;
         let budgetUtilChart = null;
         let costBreakdownChart = null;
         let spendingChart = null;
         let projectsPerMonthChart = null;
         let collabBarangayChart = null;
         let collabStatusChart = null;
+        let projectsByZoneChart = null;
+        let zoneCostChartInstance = null;
 
         // Chart 1: Overall Status Distribution (doughnut)
         const statusCtx = document.getElementById('projectStatusChart').getContext('2d');
         const statusLabels = ['Completed', 'In Progress', 'Planned', 'Delayed'];
         const statusCounts = [{{ completed_count }}, {{ in_progress_count }}, {{ planned_count }}, {{ delayed_count }}];
         const statusTotal = statusCounts.reduce((a, b) => a + b, 0);
-        new Chart(statusCtx, {
+        if (projectStatusChart) projectStatusChart.destroy();
+        projectStatusChart = new Chart(statusCtx, {
             type: 'doughnut',
             data: {
                 labels: statusLabels,
@@ -533,10 +598,10 @@
                     label: 'Projects',
                     data: statusCounts,
                     backgroundColor: [
-                        'rgba(34, 197, 94, 0.8)',   // green-500 with alpha
-                        'rgba(59, 130, 246, 0.8)',  // blue-500 with alpha
-                        'rgba(251, 191, 36, 0.8)',  // yellow-500 with alpha
-                        'rgba(239, 68, 68, 0.8)'    // red-500 with alpha
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(251, 191, 36, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
                     ],
                     borderColor: [
                         'rgba(34, 197, 94, 1)',
@@ -551,9 +616,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
+                    legend: { position: 'bottom' },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -568,72 +631,44 @@
             }
         });
 
-        // Helper: draw Barangay and Status charts from API data (used on load and when period changes)
-        function drawCollabCharts(barangayData, statusData) {
+        // Helpers so each chart-period control only affects its own chart
+        function drawCollabBarangayOnly(barangayData) {
             const barCtx = document.getElementById('collabBarangayChart');
-            const statusCtx = document.getElementById('collabStatusChart');
-            if (!barCtx || !statusCtx) return;
+            if (!barCtx) return;
             if (collabBarangayChart) { collabBarangayChart.destroy(); collabBarangayChart = null; }
-            if (collabStatusChart) { collabStatusChart.destroy(); collabStatusChart = null; }
-            const barKeys = Object.keys(barangayData);
-            const barVals = Object.values(barangayData);
-            if (barKeys.length > 0) {
+            const barKeys = Object.keys(barangayData || {});
+            const barVals = Object.values(barangayData || {});
+            if (!barKeys.length) {
                 collabBarangayChart = new Chart(barCtx.getContext('2d'), {
                     type: 'bar',
                     data: {
-                        labels: barKeys,
-                        datasets: [{ label: 'Projects', data: barVals, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, stepSize: 1 } } }
-                });
-            }
-            const statusKeys = Object.keys(statusData);
-            const statusVals = Object.values(statusData);
-            if (statusKeys.length > 0) {
-                collabStatusChart = new Chart(statusCtx.getContext('2d'), {
-                    type: 'pie',
-                    data: {
-                        labels: statusKeys,
+                        labels: ['No Data'],
                         datasets: [{
                             label: 'Projects',
-                            data: statusVals,
-                            backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(251, 191, 36, 0.7)', 'rgba(139, 92, 246, 0.7)', 'rgba(239, 68, 68, 0.7)'],
-                            borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)', 'rgba(251, 191, 36, 1)', 'rgba(139, 92, 246, 1)', 'rgba(239, 68, 68, 1)'],
+                            data: [0],
+                            backgroundColor: 'rgba(148, 163, 184, 0.7)',
+                            borderColor: 'rgba(148, 163, 184, 1)',
                             borderWidth: 1
                         }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, stepSize: 1 } }
+                    }
                 });
+                return;
             }
-        }
-
-        // Initial load: load each period-driven chart with its own period (default 'month')
-        function loadPeriodCharts() {
-            loadOneChart('budgetUtilization');
-            loadOneChart('collab');
-            loadOneChart('costBreakdown');
-            loadOneChart('monthlySpending');
-        }
-
-        loadPeriodCharts();
-
-        // Chart 7: Projects Created per Month (local data)
-        const createdLabelsEl = document.getElementById('projects-created-labels');
-        const createdCountsEl = document.getElementById('projects-created-counts');
-        if (createdLabelsEl && createdCountsEl) {
-            const labels = JSON.parse(createdLabelsEl.textContent || '[]');
-            const counts = JSON.parse(createdCountsEl.textContent || '[]');
-            const ctx = document.getElementById('projectsPerMonthChart').getContext('2d');
-            if (projectsPerMonthChart) projectsPerMonthChart.destroy();
-            projectsPerMonthChart = new Chart(ctx, {
+            collabBarangayChart = new Chart(barCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels,
+                    labels: barKeys,
                     datasets: [{
-                        label: 'Projects Created',
-                        data: counts,
-                        backgroundColor: 'rgba(100, 116, 139, 0.7)',
-                        borderColor: 'rgba(100, 116, 139, 1)',
+                        label: 'Projects',
+                        data: barVals,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
                         borderWidth: 1
                     }]
                 },
@@ -641,224 +676,223 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    scales: { y: { beginAtZero: true, stepSize: 1 } }
                 }
             });
         }
 
-        // Phase 6: Chart 7 - Projects by Zone Type
-        const projectsByZoneChartEl = document.getElementById('projectsByZoneChart');
-        if (projectsByZoneChartEl) {
-            fetch('/projeng/api/zone-analytics/')
-             .then(response => {
-                 if (!response.ok) {
-                     throw new Error(`HTTP error! status: ${response.status}`);
-                 }
-                 return response.json();
-             })
-             .then(data => {
-                 try {
-                     const ctx = projectsByZoneChartEl.getContext('2d');
-                     const zones = data.zones || [];
-                     
-                     if (zones.length === 0) {
-                         projectsByZoneChartEl.parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No zone data available</div>';
-                         return;
-                     }
-                     
-                     const labels = zones.map(z => z.zone_type);
-                     const projectCounts = zones.map(z => z.total_projects);
-                 
-                 // Zone colors matching the map (updated to standard urban planning colors)
-                 const zoneColors = {
-                     // Residential - Yellow/Beige tones
-                     'R-1': 'rgba(255, 249, 196, 0.8)', // Very light yellow
-                     'R-2': 'rgba(255, 245, 157, 0.8)', // Light yellow
-                     'R-3': 'rgba(253, 216, 53, 0.8)', // Yellow
-                     'SHZ': 'rgba(197, 225, 165, 0.8)', // Light green-yellow
-                     // Commercial - Orange tones
-                     'C-1': 'rgba(255, 111, 0, 0.8)', // Deep orange
-                     'C-2': 'rgba(255, 183, 77, 0.8)', // Light orange
-                     // Industrial - Purple tones
-                     'I-1': 'rgba(186, 104, 200, 0.8)', // Purple
-                     'I-2': 'rgba(206, 147, 216, 0.8)', // Light purple
-                     'AGRO': 'rgba(156, 204, 101, 0.8)', // Light green
-                     // Institutional
-                     'INS-1': 'rgba(121, 134, 203, 0.8)', // Indigo/purple-blue
-                     // Open Space/Parks
-                     'PARKS': 'rgba(102, 187, 106, 0.8)', // Medium green
-                     'AGRICULTURAL': 'rgba(129, 199, 132, 0.8)', // Green
-                     'ECO-TOURISM': 'rgba(38, 166, 154, 0.8)', // Teal
-                     // Special Uses
-                     'SPECIAL': 'rgba(161, 136, 127, 0.8)', // Brown
-                 };
-                 
-                 const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
-                 
-                 new Chart(ctx, {
-                     type: 'bar',
-                     data: {
-                         labels: labels,
-                         datasets: [{
-                             label: 'Number of Projects',
-                             data: projectCounts,
-                             backgroundColor: backgroundColors,
-                             borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
-                             borderWidth: 1
-                         }]
-                     },
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         scales: {
-                             y: {
-                                 beginAtZero: true,
-                                 ticks: {
-                                     stepSize: 1
-                                 }
-                             }
-                         },
-                         plugins: {
-                             legend: {
-                                 display: false
-                             },
-                             tooltip: {
-                                 callbacks: {
-                                     title: function(context) {
-                                         const zone = zones[context[0].dataIndex];
-                                         return zone.display_name || zone.zone_type;
-                                     },
-                                     label: function(context) {
-                                         const zone = zones[context.dataIndex];
-                                         return [
-                                             `Projects: ${context.parsed.y}`,
-                                             `Completed: ${zone.completed}`,
-                                             `In Progress: ${zone.in_progress}`,
-                                             `Planned: ${zone.planned}`
-                                         ];
-                                     }
-                                 }
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering projects by zone chart:', error);
-                 document.getElementById('projectsByZoneChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-             }
-             })
-             .catch(error => {
-                 console.error('Error fetching zone analytics data:', error);
-                 if (projectsByZoneChartEl && projectsByZoneChartEl.parentElement) {
-                     projectsByZoneChartEl.parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-                 }
-             });
-        } else {
-            console.warn('projectsByZoneChart element not found');
+        function drawCollabStatusOnly(statusData) {
+            const statusCtx2 = document.getElementById('collabStatusChart');
+            if (!statusCtx2) return;
+            if (collabStatusChart) { collabStatusChart.destroy(); collabStatusChart = null; }
+            const statusKeys = Object.keys(statusData || {});
+            const statusVals = Object.values(statusData || {});
+            if (!statusKeys.length) {
+                collabStatusChart = new Chart(statusCtx2.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{
+                            label: 'Projects',
+                            data: [0],
+                            backgroundColor: ['rgba(148, 163, 184, 0.7)'],
+                            borderColor: ['rgba(148, 163, 184, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+                return;
+            }
+            collabStatusChart = new Chart(statusCtx2.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: statusKeys,
+                    datasets: [{
+                        label: 'Projects',
+                        data: statusVals,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(251, 191, 36, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(251, 191, 36, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
         }
 
-        // Phase 6: Chart 8 - Zone Cost Distribution
-        const zoneCostChartEl = document.getElementById('zoneCostChart');
-        if (zoneCostChartEl) {
-            fetch('/projeng/api/zone-analytics/')
-             .then(response => {
-                 if (!response.ok) {
-                     throw new Error(`HTTP error! status: ${response.status}`);
-                 }
-                 return response.json();
-             })
-             .then(data => {
-                 try {
-                     const ctx = zoneCostChartEl.getContext('2d');
-                     const zones = data.zones || [];
-                     
-                     // Filter zones with costs > 0
-                     const zonesWithCosts = zones.filter(z => z.total_cost > 0);
-                     
-                     if (zonesWithCosts.length === 0) {
-                         zoneCostChartEl.parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No cost data available</div>';
-                         return;
-                     }
-                 
-                 const labels = zonesWithCosts.map(z => z.zone_type);
-                 const costs = zonesWithCosts.map(z => z.total_cost);
-                 
-                 // Zone colors matching the map (updated to standard urban planning colors)
-                 const zoneColors = {
-                     // Residential - Yellow/Beige tones
-                     'R-1': 'rgba(255, 249, 196, 0.8)', // Very light yellow
-                     'R-2': 'rgba(255, 245, 157, 0.8)', // Light yellow
-                     'R-3': 'rgba(253, 216, 53, 0.8)', // Yellow
-                     'SHZ': 'rgba(197, 225, 165, 0.8)', // Light green-yellow
-                     // Commercial - Orange tones
-                     'C-1': 'rgba(255, 111, 0, 0.8)', // Deep orange
-                     'C-2': 'rgba(255, 183, 77, 0.8)', // Light orange
-                     // Industrial - Purple tones
-                     'I-1': 'rgba(186, 104, 200, 0.8)', // Purple
-                     'I-2': 'rgba(206, 147, 216, 0.8)', // Light purple
-                     'AGRO': 'rgba(156, 204, 101, 0.8)', // Light green
-                     // Institutional
-                     'INS-1': 'rgba(121, 134, 203, 0.8)', // Indigo/purple-blue
-                     // Open Space/Parks
-                     'PARKS': 'rgba(102, 187, 106, 0.8)', // Medium green
-                     'AGRICULTURAL': 'rgba(129, 199, 132, 0.8)', // Green
-                     'ECO-TOURISM': 'rgba(38, 166, 154, 0.8)', // Teal
-                     // Special Uses
-                     'SPECIAL': 'rgba(161, 136, 127, 0.8)', // Brown
-                 };
-                 
-                 const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
-                 
-                 new Chart(ctx, {
-                     type: 'doughnut',
-                     data: {
-                         labels: labels,
-                         datasets: [{
-                             label: 'Total Cost (₱)',
-                             data: costs,
-                             backgroundColor: backgroundColors,
-                             borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
-                             borderWidth: 2
-                         }]
-                     },
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         plugins: {
-                             legend: {
-                                 display: true,
-                                 position: 'right'
-                             },
-                             tooltip: {
-                                 callbacks: {
-                                     title: function(context) {
-                                         const zone = zonesWithCosts[context[0].dataIndex];
-                                         return zone.display_name || zone.zone_type;
-                                     },
-                                     label: function(context) {
-                                         const value = context.parsed;
-                                         const percentage = ((value / costs.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
-                                         return `Cost: ₱${value.toLocaleString('en-US')} (${percentage}%)`;
-                                     }
-                                 }
-                             }
-                         }
-                     }
-                 });
-             } catch (error) {
-                 console.error('Error rendering zone cost chart:', error);
-                 document.getElementById('zoneCostChart').parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-             }
-                 })
-                 .catch(error => {
-                     console.error('Error fetching zone analytics data:', error);
-                     if (zoneCostChartEl && zoneCostChartEl.parentElement) {
-                         zoneCostChartEl.parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">Error loading chart data</div>';
-                     }
-                 });
-        } else {
-            console.warn('zoneCostChart element not found');
+        function drawProjectsByZoneChart(zones) {
+            const el = document.getElementById('projectsByZoneChart');
+            if (!el) return;
+            const ctx = el.getContext('2d');
+            if (projectsByZoneChart) { projectsByZoneChart.destroy(); projectsByZoneChart = null; }
+            const dataZones = zones || [];
+            if (!dataZones.length) {
+                el.parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No zone data available</div>';
+                return;
+            }
+            const labels = dataZones.map(z => z.zone_type);
+            const projectCounts = dataZones.map(z => z.total_projects);
+            const zoneColors = {
+                'R-1': 'rgba(255, 249, 196, 0.8)',
+                'R-2': 'rgba(255, 245, 157, 0.8)',
+                'R-3': 'rgba(253, 216, 53, 0.8)',
+                'SHZ': 'rgba(197, 225, 165, 0.8)',
+                'C-1': 'rgba(255, 111, 0, 0.8)',
+                'C-2': 'rgba(255, 183, 77, 0.8)',
+                'I-1': 'rgba(186, 104, 200, 0.8)',
+                'I-2': 'rgba(206, 147, 216, 0.8)',
+                'AGRO': 'rgba(156, 204, 101, 0.8)',
+                'INS-1': 'rgba(121, 134, 203, 0.8)',
+                'PARKS': 'rgba(102, 187, 106, 0.8)',
+                'AGRICULTURAL': 'rgba(129, 199, 132, 0.8)',
+                'ECO-TOURISM': 'rgba(38, 166, 154, 0.8)',
+                'SPECIAL': 'rgba(161, 136, 127, 0.8)'
+            };
+            const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
+            projectsByZoneChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Projects',
+                        data: projectCounts,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const zone = dataZones[context[0].dataIndex];
+                                    return zone.display_name || zone.zone_type;
+                                },
+                                label: function(context) {
+                                    const zone = dataZones[context.dataIndex];
+                                    return [
+                                        `Projects: ${context.parsed.y}`,
+                                        `Completed: ${zone.completed}`,
+                                        `In Progress: ${zone.in_progress}`,
+                                        `Planned: ${zone.planned}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
+
+        function drawZoneCostChart(zones) {
+            const el = document.getElementById('zoneCostChart');
+            if (!el) return;
+            const ctx = el.getContext('2d');
+            if (zoneCostChartInstance) { zoneCostChartInstance.destroy(); zoneCostChartInstance = null; }
+            const zonesWithCosts = (zones || []).filter(z => z.total_cost > 0);
+            if (!zonesWithCosts.length) {
+                el.parentElement.innerHTML = '<div class="text-gray-500 text-center mt-8">No cost data available</div>';
+                return;
+            }
+            const labels = zonesWithCosts.map(z => z.zone_type);
+            const costs = zonesWithCosts.map(z => z.total_cost);
+            const zoneColors = {
+                'R-1': 'rgba(255, 249, 196, 0.8)',
+                'R-2': 'rgba(255, 245, 157, 0.8)',
+                'R-3': 'rgba(253, 216, 53, 0.8)',
+                'SHZ': 'rgba(197, 225, 165, 0.8)',
+                'C-1': 'rgba(255, 111, 0, 0.8)',
+                'C-2': 'rgba(255, 183, 77, 0.8)',
+                'I-1': 'rgba(186, 104, 200, 0.8)',
+                'I-2': 'rgba(206, 147, 216, 0.8)',
+                'AGRO': 'rgba(156, 204, 101, 0.8)',
+                'INS-1': 'rgba(121, 134, 203, 0.8)',
+                'PARKS': 'rgba(102, 187, 106, 0.8)',
+                'AGRICULTURAL': 'rgba(129, 199, 132, 0.8)',
+                'ECO-TOURISM': 'rgba(38, 166, 154, 0.8)',
+                'SPECIAL': 'rgba(161, 136, 127, 0.8)'
+            };
+            const backgroundColors = labels.map(z => zoneColors[z] || 'rgba(200, 200, 200, 0.8)');
+            zoneCostChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Cost (₱)',
+                        data: costs,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const zone = zonesWithCosts[context[0].dataIndex];
+                                    return zone.display_name || zone.zone_type;
+                                },
+                                label: function(context) {
+                                    const zone = zonesWithCosts[context.dataIndex];
+                                    const value = context.parsed;
+                                    const percentage = ((value / costs.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                                    return [
+                                        `Total Cost: ₱${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                        `Share: ${percentage}%`,
+                                        `Completed: ₱${Number(zone.completed_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                        `In Progress: ₱${Number(zone.in_progress_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                        `Planned: ₱${Number(zone.planned_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initial load: load each period-driven chart with its own period (default 'month')
+        function loadPeriodCharts() {
+            [
+                'projectStatus',
+                'collabBarangay',
+                'collabStatus',
+                'budgetUtilization',
+                'costBreakdown',
+                'monthlySpending',
+                'projectsPerMonth',
+                'projectsByZone',
+                'zoneCost'
+            ].forEach(loadOneChart);
+        }
+
+        loadPeriodCharts();
     });
 
 </script>

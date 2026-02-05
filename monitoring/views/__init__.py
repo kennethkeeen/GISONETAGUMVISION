@@ -473,6 +473,83 @@ def dashboard_monthly_spending_data(request):
         }]
     })
 
+
+@login_required
+@prevent_project_engineer_access
+def dashboard_projects_created_data(request):
+    """API endpoint for Projects Created per Month chart (week/month/year)."""
+    from projeng.models import Project
+    from django.db.models import Count
+    from django.db.models.functions import TruncMonth, TruncWeek, TruncYear
+    from django.http import JsonResponse
+    from datetime import timedelta
+
+    if not (is_head_engineer(request.user) or is_finance_manager(request.user)):
+        return JsonResponse({'labels': ['No Data'], 'datasets': [{'label': 'Projects Created', 'data': [0]}]})
+
+    period = (request.GET.get('period') or 'month').strip().lower()
+    now = timezone.now()
+    if period == 'week':
+        start = now - timedelta(days=7 * 12)
+        try:
+            qs = (
+                Project.objects.filter(created_at__gte=start)
+                .annotate(bucket=TruncWeek('created_at'))
+                .values('bucket')
+                .annotate(total=Count('id'))
+                .order_by('bucket')
+            )
+            labels = [item['bucket'].strftime('Wk of %b %d') for item in qs if item.get('bucket')]
+            counts = [int(item['total']) for item in qs]
+        except Exception:
+            qs = (
+                Project.objects.filter(created_at__gte=start)
+                .annotate(bucket=TruncMonth('created_at'))
+                .values('bucket')
+                .annotate(total=Count('id'))
+                .order_by('bucket')
+            )
+            labels = [item['bucket'].strftime('%b %Y') for item in qs if item.get('bucket')]
+            counts = [int(item['total']) for item in qs]
+    elif period == 'year':
+        start = now - timedelta(days=365 * 5)
+        qs = (
+            Project.objects.filter(created_at__gte=start)
+            .annotate(bucket=TruncYear('created_at'))
+            .values('bucket')
+            .annotate(total=Count('id'))
+            .order_by('bucket')
+        )
+        labels = [item['bucket'].strftime('%Y') for item in qs if item.get('bucket')]
+        counts = [int(item['total']) for item in qs]
+    else:
+        start = now - timedelta(days=365)
+        qs = (
+            Project.objects.filter(created_at__gte=start)
+            .annotate(bucket=TruncMonth('created_at'))
+            .values('bucket')
+            .annotate(total=Count('id'))
+            .order_by('bucket')
+        )
+        labels = [item['bucket'].strftime('%b %Y') for item in qs if item.get('bucket')]
+        counts = [int(item['total']) for item in qs]
+
+    if not labels:
+        labels = ['No Data']
+        counts = [0]
+
+    return JsonResponse({
+        'labels': labels,
+        'datasets': [{
+            'label': 'Projects Created',
+            'data': counts,
+            'backgroundColor': 'rgba(100, 116, 139, 0.7)',
+            'borderColor': 'rgba(100, 116, 139, 1)',
+            'borderWidth': 1
+        }]
+    })
+
+
 @login_required
 @head_engineer_required
 def project_list(request):

@@ -32,6 +32,7 @@ urlpatterns = [
     path('dashboard/collab-analytics-data/', views.dashboard_collab_analytics_data, name='dashboard_collab_analytics_data'),
     path('dashboard/cost-breakdown-data/', views.dashboard_cost_breakdown_data, name='dashboard_cost_breakdown_data'),
     path('dashboard/monthly-spending-data/', views.dashboard_monthly_spending_data, name='dashboard_monthly_spending_data'),
+    path('dashboard/projects-created-data/', views.dashboard_projects_created_data, name='dashboard_projects_created_data'),
     path('api/barangay-geojson/', views.barangay_geojson_view, name='barangay_geojson'),
     path('api/overall-project-metrics/', views.overall_project_metrics_api, name='overall_project_metrics_api'),
     path('projects/<int:pk>/export-timeline-pdf/', views.export_project_timeline_pdf, name='export_project_timeline_pdf'),

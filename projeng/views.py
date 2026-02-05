@@ -2784,15 +2784,26 @@ def zone_analytics_api(request):
     """
     API endpoint for zone analytics charts.
     Returns aggregated project data by zone type.
+    Optional ?period=week|month|year filters by project created_at.
     Accessible to Head Engineers only.
     """
     from django.db.models import Q
-    
-    # Get all projects with zone_type
+
+    # Optional period filter (week/month/year)
+    period = (request.GET.get('period') or 'month').strip().lower()
+    now = timezone.now().date()
+    if period == 'week':
+        start_date = now - timedelta(days=7)
+    elif period == 'year':
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = now - timedelta(days=30)
+
+    # Get all projects with zone_type (optionally filtered by period)
     projects_with_zones = Project.objects.filter(
         zone_type__isnull=False
-    ).exclude(zone_type='')
-    
+    ).exclude(zone_type='').filter(created_at__date__gte=start_date)
+
     # Aggregate by zone_type
     zone_stats = projects_with_zones.values('zone_type').annotate(
         total_projects=Count('id'),
