@@ -32,13 +32,40 @@
   z-index: 10001 !important;
 }
 
-/* Floating Controls Styling */
+/* Floating Controls Styling - Position below fullscreen button (~56px = 40px button + 16px gap) */
 #zoning-controls-panel {
   pointer-events: auto !important;
   z-index: 10002 !important;
   position: absolute !important;
-  top: 16px !important;
+  top: 56px !important;
   right: 16px !important;
+}
+
+/* Tagum City Barangays / TAG Zone Type legend - scrollable, constrained height so zoning controls don't cover it */
+#zone-legend-container {
+  max-height: 280px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  margin-top: 8px !important;
+  padding-right: 4px !important;
+}
+
+#zone-legend-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+#zone-legend-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+#zone-legend-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+#zone-legend-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 /* Ensure floating controls don't interfere with map interactions */
@@ -224,8 +251,8 @@
             <div class="relative" style="position: relative;">
                 <div id="map" style="height: 75vh; width: 100%; z-index: 1; position: relative; background-color: #f0f0f0;"></div>
                 
-                <!-- Floating Zoning Controls Panel (Inside Map) -->
-                <div id="zoning-controls-panel" class="absolute top-4 right-4 bg-white rounded-lg shadow-xl border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="position: absolute; top: 16px; right: 16px; z-index: 10002; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <!-- Floating Zoning Controls Panel (Inside Map) - Positioned below fullscreen button -->
+                <div id="zoning-controls-panel" class="absolute bg-white rounded-lg shadow-xl border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="position: absolute; top: 56px; right: 16px; z-index: 10002; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                     <!-- Panel Header -->
                     <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                         <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,6 +286,12 @@
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Zone Type</span>
                             </label>
                         </div>
+                    </div>
+                    
+                    <!-- TAG Zone Type / Tagum City Barangays Legends (scrollable) -->
+                    <div id="zone-legend-container" class="zone-legend-scroll border-t border-gray-200 pt-2 mt-2">
+                        <!-- Populated by SimpleChoropleth -->
+                        <div class="text-xs text-gray-500 italic">Loading legend...</div>
                     </div>
                 </div>
             </div>
@@ -1092,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Sample project:', projectsToUse[0]);
                 }
                 
-                choroplethMap = new SimpleChoropleth(map, "{% url 'barangay_geojson' %}", projectsToUse);
+                choroplethMap = new SimpleChoropleth(map, "{% url 'barangay_geojson' %}", projectsToUse, 'zone-legend-container');
                 choroplethMapReady = false; // Reset flag
                 // Initialize asynchronously and wait for it to complete
                 choroplethMap.initialize().then(() => {
