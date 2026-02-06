@@ -39,15 +39,20 @@
   position: absolute !important;
   top: 56px !important;
   right: 16px !important;
+  max-height: calc(75vh - 80px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
-/* Tagum City Barangays / TAG Zone Type legend - scrollable, constrained height so zoning controls don't cover it */
+/* Tagum City Barangays / TAG Zone Type legend - ONLY this section scrolls, View Type stays fixed */
 #zone-legend-container {
-  max-height: 280px !important;
+  max-height: 240px !important;
+  min-height: 80px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  margin-top: 8px !important;
   padding-right: 4px !important;
+  flex: 1 1 auto !important;
 }
 
 #zone-legend-container::-webkit-scrollbar {
@@ -288,10 +293,10 @@
                         </div>
                     </div>
                     
-                    <!-- TAG Zone Type / Tagum City Barangays Legends (scrollable) -->
-                    <div id="zone-legend-container" class="zone-legend-scroll border-t border-gray-200 pt-2 mt-2">
-                        <!-- Populated by SimpleChoropleth -->
-                        <div class="text-xs text-gray-500 italic">Loading legend...</div>
+                    <!-- Tagum City Barangays / TAG Zone Type Legends (scrollable list only) -->
+                    <div id="zone-legend-wrapper" class="border-t border-gray-200 pt-2 mt-2 flex-1 min-h-0 flex flex-col">
+                        <div id="zone-legend-container" class="zone-legend-scroll flex-1 min-h-0" role="region" aria-label="Map legend">
+                        </div>
                     </div>
                 </div>
             </div>

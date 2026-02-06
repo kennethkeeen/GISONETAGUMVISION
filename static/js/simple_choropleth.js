@@ -384,23 +384,29 @@ class SimpleChoropleth {
                 });
             } else {
                 html = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 13px; font-weight: 600;">Tagum City Barangays</h4>';
-                const uniqueBarangays = new Map();
-                this.barangayData.forEach(feature => {
-                    const name = feature.properties.name;
-                    const color = feature.properties.color || '#FF6B6B';
-                    if (!uniqueBarangays.has(name)) {
-                        uniqueBarangays.set(name, color);
-                    }
-                });
-                const sortedBarangays = Array.from(uniqueBarangays.entries()).sort();
-                sortedBarangays.forEach(([name, color]) => {
-                    html += `
-                        <div style="margin: 4px 0; display: flex; align-items: center;">
-                            <i style="background: ${color}; width: 16px; height: 16px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
-                            <span style="font-size: 12px;">${name}</span>
-                        </div>
-                    `;
-                });
+                if (!this.barangayData || this.barangayData.length === 0) {
+                    html += '<p style="font-size: 12px; color: #6b7280; margin: 4px 0;">No data loaded yet.</p>';
+                } else {
+                    const barangayColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7'];
+                    const uniqueBarangays = new Map();
+                    let colorIndex = 0;
+                    this.barangayData.forEach(feature => {
+                        const name = feature.properties.name;
+                        if (!uniqueBarangays.has(name)) {
+                            const color = feature.properties.color || barangayColors[colorIndex++ % barangayColors.length];
+                            uniqueBarangays.set(name, color);
+                        }
+                    });
+                    const sortedBarangays = Array.from(uniqueBarangays.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+                    sortedBarangays.forEach(([name, color]) => {
+                        html += `
+                            <div style="margin: 4px 0; display: flex; align-items: center;">
+                                <i style="background: ${color}; width: 16px; height: 16px; margin-right: 8px; border: 1px solid #333; flex-shrink: 0; border-radius: 3px;"></i>
+                                <span style="font-size: 12px;">${name}</span>
+                            </div>
+                        `;
+                    });
+                }
             }
             return html;
         };
