@@ -418,6 +418,8 @@ window.closeProjectModal = function() {
     } else if (modal) {
         modal.classList.remove('opacity-100');
         modal.classList.add('opacity-0', 'pointer-events-none');
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
     }
 };
 
@@ -2158,7 +2160,12 @@ async function ensureAutoPrn() {
 function hideModal() {
     if (projectModal) {
         projectModal.classList.remove('opacity-100');
-        setTimeout(() => projectModal.classList.add('opacity-0', 'pointer-events-none'), 300);
+        projectModal.classList.add('pointer-events-none');
+        setTimeout(() => {
+            projectModal.classList.add('opacity-0');
+            projectModal.style.display = 'none';
+            projectModal.style.pointerEvents = '';
+        }, 300);
     }
     if (projectForm) {
         projectForm.reset();
@@ -2980,6 +2987,16 @@ function populateEngineers() {
         }
         if (closeModal) closeModal.addEventListener('click', hideModal);
         if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+        // Click outside modal (on backdrop) closes it using the same hideModal
+        if (projectModal) {
+            projectModal.addEventListener('click', function(e) {
+                if (e.target === projectModal) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hideModal();
+                }
+            });
+        }
     }
     
     // Run immediately if DOM is ready, otherwise wait
