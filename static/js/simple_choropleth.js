@@ -243,10 +243,20 @@ class SimpleChoropleth {
             this.map.removeLayer(this.choroplethLayer);
         }
 
-        // Create choropleth layer
+        // Create choropleth layer - same color assignment as legend for consistency
+        const barangayColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7'];
+        const colorByBarangay = new Map();
+        let colorIdx = 0;
+        this.barangayData.forEach(f => {
+            const name = f.properties?.name;
+            if (name && !colorByBarangay.has(name)) {
+                colorByBarangay.set(name, f.properties.color || barangayColors[colorIdx++ % barangayColors.length]);
+            }
+        });
         this.choroplethLayer = L.geoJSON(this.barangayData, {
             style: (feature) => {
-                const color = feature.properties.color || '#FF6B6B';
+                const name = feature.properties?.name;
+                const color = (name && colorByBarangay.get(name)) || feature.properties.color || '#FF6B6B';
                 return {
                     fillColor: color,
                     weight: 2,

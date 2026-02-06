@@ -288,12 +288,10 @@
                     <div id="zoning-control-menu" role="menu">
                         <label class="block text-xs font-semibold mb-2 text-gray-700">View Type</label>
                         <div class="space-y-1.5" id="zoning-view-controls">
+                            <!-- Hidden radio for idle/clear state (no choropleth) - checked by default -->
+                            <input type="radio" name="zoning-view-type" value="none" id="view-none" class="hidden" checked>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="none" id="view-none" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
-                                <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Clear Map</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="projects" id="view-projects" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer" checked>
+                                <input type="radio" name="zoning-view-type" value="projects" id="view-projects" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Barangay Boundaries</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
@@ -1156,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Get current view type from radio buttons
                     const selectedRadio = document.querySelector('input[name="zoning-view-type"]:checked');
                     if (selectedRadio) {
-                        const viewType = selectedRadio.value || 'projects';
+                        const viewType = selectedRadio.value; // 'none' = idle/clear, no choropleth
                         if (typeof choroplethMap.switchView === 'function') {
                             choroplethMap.switchView(viewType);
                         }
@@ -1173,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Choropleth already exists, just update view
             const selectedRadio = document.querySelector('input[name="zoning-view-type"]:checked');
             if (selectedRadio) {
-                const viewType = selectedRadio.value || 'projects';
+                const viewType = selectedRadio.value;
                 if (typeof choroplethMap.switchView === 'function') {
                     choroplethMap.switchView(viewType);
                 }
@@ -1239,27 +1237,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Attach event listeners to zoning view radio buttons
+    let lastZoningViewType = 'none'; // Track last selection for click-again-to-clear (starts idle)
     const zoningViewRadios = document.querySelectorAll('input[name="zoning-view-type"]');
-    const viewProjectsRadio = document.getElementById('view-projects');
+    const viewNoneRadio = document.getElementById('view-none');
     if (zoningViewRadios.length > 0) {
         zoningViewRadios.forEach(radio => {
             radio.addEventListener('change', function(e) {
                 const viewType = e.target.value;
+                lastZoningViewType = viewType;
                 console.log('Zoning view changed to:', viewType);
                 handleZoningViewChange(viewType);
             });
-        });
-        // Barangay Boundaries: click again when already selected -> clear map (toggle)
-        if (viewProjectsRadio) {
-            viewProjectsRadio.addEventListener('click', function() {
-                if (this.checked) {
-                    const viewNone = document.getElementById('view-none');
-                    if (viewNone) {
-                        viewNone.checked = true; // Triggers change event -> handleZoningViewChange('none')
+            // Click again when already selected -> clear map (toggle off choropleth)
+            if (radio.value !== 'none') {
+                radio.addEventListener('click', function() {
+                    if (this.checked && this.value === lastZoningViewType) {
+                        if (viewNoneRadio) {
+                            viewNoneRadio.checked = true; // Triggers change -> handleZoningViewChange('none')
+                        }
                     }
-                }
-            });
-        }
+                });
+            }
+        });
     }
 
     // Zoning Control dropdown toggle
