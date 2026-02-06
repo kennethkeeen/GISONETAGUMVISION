@@ -32,27 +32,101 @@
   z-index: 10001 !important;
 }
 
-/* Floating Controls Styling - Position below fullscreen button (~56px = 40px button + 16px gap) */
-#zoning-controls-panel {
+/* Wireframe layout: Top-right = Zoning Control (dropdown), Bottom-right = Tagum City Barangay Legend */
+
+/* Zoning Control dropdown - top-right */
+#zoning-control-dropdown {
   pointer-events: auto !important;
   z-index: 10002 !important;
   position: absolute !important;
   top: 56px !important;
   right: 16px !important;
-  max-height: calc(75vh - 80px) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
 }
 
-/* Tagum City Barangays / TAG Zone Type legend - ONLY this section scrolls, View Type stays fixed */
+#zoning-control-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+#zoning-control-toggle:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+#zoning-control-toggle svg.chevron {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+#zoning-control-dropdown.open #zoning-control-toggle svg.chevron {
+  transform: rotate(180deg);
+}
+
+#zoning-control-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 12px;
+  z-index: 10003;
+}
+
+#zoning-control-dropdown.open #zoning-control-menu {
+  display: block;
+}
+
+/* Tagum City Barangay Legend - bottom-right */
+#barangay-legend-panel {
+  pointer-events: auto !important;
+  z-index: 10002 !important;
+  position: absolute !important;
+  bottom: 16px !important;
+  right: 16px !important;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 12px 14px;
+  min-width: 220px;
+  max-width: 280px;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#barangay-legend-panel .panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 #zone-legend-container {
-  max-height: 240px !important;
-  min-height: 80px !important;
+  max-height: 260px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   padding-right: 4px !important;
-  flex: 1 1 auto !important;
 }
 
 #zone-legend-container::-webkit-scrollbar {
@@ -256,20 +330,20 @@
             <div class="relative" style="position: relative;">
                 <div id="map" style="height: 75vh; width: 100%; z-index: 1; position: relative; background-color: #f0f0f0;"></div>
                 
-                <!-- Floating Zoning Controls Panel (Inside Map) - Positioned below fullscreen button -->
-                <div id="zoning-controls-panel" class="absolute bg-white rounded-lg shadow-xl border border-gray-300 p-3 min-w-[260px] max-w-[300px]" style="position: absolute; top: 56px; right: 16px; z-index: 10002; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                    <!-- Panel Header -->
-                    <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+                <!-- Top-Right: Zoning Control (Dropdown) -->
+                <div id="zoning-control-dropdown" class="absolute" style="z-index: 10002;">
+                    <button id="zoning-control-toggle" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="zoning-control-menu">
                         <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.948L9 2m0 0l6 2.67M9 2v18m6-15.33l5.447 2.724A2 2 0 0121 8.618v9.764a2 2 0 01-1.553 1.948L15 22m0 0V4.67"></path>
                         </svg>
-                        <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">Zoning Controls</span>
-                    </div>
-                    
-                    <!-- Zoning View Type Selector (Always visible) -->
-                    <div id="zoning-view-controls" class="mt-2">
-                        <label class="block text-xs font-semibold mb-1.5 text-gray-700">View Type</label>
-                        <div class="space-y-1.5">
+                        <span>Zoning Control</span>
+                        <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="zoning-control-menu" role="menu">
+                        <label class="block text-xs font-semibold mb-2 text-gray-700">View Type</label>
+                        <div class="space-y-1.5" id="zoning-view-controls">
                             <label class="flex items-center gap-2 cursor-pointer group">
                                 <input type="radio" name="zoning-view-type" value="projects" id="view-projects" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer" checked>
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Projects (Default)</span>
@@ -292,12 +366,12 @@
                             </label>
                         </div>
                     </div>
-                    
-                    <!-- Tagum City Barangays / TAG Zone Type Legends (scrollable list only) -->
-                    <div id="zone-legend-wrapper" class="border-t border-gray-200 pt-2 mt-2 flex-1 min-h-0 flex flex-col">
-                        <div id="zone-legend-container" class="zone-legend-scroll flex-1 min-h-0" role="region" aria-label="Map legend">
-                        </div>
-                    </div>
+                </div>
+                
+                <!-- Bottom-Right: Tagum City Barangay Legend -->
+                <div id="barangay-legend-panel">
+                    <div class="panel-title">Tagum City Barangay Legend</div>
+                    <div id="zone-legend-container" role="region" aria-label="Map legend"></div>
                 </div>
             </div>
         </div>
@@ -1231,6 +1305,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Zoning view changed to:', viewType);
                 handleZoningViewChange(viewType);
             });
+        });
+    }
+
+    // Zoning Control dropdown toggle
+    const zoningControlDropdown = document.getElementById('zoning-control-dropdown');
+    const zoningControlToggle = document.getElementById('zoning-control-toggle');
+    if (zoningControlDropdown && zoningControlToggle) {
+        zoningControlToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            zoningControlDropdown.classList.toggle('open');
+            zoningControlToggle.setAttribute('aria-expanded', zoningControlDropdown.classList.contains('open'));
+        });
+        document.addEventListener('click', function(e) {
+            if (zoningControlDropdown.classList.contains('open') && !zoningControlDropdown.contains(e.target)) {
+                zoningControlDropdown.classList.remove('open');
+                zoningControlToggle.setAttribute('aria-expanded', 'false');
+            }
         });
     }
 
