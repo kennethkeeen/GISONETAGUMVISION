@@ -2287,6 +2287,16 @@ def barangay_geojson_view(request):
         geojson_data = json.load(f)
     return JsonResponse(geojson_data, safe=False)
 
+
+def tagum_city_boundary_geojson_view(request):
+    """Serve whole Tagum City boundary (OSM admin boundary) - single outline, no barangays."""
+    geojson_path = os.path.join(settings.BASE_DIR, 'wholetagumexport.geojson')
+    if not os.path.isfile(geojson_path):
+        geojson_path = os.path.join(settings.BASE_DIR, 'static', 'data', 'tagum_city_boundary.geojson')
+    with open(geojson_path, 'r', encoding='utf-8') as f:
+        geojson_data = json.load(f)
+    return JsonResponse(geojson_data, safe=False)
+
 def export_project_timeline_pdf(request, pk):
     """Export project timeline as PDF"""
     from projeng.models import Project as ProjEngProject, ProjectProgress as ProjEngProjectProgress

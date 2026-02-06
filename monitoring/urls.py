@@ -34,6 +34,7 @@ urlpatterns = [
     path('dashboard/monthly-spending-data/', views.dashboard_monthly_spending_data, name='dashboard_monthly_spending_data'),
     path('dashboard/projects-created-data/', views.dashboard_projects_created_data, name='dashboard_projects_created_data'),
     path('api/barangay-geojson/', views.barangay_geojson_view, name='barangay_geojson'),
+    path('api/tagum-city-boundary-geojson/', views.tagum_city_boundary_geojson_view, name='tagum_city_boundary_geojson'),
     path('api/overall-project-metrics/', views.overall_project_metrics_api, name='overall_project_metrics_api'),
     path('projects/<int:pk>/export-timeline-pdf/', views.export_project_timeline_pdf, name='export_project_timeline_pdf'),
     path('projects/<int:pk>/export-comprehensive-pdf/', views.export_project_comprehensive_pdf, name='export_project_comprehensive_pdf'),

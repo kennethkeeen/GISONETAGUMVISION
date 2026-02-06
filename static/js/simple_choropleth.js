@@ -670,8 +670,7 @@ class SimpleChoropleth {
             // This must happen after loadData() so we have barangay names for matching
             this.calculateBarangayStats();
             
-            this.createChoropleth();
-            console.log('Choropleth initialized successfully');
+            // Do NOT create choropleth here - only create the layer for the current view (e.g. city boundary when 'none')
             console.log('Zoning data available:', this.zoningData ? Object.keys(this.zoningData).length + ' barangays' : 'none');
             console.log('Barangay stats calculated for', Object.keys(this.barangayStats).length, 'barangays');
             console.log('switchView method available:', typeof this.switchView === 'function');

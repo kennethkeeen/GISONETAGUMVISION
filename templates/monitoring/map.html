@@ -1145,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Sample project:', projectsToUse[0]);
                 }
                 
-                choroplethMap = new SimpleChoropleth(map, "{% url 'barangay_geojson' %}", projectsToUse, null, "{% static 'data/tagum_city_boundary.geojson' %}");
+                choroplethMap = new SimpleChoropleth(map, "{% url 'barangay_geojson' %}", projectsToUse, null, "{% url 'tagum_city_boundary_geojson' %}");
                 choroplethMapReady = false; // Reset flag
                 // Initialize asynchronously and wait for it to complete
                 choroplethMap.initialize().then(() => {
