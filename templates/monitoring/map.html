@@ -858,6 +858,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     fullscreenButton.getContainer().title = 'Exit Fullscreen';
                 }
                 
+                // Move zoning control below fullscreen button in fullscreen mode
+                if (zoningControlDropdown) {
+                    zoningControlDropdown.style.setProperty('position', 'fixed', 'important');
+                    zoningControlDropdown.style.setProperty('top', '60px', 'important');
+                    zoningControlDropdown.style.setProperty('right', '10px', 'important');
+                    zoningControlDropdown.style.setProperty('z-index', '10001', 'important');
+                }
+                
                 isFullscreen = true;
                 
                 // Invalidate map size after a short delay
@@ -901,10 +909,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Restore zoning control position when exiting fullscreen
                 if (zoningControlDropdown) {
-                    zoningControlDropdown.style.position = '';
-                    zoningControlDropdown.style.top = '';
-                    zoningControlDropdown.style.right = '';
-                    zoningControlDropdown.style.zIndex = '';
+                    zoningControlDropdown.style.removeProperty('position');
+                    zoningControlDropdown.style.removeProperty('top');
+                    zoningControlDropdown.style.removeProperty('right');
+                    zoningControlDropdown.style.removeProperty('z-index');
                 }
                 
                 // Update button
