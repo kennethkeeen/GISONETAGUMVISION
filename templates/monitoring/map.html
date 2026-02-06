@@ -288,8 +288,10 @@
                     <div id="zoning-control-menu" role="menu">
                         <label class="block text-xs font-semibold mb-2 text-gray-700">View Type</label>
                         <div class="space-y-1.5" id="zoning-view-controls">
-                            <!-- Hidden radio for idle/clear state (no choropleth) - checked by default -->
-                            <input type="radio" name="zoning-view-type" value="none" id="view-none" class="hidden" checked>
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="radio" name="zoning-view-type" value="none" id="view-none" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer" checked>
+                                <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">City Outline Only</span>
+                            </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
                                 <input type="radio" name="zoning-view-type" value="projects" id="view-projects" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Barangay Boundaries</span>

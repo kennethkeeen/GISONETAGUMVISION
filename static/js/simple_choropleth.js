@@ -428,19 +428,28 @@ class SimpleChoropleth {
 
         const legendHtml = buildLegendHtml();
 
+        // When nothing is active (view 'none'), remove legend entirely - no choropleth legend shown
+        if (!legendHtml) {
+            if (this.legendContainerId) {
+                const container = document.getElementById(this.legendContainerId);
+                if (container) container.innerHTML = '';
+            }
+            if (this.legend) {
+                try { this.map.removeControl(this.legend); } catch (e) { /* ignore */ }
+                this.legend = null;
+            }
+            return;
+        }
+
         // If custom legend container is provided, render there (inside zoning panel)
         if (this.legendContainerId) {
             const container = document.getElementById(this.legendContainerId);
             if (container) {
                 container.innerHTML = legendHtml;
-                // Remove existing Leaflet legend if any
                 if (this.legend) {
-                    try {
-                        this.map.removeControl(this.legend);
-                    } catch (e) { /* ignore */ }
+                    try { this.map.removeControl(this.legend); } catch (e) { /* ignore */ }
                     this.legend = null;
                 }
-                console.log('Legend created for view:', this.currentView, '(in custom container)');
                 return;
             }
         }
@@ -467,7 +476,6 @@ class SimpleChoropleth {
             return div;
         };
         this.legend.addTo(this.map);
-        console.log('Legend created for view:', this.currentView);
     }
 
     async fetchOverallMetrics() {
