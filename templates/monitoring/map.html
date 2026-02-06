@@ -1251,9 +1251,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (radio.value !== 'none') {
                 radio.addEventListener('click', function() {
                     if (this.checked && this.value === lastZoningViewType) {
+                        lastZoningViewType = 'none';
                         if (viewNoneRadio) {
-                            viewNoneRadio.checked = true; // Triggers change -> handleZoningViewChange('none')
+                            viewNoneRadio.checked = true;
                         }
+                        handleZoningViewChange('none'); // Explicitly clear choropleth (change event may not fire on programmatic check)
                     }
                 });
             }
