@@ -544,7 +544,7 @@
                         ]
                     ]
                 },
-                layout: { hLineWidth: 0.5, vLineWidth: 0.5 },
+                layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
                 margin: [0, 0, 0, 8]
             },
             { text: 'Overall Progress', fontSize: 10, bold: true, margin: [0, 8, 0, 4] },
@@ -571,7 +571,7 @@
         }
         content.push({
             table: { headerRows: 1, widths: [70, 45, '*', 60], body: progressRows },
-            layout: { hLineWidth: 0.5, vLineWidth: 0.5 },
+            layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
             margin: [0, 0, 0, 8]
         });
 
@@ -597,7 +597,7 @@
         }
         content.push({
             table: { headerRows: 1, widths: [55, 50, '*', 50, 55], body: costRows },
-            layout: { hLineWidth: 0.5, vLineWidth: 0.5 },
+            layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
             margin: [0, 0, 0, 8]
         });
 
@@ -620,7 +620,7 @@
                     ]
                 ]
             },
-            layout: { hLineWidth: 0.5, vLineWidth: 0.5 }
+            layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } }
         });
 
         const docDef = {
