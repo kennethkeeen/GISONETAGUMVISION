@@ -9,10 +9,18 @@
                 <h1 class="text-3xl font-bold text-gray-900">Project Reports</h1>
                 <p class="text-gray-600 mt-1">View and export project data by barangay, status, and date range.</p>
             </div>
-            <button type="button" id="export-button-header" class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition border-2 border-green-700 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                Export
-            </button>
+            <div class="relative flex-shrink-0" id="export-dropdown-container">
+                <button type="button" id="export-dropdown-trigger" class="inline-flex items-center gap-2 px-5 py-2.5 text-base font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition border-2 border-green-700 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Export
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div id="export-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <a href="{% url 'export_reports_csv' %}" id="export-csv" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Export as CSV</a>
+                    <a href="{% url 'export_reports_excel' %}" id="export-excel" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Export as Excel</a>
+                    <button type="button" id="export-pdf" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Export as PDF</button>
+                </div>
+            </div>
         </div>
 
         {# Summary cards (updated by JS when filters change) #}
@@ -98,8 +106,8 @@
                     <label for="cost-max-filter" class="block text-sm font-semibold text-gray-700 mb-2">Cost Max (₱)</label>
                     <input type="number" step="0.01" id="cost-max-filter" name="cost_max" value="{{ selected_cost_max|default:'' }}" placeholder="Max" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
                 </div>
-                <div class="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-2">
-                    <button type="button" id="clear-filters-btn" class="px-4 py-2.5 text-base font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition border-2 border-gray-200">Clear Filters</button>
+                <div class="flex items-end sm:col-span-2 lg:col-span-1">
+                    <button type="button" id="clear-filters-btn" class="w-full lg:w-auto px-4 py-2.5 text-base font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition border-2 border-gray-200 whitespace-nowrap">Clear Filters</button>
                 </div>
             </form>
             <p id="result-count" class="text-sm text-gray-500 mt-4">Showing <strong id="result-count-num">0</strong> projects</p>
@@ -124,87 +132,20 @@
                     </colgroup>
                     <thead class="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">PRN#</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Project</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cost</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Source of Funds</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Started</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ended</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">PRN#</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Project</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Cost</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Source of Funds</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Started</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ended</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100" id="projects-table-body">
                         {# Rows populated by JS #}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-{# Export modal #}
-<div id="exportModal" class="fixed inset-0 bg-black/50 z-50 hidden overflow-y-auto">
-    <div class="flex min-h-full items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div class="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 class="text-lg font-bold text-gray-900">Export Project List</h3>
-                <button type="button" id="closeModal" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">&times;</button>
-            </div>
-            <div class="p-4 flex flex-wrap items-center gap-3 border-b border-gray-100">
-                <label for="modal-barangay-filter" class="text-sm font-medium text-gray-700">Barangay:</label>
-                <select id="modal-barangay-filter" name="modal_barangay" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
-                    <option value="">All Barangays</option>
-                    <option value="Apokon">Apokon</option>
-                    <option value="Bincungan">Bincungan</option>
-                    <option value="Busaon">Busaon</option>
-                    <option value="Canocotan">Canocotan</option>
-                    <option value="Cuambogan">Cuambogan</option>
-                    <option value="La Filipina">La Filipina</option>
-                    <option value="Liboganon">Liboganon</option>
-                    <option value="Madaum">Madaum</option>
-                    <option value="Magdum">Magdum</option>
-                    <option value="Magugpo East">Magugpo East</option>
-                    <option value="Magugpo North">Magugpo North</option>
-                    <option value="Magugpo Poblacion">Magugpo Poblacion</option>
-                    <option value="Magugpo South">Magugpo South</option>
-                    <option value="Magugpo West">Magugpo West</option>
-                    <option value="Mankilam">Mankilam</option>
-                    <option value="New Balamban">New Balamban</option>
-                    <option value="Nueva Fuerza">Nueva Fuerza</option>
-                    <option value="Pagsabangan">Pagsabangan</option>
-                    <option value="Pandapan">Pandapan</option>
-                    <option value="San Agustin">San Agustin</option>
-                    <option value="San Isidro">San Isidro</option>
-                    <option value="San Miguel">San Miguel</option>
-                    <option value="Visayan Village">Visayan Village</option>
-                </select>
-                <span class="text-sm text-gray-500">Export as:</span>
-                <div class="flex gap-2">
-                    <a href="{% url 'export_reports_csv' %}" id="export-csv" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">CSV</a>
-                    <a href="{% url 'export_reports_excel' %}" id="export-excel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Excel</a>
-                    <a href="{% url 'export_reports_pdf' %}" id="export-pdf" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">PDF</a>
-                </div>
-            </div>
-            <div class="overflow-auto flex-1 p-4">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">PRN#</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Project</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Description</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Location</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Cost</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Source</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Started</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Ended</th>
-                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modal-projects-table-body" class="divide-y divide-gray-100">
                     </tbody>
                 </table>
             </div>
@@ -381,61 +322,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     filterAndRender();
 
-    // Export modal
-    const exportModal = document.getElementById('exportModal');
-    const closeModalButton = document.getElementById('closeModal');
-    const modalTableBody = document.getElementById('modal-projects-table-body');
-    const modalBarangayFilter = document.getElementById('modal-barangay-filter');
+    // Export dropdown
+    const exportDropdownTrigger = document.getElementById('export-dropdown-trigger');
+    const exportDropdownMenu = document.getElementById('export-dropdown-menu');
+    const exportDropdownContainer = document.getElementById('export-dropdown-container');
 
-    function renderModalTable(list) {
-        modalTableBody.innerHTML = '';
-        if (!list || list.length === 0) {
-            modalTableBody.innerHTML = '<tr><td colspan="10" class="px-4 py-4 text-center text-gray-500">No projects to export.</td></tr>';
-            return;
-        }
-        list.forEach((project, index) => {
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50';
-            tr.innerHTML =
-                '<td class="px-4 py-2 text-gray-900">' + (index + 1) + '</td>' +
-                '<td class="px-4 py-2 font-mono text-gray-700">' + escapeHtml(project.prn || '') + '</td>' +
-                '<td class="px-4 py-2 font-medium text-gray-900">' + escapeHtml(project.name || '') + '</td>' +
-                '<td class="px-4 py-2 text-gray-600">' + escapeHtml(project.description || '') + '</td>' +
-                '<td class="px-4 py-2 text-gray-700">' + escapeHtml(project.barangay || '') + '</td>' +
-                '<td class="px-4 py-2 text-gray-700">' + formatCost(project.project_cost) + '</td>' +
-                '<td class="px-4 py-2 text-gray-600">' + escapeHtml(project.source_of_funds || '') + '</td>' +
-                '<td class="px-4 py-2 text-gray-600">' + formatDate(project.start_date) + '</td>' +
-                '<td class="px-4 py-2 text-gray-600">' + formatDate(project.end_date) + '</td>' +
-                '<td class="px-4 py-2">' + getStatusBadge(project.status) + '</td>';
-            modalTableBody.appendChild(tr);
+    if (exportDropdownTrigger && exportDropdownMenu) {
+        exportDropdownTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            exportDropdownMenu.classList.toggle('hidden');
         });
-    }
-
-    function openExportModal() {
-        renderModalTable(filteredProjects);
-        exportModal.classList.remove('hidden');
-    }
-    function closeExportModal() {
-        exportModal.classList.add('hidden');
-    }
-
-    const exportButtonHeader = document.getElementById('export-button-header');
-    if (exportButtonHeader) exportButtonHeader.addEventListener('click', openExportModal);
-    if (closeModalButton) closeModalButton.addEventListener('click', closeExportModal);
-
-    if (modalBarangayFilter) {
-        modalBarangayFilter.addEventListener('change', function() {
-            const val = this.value;
-            const list = val ? filteredProjects.filter(p => p.barangay === val) : filteredProjects;
-            renderModalTable(list);
+        document.addEventListener('click', function() {
+            exportDropdownMenu.classList.add('hidden');
         });
+        exportDropdownContainer && exportDropdownContainer.addEventListener('click', function(e) { e.stopPropagation(); });
     }
 
-    // PDF export via PDFMake – City of Tagum official format
+    // Build export URL with current main filter values (matches what's in the table)
+    function buildExportParams() {
+        const params = new URLSearchParams();
+        if (barangayFilter && barangayFilter.value) params.append('barangay', barangayFilter.value);
+        if (statusFilter && statusFilter.value) params.append('status', statusFilter.value);
+        if (startDateFilter && startDateFilter.value) params.append('start_date', startDateFilter.value);
+        if (endDateFilter && endDateFilter.value) params.append('end_date', endDateFilter.value);
+        if (sourceOfFundsFilter && sourceOfFundsFilter.value) params.append('source_of_funds', sourceOfFundsFilter.value);
+        if (costMinFilter && costMinFilter.value) params.append('cost_min', costMinFilter.value);
+        if (costMaxFilter && costMaxFilter.value) params.append('cost_max', costMaxFilter.value);
+        return params;
+    }
+
+    // PDF export via PDFMake – uses filteredProjects (whatever is in the table)
     function exportToPdfMake() {
-        const list = (modalBarangayFilter && modalBarangayFilter.value)
-            ? filteredProjects.filter(function(p) { return p.barangay === modalBarangayFilter.value; })
-            : filteredProjects;
+        const list = filteredProjects;
 
         const now = new Date();
         const reportDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).replace(/(\d+), (\d+)/, '$1, $2');
@@ -552,33 +470,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // CSV and Excel: keep server-side export with filter params
+    // CSV and Excel: server-side export with current filter params (matches table)
     [document.getElementById('export-csv'), document.getElementById('export-excel')].forEach(function(link) {
         if (!link) return;
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            const params = new URLSearchParams();
-            if (barangayFilter && barangayFilter.value) params.append('barangay', barangayFilter.value);
-            if (statusFilter && statusFilter.value) params.append('status', statusFilter.value);
-            if (startDateFilter && startDateFilter.value) params.append('start_date', startDateFilter.value);
-            if (endDateFilter && endDateFilter.value) params.append('end_date', endDateFilter.value);
-            if (sourceOfFundsFilter && sourceOfFundsFilter.value) params.append('source_of_funds', sourceOfFundsFilter.value);
-            if (costMinFilter && costMinFilter.value) params.append('cost_min', costMinFilter.value);
-            if (costMaxFilter && costMaxFilter.value) params.append('cost_max', costMaxFilter.value);
+            const params = buildExportParams();
             let url = this.getAttribute('href');
             if (params.toString()) url = url + (url.indexOf('?') >= 0 ? '&' : '?') + params.toString();
             window.location.href = url;
-            closeExportModal();
+            if (exportDropdownMenu) exportDropdownMenu.classList.add('hidden');
         });
     });
 
-    // PDF: use PDFMake (client-side)
+    // PDF: client-side PDFMake using filteredProjects (same as table)
     const exportPdfBtn = document.getElementById('export-pdf');
     if (exportPdfBtn) {
         exportPdfBtn.addEventListener('click', function(e) {
             e.preventDefault();
             exportToPdfMake();
-            closeExportModal();
+            if (exportDropdownMenu) exportDropdownMenu.classList.add('hidden');
         });
     }
 });
