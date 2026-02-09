@@ -2301,6 +2301,53 @@ def head_engineer_project_detail(request, pk):
             'total_days': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
         }
         
+        # Serializable report data for client-side PDFMake
+        from django.utils import timezone as tz
+        today = tz.now().date()
+        total_days = (project.end_date - project.start_date).days if project.start_date and project.end_date else 0
+        days_elapsed = (today - project.start_date).days if project.start_date else 0
+        report_data = {
+            'project': {
+                'name': project.name or '',
+                'prn': project.prn or '',
+                'barangay': project.barangay or '',
+                'status': project.get_status_display() if hasattr(project, 'get_status_display') else (project.status or ''),
+                'start_date': project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
+                'end_date': project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
+                'project_cost': float(project.project_cost) if project.project_cost is not None else 0,
+                'source_of_funds': project.source_of_funds or '',
+                'description': (project.description or '')[:200],
+            },
+            'assigned_engineers': [u.get_full_name() or u.username for u in project.assigned_engineers.all()],
+            'latest_progress_pct': latest_progress.percentage_complete if latest_progress else 0,
+            'total_cost': float(total_cost),
+            'budget_utilization': float(budget_utilization),
+            'days_elapsed': days_elapsed,
+            'total_days': total_days,
+            'progress_updates': [
+                {
+                    'date': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else '',
+                    'time': u.created_at.strftime('%I:%M %p') if getattr(u, 'created_at', None) else '',
+                    'percentage_complete': getattr(u, 'percentage_complete', 0),
+                    'description': (getattr(u, 'description', None) or '')[:80],
+                    'engineer': u.created_by.get_full_name() or getattr(u.created_by, 'username', '') if getattr(u, 'created_by', None) else '',
+                    'photo_count': u.photos.count() if hasattr(u, 'photos') and hasattr(u.photos, 'count') else 0,
+                }
+                for u in progress_updates
+            ],
+            'costs': [
+                {
+                    'date': c.date.strftime('%Y-%m-%d') if getattr(c, 'date', None) else '',
+                    'time': c.created_at.strftime('%I:%M %p') if getattr(c, 'created_at', None) else '',
+                    'cost_type': c.get_cost_type_display() if hasattr(c, 'get_cost_type_display') else '',
+                    'description': (getattr(c, 'description', None) or '')[:60],
+                    'amount': float(getattr(c, 'amount', 0) or 0),
+                    'engineer': c.created_by.get_full_name() or getattr(c.created_by, 'username', '') if getattr(c, 'created_by', None) else '',
+                }
+                for c in costs
+            ],
+        }
+        
         context = {
             'project': project,
             'projeng_project': project,  # Pass project as projeng_project for template compatibility
@@ -2314,6 +2361,7 @@ def head_engineer_project_detail(request, pk):
             'total_cost': total_cost,
             'budget_utilization': budget_utilization,
             'timeline_data': timeline_data,
+            'report_data': report_data,
         }
         
         return render(request, 'monitoring/head_engineer_project_detail.html', context)
