@@ -1357,7 +1357,7 @@ def overall_project_metrics_api(request):
 def reports(request):
     # This view is only accessible to Head Engineers and Finance Managers
     # Project Engineers are redirected by the decorator
-    from projeng.models import ProjectCost
+    from projeng.models import ProjectCost, SourceOfFunds
     from django.db.models import Q
     
     if is_head_engineer(request.user) or is_finance_manager(request.user):
@@ -1370,6 +1370,9 @@ def reports(request):
     status_filter = request.GET.get('status', '').strip()
     start_date_filter = request.GET.get('start_date', '').strip()
     end_date_filter = request.GET.get('end_date', '').strip()
+    source_of_funds_filter = request.GET.get('source_of_funds', '').strip()
+    cost_min_filter = request.GET.get('cost_min', '').strip()
+    cost_max_filter = request.GET.get('cost_max', '').strip()
     
     # Filter by barangay
     if barangay_filter:
@@ -1399,6 +1402,24 @@ def reports(request):
             end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
             projects = projects.filter(end_date__lte=end_date)
         except ValueError:
+            pass
+    
+    # Filter by source of funds
+    if source_of_funds_filter:
+        projects = projects.filter(source_of_funds__iexact=source_of_funds_filter)
+    
+    # Filter by project cost range
+    if cost_min_filter:
+        try:
+            cost_min = float(cost_min_filter)
+            projects = projects.filter(project_cost__gte=cost_min)
+        except (ValueError, TypeError):
+            pass
+    if cost_max_filter:
+        try:
+            cost_max = float(cost_max_filter)
+            projects = projects.filter(project_cost__lte=cost_max)
+        except (ValueError, TypeError):
             pass
     
     # Calculate budget metrics
@@ -1500,6 +1521,10 @@ def reports(request):
         'selected_status': status_filter,
         'selected_start_date': start_date_filter,
         'selected_end_date': end_date_filter,
+        'source_of_funds_options': SourceOfFunds.objects.filter(is_active=True).order_by('name'),
+        'selected_source_of_funds': source_of_funds_filter,
+        'selected_cost_min': cost_min_filter,
+        'selected_cost_max': cost_max_filter,
     }
     return render(request, 'monitoring/reports.html', context)
 
@@ -2508,6 +2533,27 @@ def export_reports_csv(request):
         except (ValueError, TypeError):
             pass  # Invalid date format, ignore filter
     
+    # Filter by source of funds
+    source_of_funds_filter = request.GET.get('source_of_funds', '').strip()
+    if source_of_funds_filter:
+        projects = projects.filter(source_of_funds__iexact=source_of_funds_filter)
+    
+    # Filter by project cost range
+    cost_min_filter = request.GET.get('cost_min', '').strip()
+    cost_max_filter = request.GET.get('cost_max', '').strip()
+    if cost_min_filter:
+        try:
+            cost_min = float(cost_min_filter)
+            projects = projects.filter(project_cost__gte=cost_min)
+        except (ValueError, TypeError):
+            pass
+    if cost_max_filter:
+        try:
+            cost_max = float(cost_max_filter)
+            projects = projects.filter(project_cost__lte=cost_max)
+        except (ValueError, TypeError):
+            pass
+    
     # Create the HttpResponse object with the appropriate CSV header
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="projects_report_{timezone.now().strftime("%Y%m%d")}.csv"'
@@ -2581,6 +2627,27 @@ def export_reports_excel(request):
             projects = projects.filter(end_date__lte=end_date)
         except (ValueError, TypeError):
             pass  # Invalid date format, ignore filter
+    
+    # Filter by source of funds
+    source_of_funds_filter = request.GET.get('source_of_funds', '').strip()
+    if source_of_funds_filter:
+        projects = projects.filter(source_of_funds__iexact=source_of_funds_filter)
+    
+    # Filter by project cost range
+    cost_min_filter = request.GET.get('cost_min', '').strip()
+    cost_max_filter = request.GET.get('cost_max', '').strip()
+    if cost_min_filter:
+        try:
+            cost_min = float(cost_min_filter)
+            projects = projects.filter(project_cost__gte=cost_min)
+        except (ValueError, TypeError):
+            pass
+    if cost_max_filter:
+        try:
+            cost_max = float(cost_max_filter)
+            projects = projects.filter(project_cost__lte=cost_max)
+        except (ValueError, TypeError):
+            pass
     
     # Create a new workbook and select the active sheet
     workbook = openpyxl.Workbook()

@@ -33,7 +33,7 @@
 
         {# Filters card — same style as Project List / All Project Analytics #}
         <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-6">
-            <form method="get" id="filter-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <form method="get" id="filter-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-4">
                 <div>
                     <label for="barangay-filter" class="block text-sm font-semibold text-gray-700 mb-2">Barangay</label>
                     <select id="barangay-filter" name="barangay" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300 cursor-pointer">
@@ -80,6 +80,23 @@
                 <div>
                     <label for="end-date-filter" class="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
                     <input type="date" id="end-date-filter" name="end_date" value="{{ selected_end_date|default:'' }}" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
+                </div>
+                <div>
+                    <label for="source-of-funds-filter" class="block text-sm font-semibold text-gray-700 mb-2">Source of Funds</label>
+                    <select id="source-of-funds-filter" name="source_of_funds" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300 cursor-pointer">
+                        <option value="" {% if not selected_source_of_funds %}selected{% endif %}>All Sources</option>
+                        {% for sof in source_of_funds_options %}
+                            <option value="{{ sof.name }}" {% if selected_source_of_funds == sof.name %}selected{% endif %}>{{ sof.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="cost-min-filter" class="block text-sm font-semibold text-gray-700 mb-2">Cost Min (₱)</label>
+                    <input type="number" step="0.01" id="cost-min-filter" name="cost_min" value="{{ selected_cost_min|default:'' }}" placeholder="Min" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
+                </div>
+                <div>
+                    <label for="cost-max-filter" class="block text-sm font-semibold text-gray-700 mb-2">Cost Max (₱)</label>
+                    <input type="number" step="0.01" id="cost-max-filter" name="cost_max" value="{{ selected_cost_max|default:'' }}" placeholder="Max" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white transition-all hover:border-gray-300">
                 </div>
                 <div class="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-2">
                     <button type="button" id="clear-filters-btn" class="px-4 py-2.5 text-base font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition border-2 border-gray-200">Clear Filters</button>
@@ -222,6 +239,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusFilter = document.getElementById('status-filter');
     const startDateFilter = document.getElementById('start-date-filter');
     const endDateFilter = document.getElementById('end-date-filter');
+    const sourceOfFundsFilter = document.getElementById('source-of-funds-filter');
+    const costMinFilter = document.getElementById('cost-min-filter');
+    const costMaxFilter = document.getElementById('cost-max-filter');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
     const projectsTableBody = document.getElementById('projects-table-body');
     const resultCountNum = document.getElementById('result-count-num');
@@ -275,6 +295,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const status = (statusFilter && statusFilter.value) || '';
         const startDate = (startDateFilter && startDateFilter.value) || '';
         const endDate = (endDateFilter && endDateFilter.value) || '';
+        const sourceOfFunds = (sourceOfFundsFilter && sourceOfFundsFilter.value) || '';
+        const costMin = (costMinFilter && costMinFilter.value) ? parseFloat(costMinFilter.value) : null;
+        const costMax = (costMaxFilter && costMaxFilter.value) ? parseFloat(costMaxFilter.value) : null;
 
         filteredProjects = projects.filter(p => {
             const matchBarangay = !barangay || (p.barangay && p.barangay.trim().toLowerCase() === barangay.trim().toLowerCase());
@@ -287,7 +310,17 @@ document.addEventListener('DOMContentLoaded', function() {
             let matchDate = true;
             if (startDate && p.start_date) matchDate = matchDate && (new Date(p.start_date) >= new Date(startDate));
             if (endDate && p.end_date) matchDate = matchDate && (new Date(p.end_date) <= new Date(endDate));
-            return matchBarangay && matchStatus && matchDate;
+            const matchSourceOfFunds = !sourceOfFunds || (p.source_of_funds && p.source_of_funds.trim().toLowerCase() === sourceOfFunds.trim().toLowerCase());
+            let matchCost = true;
+            if (costMin != null && !isNaN(costMin)) {
+                const pCost = p.project_cost != null && p.project_cost !== '' ? parseFloat(String(p.project_cost).replace(/[^\d.]/g, '')) : null;
+                matchCost = matchCost && (pCost != null && !isNaN(pCost) && pCost >= costMin);
+            }
+            if (costMax != null && !isNaN(costMax)) {
+                const pCost = p.project_cost != null && p.project_cost !== '' ? parseFloat(String(p.project_cost).replace(/[^\d.]/g, '')) : null;
+                matchCost = matchCost && (pCost != null && !isNaN(pCost) && pCost <= costMax);
+            }
+            return matchBarangay && matchStatus && matchDate && matchSourceOfFunds && matchCost;
         });
 
         let totalBudget = 0;
@@ -330,12 +363,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (statusFilter) statusFilter.addEventListener('change', filterAndRender);
     if (startDateFilter) startDateFilter.addEventListener('change', filterAndRender);
     if (endDateFilter) endDateFilter.addEventListener('change', filterAndRender);
+    if (sourceOfFundsFilter) sourceOfFundsFilter.addEventListener('change', filterAndRender);
+    if (costMinFilter) costMinFilter.addEventListener('input', filterAndRender);
+    if (costMaxFilter) costMaxFilter.addEventListener('input', filterAndRender);
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
             if (barangayFilter) barangayFilter.value = '';
             if (statusFilter) statusFilter.value = '';
             if (startDateFilter) startDateFilter.value = '';
             if (endDateFilter) endDateFilter.value = '';
+            if (sourceOfFundsFilter) sourceOfFundsFilter.value = '';
+            if (costMinFilter) costMinFilter.value = '';
+            if (costMaxFilter) costMaxFilter.value = '';
             filterAndRender();
         });
     }
@@ -423,54 +462,51 @@ document.addEventListener('DOMContentLoaded', function() {
             return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
         }
 
-        // Official header: right-aligned institutional text (compact for portrait)
+        // Official header: center-aligned institutional text (compact for portrait)
         const headerContent = [
-            { text: 'REPUBLIC OF THE PHILIPPINES', fontSize: 6, alignment: 'right', margin: [0, 0, 0, 0] },
-            { text: 'PROVINCE OF DAVAO DEL NORTE', fontSize: 6, alignment: 'right', margin: [0, 0, 0, 0] },
-            { text: 'CITY OF TAGUM', fontSize: 9, bold: true, alignment: 'right', margin: [0, 1, 0, 0] },
-            { text: 'OFFICE OF THE CITY ENGINEER', fontSize: 9, bold: true, alignment: 'right', margin: [0, 1, 0, 0] },
-            { text: 'LIST OF INFRASTRUCTURE PROJECTS', fontSize: 10, bold: true, alignment: 'right', margin: [0, 2, 0, 0] },
-            { text: 'As of ' + reportDate, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] }
+            { text: 'REPUBLIC OF THE PHILIPPINES', fontSize: 6, alignment: 'center', margin: [0, 0, 0, 0] },
+            { text: 'PROVINCE OF DAVAO DEL NORTE', fontSize: 6, alignment: 'center', margin: [0, 0, 0, 0] },
+            { text: 'CITY OF TAGUM', fontSize: 9, bold: true, alignment: 'center', margin: [0, 1, 0, 0] },
+            { text: 'OFFICE OF THE CITY ENGINEER', fontSize: 9, bold: true, alignment: 'center', margin: [0, 1, 0, 0] },
+            { text: 'LIST OF INFRASTRUCTURE PROJECTS', fontSize: 10, bold: true, alignment: 'center', margin: [0, 2, 0, 0] },
+            { text: 'As of ' + reportDate, fontSize: 7, alignment: 'center', margin: [0, 1, 0, 0] }
         ];
 
-        // Table: compact column widths for portrait A4 (~535pt content width)
-        const colWidths = [14, 42, '*', 32, 38, 40, 30, 34, 30, 32, 36];
+        // Table: match Reports page columns - #, PRN#, PROJECT, DESCRIPTION, LOCATION, COST, SOURCE OF FUNDS, STARTED, ENDED, STATUS
+        const colWidths = [14, 45, '*', 55, 38, 40, 42, 36, 36, 42];
         const year = now.getFullYear();
         const sectionHeaderRow = [
-            { text: year + ' INFRASTRUCTURE PROJECTS', colSpan: 11, alignment: 'center', fillColor: '#166534', color: 'white', bold: true, fontSize: 7 },
-            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+            { text: year + ' INFRASTRUCTURE PROJECTS', colSpan: 10, alignment: 'center', fillColor: '#166534', color: 'white', bold: true, fontSize: 7 },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}
         ];
         const mainHeaderRow = [
-            { text: 'No.', style: 'tableHeader', alignment: 'center' },
-            { text: 'PRN', style: 'tableHeader' },
-            { text: 'Name of Project', style: 'tableHeader' },
-            { text: 'Location', style: 'tableHeader' },
-            { text: 'Project Cost', style: 'tableHeader', alignment: 'right' },
-            { text: 'Project Description', style: 'tableHeader' },
-            { text: 'Date Started', style: 'tableHeader', alignment: 'center' },
-            { text: 'Target Date of Completion', style: 'tableHeader', alignment: 'center' },
-            { text: 'Date of Completion', style: 'tableHeader', alignment: 'center' },
-            { text: '% Accomplishment', style: 'tableHeader', alignment: 'right' },
-            { text: 'REMARKS', style: 'tableHeader' }
+            { text: '#', style: 'tableHeader', alignment: 'center' },
+            { text: 'PRN#', style: 'tableHeader' },
+            { text: 'PROJECT', style: 'tableHeader' },
+            { text: 'DESCRIPTION', style: 'tableHeader', alignment: 'center' },
+            { text: 'LOCATION', style: 'tableHeader' },
+            { text: 'COST', style: 'tableHeader', alignment: 'right' },
+            { text: 'SOURCE OF FUNDS', style: 'tableHeader' },
+            { text: 'STARTED', style: 'tableHeader', alignment: 'center' },
+            { text: 'ENDED', style: 'tableHeader', alignment: 'center' },
+            { text: 'STATUS', style: 'tableHeader' }
         ];
         const tableBody = [sectionHeaderRow, mainHeaderRow];
 
         list.forEach(function(p, idx) {
             const progress = p.progress != null ? Number(p.progress) : 0;
-            const dateCompleted = (progress >= 99 || normalizeStatus(p.status) === 'completed') && p.end_date ? toDdMonYy(p.end_date) : '';
             const desc = (p.description || '').toString();
-            const descShort = desc.length > 45 ? desc.substring(0, 45) + '...' : desc;
+            const descShort = desc.length > 50 ? desc.substring(0, 50) + '...' : desc;
             tableBody.push([
                 { text: String(idx + 1), alignment: 'center', fontSize: 6 },
                 { text: (p.prn || '').toString(), fontSize: 6 },
                 { text: (p.name || '').toString(), fontSize: 6 },
+                { text: descShort, alignment: 'center', fontSize: 6 },
                 { text: (p.barangay || '').toString(), fontSize: 6 },
                 { text: formatCostOfficial(p.project_cost), alignment: 'right', fontSize: 6 },
-                { text: descShort, fontSize: 6 },
+                { text: (p.source_of_funds || '').toString(), fontSize: 6 },
                 { text: toDdMonYy(p.start_date), alignment: 'center', fontSize: 6 },
                 { text: toDdMonYy(p.end_date), alignment: 'center', fontSize: 6 },
-                { text: dateCompleted, alignment: 'center', fontSize: 6 },
-                { text: (progress.toFixed(2) + '%'), alignment: 'right', fontSize: 6 },
                 { text: getRemarks(p.status, progress), fontSize: 6 }
             ]);
         });
@@ -481,10 +517,11 @@ document.addEventListener('DOMContentLoaded', function() {
             pageMargins: [25, 70, 25, 45],
             header: function() {
                 return {
-                    columns: [
-                        { text: 'ON GOING / FOR IMPLEMENTATION / PRE-INGE PROJECTS.', fontSize: 6, margin: [25, 16, 0, 0] },
-                        { stack: headerContent, width: '*', margin: [0, 16, 25, 0] }
-                    ]
+                    stack: [
+                        { text: 'ON GOING / FOR IMPLEMENTATION / PRE-INGE PROJECTS.', fontSize: 6, margin: [25, 16, 25, 4] },
+                        { stack: headerContent, alignment: 'center', width: '*', margin: [0, 0, 0, 0] }
+                    ],
+                    margin: [0, 0, 0, 0]
                 };
             },
             footer: function(currentPage, pageCount) {
@@ -525,6 +562,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (statusFilter && statusFilter.value) params.append('status', statusFilter.value);
             if (startDateFilter && startDateFilter.value) params.append('start_date', startDateFilter.value);
             if (endDateFilter && endDateFilter.value) params.append('end_date', endDateFilter.value);
+            if (sourceOfFundsFilter && sourceOfFundsFilter.value) params.append('source_of_funds', sourceOfFundsFilter.value);
+            if (costMinFilter && costMinFilter.value) params.append('cost_min', costMinFilter.value);
+            if (costMaxFilter && costMaxFilter.value) params.append('cost_max', costMaxFilter.value);
             let url = this.getAttribute('href');
             if (params.toString()) url = url + (url.indexOf('?') >= 0 ? '&' : '?') + params.toString();
             window.location.href = url;
