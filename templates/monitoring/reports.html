@@ -83,10 +83,6 @@
                 </div>
                 <div class="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-2">
                     <button type="button" id="clear-filters-btn" class="px-4 py-2.5 text-base font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition border-2 border-gray-200">Clear Filters</button>
-                    <button type="button" id="export-button" class="px-4 py-2.5 text-base font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition flex items-center gap-2 border-2 border-green-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        Export
-                    </button>
                 </div>
             </form>
             <p id="result-count" class="text-sm text-gray-500 mt-4">Showing <strong id="result-count-num">0</strong> projects</p>
@@ -347,7 +343,6 @@ document.addEventListener('DOMContentLoaded', function() {
     filterAndRender();
 
     // Export modal
-    const exportButton = document.getElementById('export-button');
     const exportModal = document.getElementById('exportModal');
     const closeModalButton = document.getElementById('closeModal');
     const modalTableBody = document.getElementById('modal-projects-table-body');
@@ -385,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
         exportModal.classList.add('hidden');
     }
 
-    if (exportButton) exportButton.addEventListener('click', openExportModal);
     const exportButtonHeader = document.getElementById('export-button-header');
     if (exportButtonHeader) exportButtonHeader.addEventListener('click', openExportModal);
     if (closeModalButton) closeModalButton.addEventListener('click', closeExportModal);
@@ -429,21 +423,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
         }
 
-        // Official header: right-aligned institutional text
+        // Official header: right-aligned institutional text (compact for portrait)
         const headerContent = [
-            { text: 'REPUBLIC OF THE PHILIPPINES', fontSize: 8, alignment: 'right', margin: [0, 0, 0, 0] },
-            { text: 'PROVINCE OF DAVAO DEL NORTE', fontSize: 8, alignment: 'right', margin: [0, 0, 0, 0] },
-            { text: 'CITY OF TAGUM', fontSize: 11, bold: true, alignment: 'right', margin: [0, 2, 0, 0] },
-            { text: 'OFFICE OF THE CITY ENGINEER', fontSize: 11, bold: true, alignment: 'right', margin: [0, 2, 0, 0] },
-            { text: 'LIST OF INFRASTRUCTURE PROJECTS', fontSize: 12, bold: true, alignment: 'right', margin: [0, 4, 0, 0] },
-            { text: 'As of ' + reportDate, fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] }
+            { text: 'REPUBLIC OF THE PHILIPPINES', fontSize: 6, alignment: 'right', margin: [0, 0, 0, 0] },
+            { text: 'PROVINCE OF DAVAO DEL NORTE', fontSize: 6, alignment: 'right', margin: [0, 0, 0, 0] },
+            { text: 'CITY OF TAGUM', fontSize: 9, bold: true, alignment: 'right', margin: [0, 1, 0, 0] },
+            { text: 'OFFICE OF THE CITY ENGINEER', fontSize: 9, bold: true, alignment: 'right', margin: [0, 1, 0, 0] },
+            { text: 'LIST OF INFRASTRUCTURE PROJECTS', fontSize: 10, bold: true, alignment: 'right', margin: [0, 2, 0, 0] },
+            { text: 'As of ' + reportDate, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] }
         ];
 
-        // Table: No. | PRN | Name of Project | Location | Project Cost | Project Description | Date Started | Target Date of Completion | Date of Completion | % Accomplishment | REMARKS
-        const colWidths = [20, 50, '*', 45, 50, 65, 42, 48, 42, 42, 50];
+        // Table: compact column widths for portrait A4 (~535pt content width)
+        const colWidths = [14, 42, '*', 32, 38, 40, 30, 34, 30, 32, 36];
         const year = now.getFullYear();
         const sectionHeaderRow = [
-            { text: year + ' INFRASTRUCTURE PROJECTS', colSpan: 11, alignment: 'center', fillColor: '#166534', color: 'white', bold: true, fontSize: 9 },
+            { text: year + ' INFRASTRUCTURE PROJECTS', colSpan: 11, alignment: 'center', fillColor: '#166534', color: 'white', bold: true, fontSize: 7 },
             {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
         ];
         const mainHeaderRow = [
@@ -464,35 +458,37 @@ document.addEventListener('DOMContentLoaded', function() {
         list.forEach(function(p, idx) {
             const progress = p.progress != null ? Number(p.progress) : 0;
             const dateCompleted = (progress >= 99 || normalizeStatus(p.status) === 'completed') && p.end_date ? toDdMonYy(p.end_date) : '';
+            const desc = (p.description || '').toString();
+            const descShort = desc.length > 45 ? desc.substring(0, 45) + '...' : desc;
             tableBody.push([
-                { text: String(idx + 1), alignment: 'center', fontSize: 8 },
-                { text: (p.prn || '').toString(), fontSize: 8 },
-                { text: (p.name || '').toString(), fontSize: 8 },
-                { text: (p.barangay || '').toString(), fontSize: 8 },
-                { text: formatCostOfficial(p.project_cost), alignment: 'right', fontSize: 8 },
-                { text: ((p.description || '').toString().substring(0, 80) + ((p.description || '').length > 80 ? '...' : '')), fontSize: 7 },
-                { text: toDdMonYy(p.start_date), alignment: 'center', fontSize: 8 },
-                { text: toDdMonYy(p.end_date), alignment: 'center', fontSize: 8 },
-                { text: dateCompleted, alignment: 'center', fontSize: 8 },
-                { text: (progress.toFixed(2) + '%'), alignment: 'right', fontSize: 8 },
-                { text: getRemarks(p.status, progress), fontSize: 8 }
+                { text: String(idx + 1), alignment: 'center', fontSize: 6 },
+                { text: (p.prn || '').toString(), fontSize: 6 },
+                { text: (p.name || '').toString(), fontSize: 6 },
+                { text: (p.barangay || '').toString(), fontSize: 6 },
+                { text: formatCostOfficial(p.project_cost), alignment: 'right', fontSize: 6 },
+                { text: descShort, fontSize: 6 },
+                { text: toDdMonYy(p.start_date), alignment: 'center', fontSize: 6 },
+                { text: toDdMonYy(p.end_date), alignment: 'center', fontSize: 6 },
+                { text: dateCompleted, alignment: 'center', fontSize: 6 },
+                { text: (progress.toFixed(2) + '%'), alignment: 'right', fontSize: 6 },
+                { text: getRemarks(p.status, progress), fontSize: 6 }
             ]);
         });
 
         const docDef = {
             pageSize: 'A4',
-            pageOrientation: 'landscape',
-            pageMargins: [30, 80, 30, 50],
+            pageOrientation: 'portrait',
+            pageMargins: [25, 70, 25, 45],
             header: function() {
                 return {
                     columns: [
-                        { text: 'ON GOING / FOR IMPLEMENTATION / PRE-INGE PROJECTS.', fontSize: 8, margin: [30, 20, 0, 0] },
-                        { stack: headerContent, width: '*', margin: [0, 20, 30, 0] }
+                        { text: 'ON GOING / FOR IMPLEMENTATION / PRE-INGE PROJECTS.', fontSize: 6, margin: [25, 16, 0, 0] },
+                        { stack: headerContent, width: '*', margin: [0, 16, 25, 0] }
                     ]
                 };
             },
             footer: function(currentPage, pageCount) {
-                return { text: 'Page ' + currentPage + ' of ' + pageCount, fontSize: 8, color: '#666', alignment: 'center', margin: [0, 0, 0, 15] };
+                return { text: 'Page ' + currentPage + ' of ' + pageCount, fontSize: 6, color: '#666', alignment: 'center', margin: [0, 0, 0, 12] };
             },
             content: [
                 {
@@ -508,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             ],
             styles: {
-                tableHeader: { bold: true, fontSize: 8, fillColor: '#166534', color: 'white' }
+                tableHeader: { bold: true, fontSize: 6, fillColor: '#166534', color: 'white' }
             }
         };
 
