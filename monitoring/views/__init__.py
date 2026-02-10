@@ -1552,6 +1552,9 @@ def budget_reports(request):
     selected_cost_min = request.GET.get('cost_min', '').strip()
     selected_cost_max = request.GET.get('cost_max', '').strip()
     selected_budget_status = request.GET.get('budget_status', '').strip()
+    selected_chart_period = request.GET.get('chart_period', 'month').strip().lower()
+    if selected_chart_period not in ('week', 'month', 'year'):
+        selected_chart_period = 'month'
     
     if selected_barangay:
         projects = projects.filter(barangay=selected_barangay)
@@ -1584,6 +1587,37 @@ def budget_reports(request):
     
     # Get all projects for summary calculations (before pagination)
     all_projects_for_summary = projects
+    
+    # Chart period filter: projects overlapping current week/month/year
+    from datetime import date, timedelta
+    today = timezone.now().date() if timezone.is_naive(timezone.now()) else timezone.now().date()
+    if selected_chart_period == 'week':
+        period_start = today - timedelta(days=today.weekday())
+        period_end = period_start + timedelta(days=6)
+    elif selected_chart_period == 'year':
+        period_start = date(today.year, 1, 1)
+        period_end = date(today.year, 12, 31)
+    else:
+        period_start = date(today.year, today.month, 1)
+        if today.month == 12:
+            period_end = date(today.year, 12, 31)
+        else:
+            period_end = date(today.year, today.month + 1, 1) - timedelta(days=1)
+    
+    def project_in_chart_period(p):
+        if not getattr(p, 'start_date', None) and not getattr(p, 'end_date', None):
+            return True
+        start = getattr(p, 'start_date', None)
+        end = getattr(p, 'end_date', None)
+        if start and end:
+            return start <= period_end and end >= period_start
+        if start:
+            return start <= period_end
+        if end:
+            return end >= period_start
+        return True
+    
+    projects_for_chart = [p for p in all_projects_for_summary if project_in_chart_period(p)]
     
     project_data = []
     project_names = []
@@ -1664,9 +1698,36 @@ def budget_reports(request):
         project_names.append(p.name)
         utilizations.append(utilization)
     
-    # For chart: Get top 20 projects by utilization (or budget if utilization is 0)
+    # Chart data from period-filtered projects (projects_for_chart)
+    chart_project_names = []
+    chart_utilizations_list = []
+    chart_over_count = 0
+    chart_within_count = 0
+    chart_under_count = 0
+    for p in projects_for_chart:
+        costs = ProjectCost.objects.filter(project=p)
+        spent = sum([float(c.amount) for c in costs]) if costs else 0
+        budget = float(p.project_cost) if p.project_cost else 0
+        utilization = (spent / budget * 100) if budget > 0 else 0
+        if budget > 0:
+            if spent > budget:
+                ou = 'Over'
+            elif utilization >= 80:
+                ou = 'Within'
+            else:
+                ou = 'Under'
+        else:
+            ou = 'Under'
+        if ou == 'Over':
+            chart_over_count += 1
+        elif ou == 'Within':
+            chart_within_count += 1
+        else:
+            chart_under_count += 1
+        chart_project_names.append(p.name)
+        chart_utilizations_list.append(utilization)
     chart_data = sorted(
-        zip(project_names, utilizations, [p['budget'] for p in project_data]),
+        zip(chart_project_names, chart_utilizations_list, [float(getattr(p, 'project_cost') or 0) for p in projects_for_chart]),
         key=lambda x: x[1] if x[1] > 0 else x[2],
         reverse=True
     )[:20]
@@ -1739,7 +1800,11 @@ def budget_reports(request):
         'selected_cost_min': selected_cost_min,
         'selected_cost_max': selected_cost_max,
         'selected_budget_status': selected_budget_status,
+        'selected_chart_period': selected_chart_period,
         'all_barangays': all_barangays,
+        'chart_over_count': chart_over_count,
+        'chart_within_count': chart_within_count,
+        'chart_under_count': chart_under_count,
     }
     return render(request, 'monitoring/budget_reports.html', context)
 

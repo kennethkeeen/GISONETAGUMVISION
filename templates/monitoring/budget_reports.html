@@ -140,6 +140,7 @@
       
       <!-- Filter Form - Inline with heading -->
       <form method="get" id="filter-form" class="flex flex-wrap gap-3 items-end no-print">
+        <input type="hidden" name="chart_period" value="{{ selected_chart_period|default:'month' }}">
         <div class="min-w-[150px]">
           <label for="barangay-filter" class="block text-xs font-medium text-gray-700 mb-1">Barangay:</label>
           <select id="barangay-filter" name="barangay" class="w-full pl-2 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md">
@@ -354,24 +355,48 @@
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 h-80 flex flex-col">
-      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-        </svg>
-        Budget Utilization per Project
-      </h2>
-      <canvas id="budgetUtilizationChart" class="flex-1"></canvas>
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 flex flex-col min-h-0">
+      <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          Budget Utilization per Project
+        </h2>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Chart period</label>
+          <select id="chart-period-utilization" class="chart-period-select px-3 py-1.5 rounded-lg text-xs font-medium border-2 border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+            <option value="week" {% if selected_chart_period == 'week' %}selected{% endif %}>Weekly</option>
+            <option value="month" {% if selected_chart_period == 'month' %}selected{% endif %}>Monthly</option>
+            <option value="year" {% if selected_chart_period == 'year' %}selected{% endif %}>Yearly</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex-1 min-h-[280px]" style="position: relative; height: 320px;">
+        <canvas id="budgetUtilizationChart"></canvas>
+      </div>
     </div>
-    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 h-80 flex flex-col">
-      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-        </svg>
-        Over/Under Budget Status
-      </h2>
-      <canvas id="overUnderChart" class="flex-1"></canvas>
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 flex flex-col min-h-0">
+      <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <svg class="w-6 h-6 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+          </svg>
+          Over/Under Budget Status
+        </h2>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Chart period</label>
+          <select id="chart-period-overunder" class="chart-period-select px-3 py-1.5 rounded-lg text-xs font-medium border-2 border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+            <option value="week" {% if selected_chart_period == 'week' %}selected{% endif %}>Weekly</option>
+            <option value="month" {% if selected_chart_period == 'month' %}selected{% endif %}>Monthly</option>
+            <option value="year" {% if selected_chart_period == 'year' %}selected{% endif %}>Yearly</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex-1 min-h-[280px]" style="position: relative; height: 320px;">
+        <canvas id="overUnderChart"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -387,12 +412,12 @@
     const utilizations = {{ utilizations|safe }};
     const ctxUtil = document.getElementById('budgetUtilizationChart').getContext('2d');
     
-    // Truncate long project names for better display
+    // Truncate long project names so they fit inside the chart
     const truncatedNames = projNames.map(name => {
-      if (name.length > 40) {
-        return name.substring(0, 37) + '...';
-      }
-      return name;
+      if (!name) return '';
+      const s = String(name);
+      if (s.length > 28) return s.substring(0, 25) + '...';
+      return s;
     });
     
     new Chart(ctxUtil, {
@@ -403,9 +428,9 @@
           label: 'Utilization %',
           data: utilizations,
           backgroundColor: utilizations.map(util => {
-            if (util >= 100) return 'rgba(239, 68, 68, 0.7)'; // Red for over budget
-            if (util >= 80) return 'rgba(251, 191, 36, 0.7)'; // Yellow for at risk
-            return 'rgba(59, 130, 246, 0.7)'; // Blue for under budget
+            if (util >= 100) return 'rgba(239, 68, 68, 0.7)';
+            if (util >= 80) return 'rgba(251, 191, 36, 0.7)';
+            return 'rgba(59, 130, 246, 0.7)';
           }),
           borderColor: utilizations.map(util => {
             if (util >= 100) return 'rgba(239, 68, 68, 1)';
@@ -418,7 +443,8 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        indexAxis: 'y', // Horizontal bars for better readability
+        layout: { padding: { left: 8, right: 16, top: 8, bottom: 8 } },
+        indexAxis: 'y',
         plugins: { 
           legend: { display: false },
           tooltip: {
@@ -433,15 +459,16 @@
           x: { 
             beginAtZero: true, 
             max: utilizations.length > 0 ? Math.max(150, Math.max(...utilizations) * 1.1) : 150,
-            title: {
-              display: true,
-              text: 'Budget Utilization (%)'
-            }
+            title: { display: true, text: 'Budget Utilization (%)' }
           },
           y: {
             ticks: {
-              font: {
-                size: 10
+              font: { size: 9 },
+              maxRotation: 0,
+              autoSkip: false,
+              callback: function(val, index) {
+                const label = this.getLabelForValue(val);
+                return label.length > 28 ? label.substring(0, 25) + '…' : label;
               }
             }
           }
@@ -449,20 +476,20 @@
       }
     });
 
-    // Over/Under/Within Budget Pie Chart
-    const overCount = {{ over_count }};
-    const underCount = {{ under_count }};
-    const withinCount = {{ within_count|default:0 }};
+    // Over/Under/Within Budget Pie Chart (uses chart period–filtered counts)
+    const chartOverCount = {{ chart_over_count|default:over_count }};
+    const chartUnderCount = {{ chart_under_count|default:under_count }};
+    const chartWithinCount = {{ chart_within_count|default:within_count }};
     const ctxOU = document.getElementById('overUnderChart').getContext('2d');
     
-    const totalProjects = overCount + underCount + withinCount;
+    const totalProjects = chartOverCount + chartUnderCount + chartWithinCount;
     
     new Chart(ctxOU, {
       type: 'pie',
       data: {
         labels: ['Over Budget', 'Within Budget (80-100%)', 'Under Budget'],
         datasets: [{
-          data: [overCount, withinCount, underCount],
+          data: [chartOverCount, chartWithinCount, chartUnderCount],
           backgroundColor: [
             'rgba(239, 68, 68, 0.7)',  // Red for over
             'rgba(251, 191, 36, 0.7)', // Yellow for within
@@ -479,15 +506,11 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: 12 },
         plugins: { 
           legend: { 
             position: 'bottom',
-            labels: {
-              padding: 15,
-              font: {
-                size: 12
-              }
-            }
+            labels: { padding: 12, font: { size: 11 } }
           },
           tooltip: {
             callbacks: {
@@ -501,6 +524,19 @@
           }
         }
       }
+    });
+
+    // Chart period: reload page with chart_period param so both charts use the same period
+    function applyChartPeriod(period) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('chart_period', period);
+      window.location.search = params.toString();
+    }
+    document.getElementById('chart-period-utilization') && document.getElementById('chart-period-utilization').addEventListener('change', function() {
+      applyChartPeriod(this.value);
+    });
+    document.getElementById('chart-period-overunder') && document.getElementById('chart-period-overunder').addEventListener('change', function() {
+      applyChartPeriod(this.value);
     });
 
     const btn = document.getElementById('export-dropdown-btn');
