@@ -1687,9 +1687,41 @@ def budget_reports(request):
     # Get all unique barangays for filter dropdown
     all_barangays = Project.objects.values_list('barangay', flat=True).distinct().exclude(barangay__isnull=True).exclude(barangay='').order_by('barangay')
     
+    # Full filtered project list for PDF export (PDFMake) - not paginated
+    budget_pdf_projects = []
+    for idx, p in enumerate(project_data):
+        cost_breakdown_str = '; '.join([f"{c['cost_type']}: ₱{float(c['total']):,.2f}" for c in p.get('cost_breakdown', [])]) if p.get('cost_breakdown') else '—'
+        budget_pdf_projects.append({
+            'num': idx + 1,
+            'prn': p.get('prn') or '—',
+            'name': p.get('name') or '—',
+            'barangay': p.get('barangay') or '—',
+            'assigned_engineers': ', '.join(p.get('assigned_engineers', [])) if p.get('assigned_engineers') else '—',
+            'budget': p.get('budget', 0),
+            'spent': p.get('spent', 0),
+            'utilization': p.get('utilization', 0),
+            'over_under': p.get('over_under', '—'),
+            'status': p.get('status', ''),
+            'cost_breakdown': cost_breakdown_str,
+        })
+    budget_report_pdf_data = {
+        'summary': {
+            'total_budget': total_budget_sum,
+            'total_spent': total_spent_sum,
+            'total_remaining': total_budget_sum - total_spent_sum,
+            'project_count': len(project_data),
+            'over_count': over_count,
+            'at_risk_count': at_risk_count,
+            'within_count': within_count,
+            'under_count': under_count,
+        },
+        'projects': budget_pdf_projects,
+    }
+    
     context = {
         'project_data': paginated_project_data,
         'project_data_json': json.dumps(paginated_project_data),  # For JavaScript modal
+        'budget_report_pdf_data': json.dumps(budget_report_pdf_data),
         'project_names': json.dumps(chart_project_names),
         'utilizations': json.dumps(chart_utilizations),
         'over_count': over_count,

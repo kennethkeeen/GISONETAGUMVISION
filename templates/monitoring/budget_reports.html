@@ -28,7 +28,7 @@
         </button>
         <div id="export-dropdown-menu" class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-50" role="menu" aria-orientation="vertical" aria-labelledby="export-dropdown-btn">
           <div class="py-1" role="none">
-            <a href="{% url 'export_budget_reports_pdf' %}" id="export-pdf-link" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📄 Export to PDF</a>
+            <button type="button" id="export-pdf-btn" class="w-full text-left text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📄 Export to PDF</button>
             <a href="{% url 'export_budget_reports_excel' %}" id="export-excel-link" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📊 Export to Excel</a>
             <a href="{% url 'export_budget_reports_csv' %}" id="export-csv-link" target="_blank" class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100" role="menuitem">📋 Export to CSV</a>
           </div>
@@ -377,6 +377,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
+{{ budget_report_pdf_data|json_script:"budget-report-pdf-data" }}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Budget Utilization Bar Chart - Top 20 projects
@@ -537,13 +540,9 @@
       const queryString = buildFilterQueryString();
       const separator = queryString ? '?' : '';
       
-      const pdfLink = document.getElementById('export-pdf-link');
       const excelLink = document.getElementById('export-excel-link');
       const csvLink = document.getElementById('export-csv-link');
       
-      if (pdfLink) {
-        pdfLink.href = pdfLink.getAttribute('data-base-url') + separator + queryString;
-      }
       if (excelLink) {
         excelLink.href = excelLink.getAttribute('data-base-url') + separator + queryString;
       }
@@ -553,7 +552,6 @@
     }
 
     // Store base URLs
-    document.getElementById('export-pdf-link').setAttribute('data-base-url', '{% url "export_budget_reports_pdf" %}');
     document.getElementById('export-excel-link').setAttribute('data-base-url', '{% url "export_budget_reports_excel" %}');
     document.getElementById('export-csv-link').setAttribute('data-base-url', '{% url "export_budget_reports_csv" %}');
 
@@ -568,6 +566,123 @@
 
     // Initial update
     updateExportLinks();
+
+    // Export to PDF via PDFMake (client-side, presentable format)
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    if (exportPdfBtn) {
+      exportPdfBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        menu.classList.add('hidden');
+        const el = document.getElementById('budget-report-pdf-data');
+        if (!el || !el.textContent) { alert('Report data not available.'); return; }
+        let data;
+        try { data = JSON.parse(el.textContent); } catch (err) { alert('Error loading report data.'); return; }
+        const sum = data.summary || {};
+        const projects = data.projects || [];
+        const fmt = function(n) { return (n == null || n === '') ? '0.00' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        const now = new Date();
+        const reportDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        const headerContent = [
+          { text: 'REPUBLIC OF THE PHILIPPINES', fontSize: 7, alignment: 'center', margin: [0, 0, 0, 0] },
+          { text: 'PROVINCE OF DAVAO DEL NORTE', fontSize: 7, alignment: 'center', margin: [0, 0, 0, 0] },
+          { text: 'CITY OF TAGUM', fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 0] },
+          { text: 'OFFICE OF THE CITY ENGINEER', fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 0] },
+          { text: 'BUDGET REPORTS', fontSize: 11, bold: true, alignment: 'center', margin: [0, 2, 0, 0] },
+          { text: 'Comprehensive financial overview of all projects', fontSize: 8, alignment: 'center', margin: [0, 0, 0, 0] },
+          { text: 'As of ' + reportDate, fontSize: 8, alignment: 'center', margin: [0, 1, 0, 0] }
+        ];
+
+        const summaryTable = {
+          table: {
+            widths: ['*', '*', '*', '*'],
+            body: [
+              [
+                { text: 'TOTAL BUDGET', fontSize: 7, fillColor: '#dbeafe', alignment: 'center' },
+                { text: 'TOTAL SPENT', fontSize: 7, fillColor: '#ffedd5', alignment: 'center' },
+                { text: 'OVER BUDGET', fontSize: 7, fillColor: '#fee2e2', alignment: 'center' },
+                { text: 'AT RISK (90%+)', fontSize: 7, fillColor: '#fef3c7', alignment: 'center' }
+              ],
+              [
+                { text: '₱' + fmt(sum.total_budget) + '\n' + (sum.project_count || 0) + ' projects', fontSize: 8, alignment: 'center' },
+                { text: '₱' + fmt(sum.total_spent) + '\nRemaining: ₱' + fmt(sum.total_remaining), fontSize: 8, alignment: 'center' },
+                { text: (sum.over_count || 0) + '\n' + ((sum.over_count || 0) > 0 ? 'Requires attention' : 'All within budget'), fontSize: 8, alignment: 'center' },
+                { text: (sum.at_risk_count || 0) + '\n' + ((sum.at_risk_count || 0) > 0 ? '90%+ utilization' : 'All safe'), fontSize: 8, alignment: 'center' }
+              ]
+            ]
+          },
+          layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
+          margin: [0, 0, 0, 10]
+        };
+
+        const colWidths = [12, 42, '*', 36, 48, 38, 38, 26, 30, 30, 42];
+        const tableHeaderRow = [
+          { text: '#', style: 'tableHeader', alignment: 'center' },
+          { text: 'PRN#', style: 'tableHeader' },
+          { text: 'PROJECT', style: 'tableHeader' },
+          { text: 'BARANGAY', style: 'tableHeader' },
+          { text: 'ENGINEERS', style: 'tableHeader', fontSize: 5 },
+          { text: 'BUDGET', style: 'tableHeader', alignment: 'right' },
+          { text: 'SPENT', style: 'tableHeader', alignment: 'right' },
+          { text: 'UTIL%', style: 'tableHeader', alignment: 'center' },
+          { text: 'O/U', style: 'tableHeader', alignment: 'center' },
+          { text: 'STATUS', style: 'tableHeader', alignment: 'center' },
+          { text: 'COST BRK', style: 'tableHeader', fontSize: 5 }
+        ];
+        const tableBody = [tableHeaderRow];
+        projects.forEach(function(p) {
+          const nameShort = (p.name || '—').toString();
+          const nameTrunc = nameShort.length > 28 ? nameShort.substring(0, 28) + '...' : nameShort;
+          const engShort = (p.assigned_engineers || '—').toString();
+          const engTrunc = engShort.length > 18 ? engShort.substring(0, 18) + '...' : engShort;
+          const costBreakShort = (p.cost_breakdown || '—').toString();
+          const costTrunc = costBreakShort.length > 22 ? costBreakShort.substring(0, 22) + '...' : costBreakShort;
+          tableBody.push([
+            { text: String(p.num || ''), alignment: 'center', fontSize: 5 },
+            { text: (p.prn || '—').toString(), fontSize: 5 },
+            { text: nameTrunc, fontSize: 5 },
+            { text: (p.barangay || '—').toString(), fontSize: 5 },
+            { text: engTrunc, fontSize: 5 },
+            { text: '₱' + fmt(p.budget), alignment: 'right', fontSize: 5 },
+            { text: '₱' + fmt(p.spent), alignment: 'right', fontSize: 5 },
+            { text: (p.utilization != null ? Number(p.utilization).toFixed(1) + '%' : '—'), alignment: 'center', fontSize: 5 },
+            { text: (p.over_under || '—').toString(), alignment: 'center', fontSize: 5 },
+            { text: (p.status || '—').toString().replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }), alignment: 'center', fontSize: 5 },
+            { text: costTrunc, fontSize: 5 }
+          ]);
+        });
+        if (tableBody.length === 1) {
+          tableBody.push([{ text: 'No projects found.', colSpan: 11, alignment: 'center', fontSize: 7 }, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]);
+        }
+
+        const docDef = {
+          pageSize: 'A4',
+          pageOrientation: 'portrait',
+          pageMargins: [20, 72, 20, 45],
+          header: function() {
+            return { stack: headerContent, alignment: 'center', margin: [0, 12, 0, 0] };
+          },
+          footer: function(currentPage, pageCount) {
+            return { text: 'Page ' + currentPage + ' of ' + pageCount, fontSize: 7, color: '#666', alignment: 'center', margin: [0, 0, 0, 10] };
+          },
+          content: [
+            summaryTable,
+            { text: 'Project Budget Details', fontSize: 10, bold: true, margin: [0, 6, 0, 4] },
+            {
+              table: { headerRows: 1, widths: colWidths, body: tableBody },
+              layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } }
+            }
+          ],
+          styles: { tableHeader: { bold: true, fontSize: 5, fillColor: '#166534', color: 'white' } }
+        };
+
+        if (typeof pdfMake !== 'undefined') {
+          pdfMake.createPdf(docDef).download('budget_report_' + now.toISOString().slice(0, 10) + '.pdf');
+        } else {
+          alert('PDF library not loaded. Please refresh the page and try again.');
+        }
+      });
+    }
 
     // Auto-submit form when filters change
     const filterForm = document.getElementById('filter-form');
