@@ -14,6 +14,7 @@ tzdata==2025.2
 django-extensions
 whitenoise==6.7.0
 dj-database-url==2.2.0
+python-dotenv==1.0.1
 django-redis==5.4.0  # For Redis caching (optional - only needed if you add Redis)
 celery==5.3.4  # For background task processing
 channels==4.0.0  # For WebSocket support (Django Channels)
