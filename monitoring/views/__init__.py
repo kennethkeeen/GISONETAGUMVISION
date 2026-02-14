@@ -2451,17 +2451,39 @@ def project_detail(request, pk):
     return HttpResponse("project_detail placeholder")
 
 
+def _file_to_data_url(file_field):
+    """Convert a FileField/ImageField to base64 dataURL for pdfMake (avoids CORS with external storage)."""
+    import base64
+    import mimetypes
+    if not file_field:
+        return None
+    try:
+        file_field.open('rb')
+        content = file_field.read()
+        file_field.close()
+        if not content:
+            return None
+        b64 = base64.b64encode(content).decode('ascii')
+        name = getattr(file_field, 'name', '') or ''
+        mime, _ = mimetypes.guess_type(name)
+        if not mime or not mime.startswith('image/'):
+            mime = 'image/jpeg'
+        return f'data:{mime};base64,{b64}'
+    except Exception:
+        return None
+
+
 def _build_uploaded_images_list(request, progress_updates, image_documents, project):
-    """Collect all uploaded images (progress photos + image documents) with absolute URLs for PDF export."""
+    """Collect all uploaded images as base64 dataURLs for PDF export (pdfMake requires dataURL, not remote URLs)."""
     images = []
     # Progress photos from updates
     for u in progress_updates:
         for photo in (u.photos.all() if hasattr(u, 'photos') else []):
             try:
-                url = photo.image.url if photo.image else None
-                if url:
+                data_url = _file_to_data_url(photo.image)
+                if data_url:
                     images.append({
-                        'url': request.build_absolute_uri(url),
+                        'url': data_url,
                         'caption': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else 'Progress',
                     })
             except (ValueError, OSError):
@@ -2469,21 +2491,21 @@ def _build_uploaded_images_list(request, progress_updates, image_documents, proj
     # Image documents
     for doc in image_documents or []:
         try:
-            url = doc.file.url if doc.file else None
-            if url:
+            data_url = _file_to_data_url(doc.file)
+            if data_url:
                 images.append({
-                    'url': request.build_absolute_uri(url),
-                    'caption': (doc.name or doc.file.name or 'Document')[:30],
+                    'url': data_url,
+                    'caption': (doc.name or (doc.file.name if doc.file else '') or 'Document')[:30],
                 })
         except (ValueError, OSError):
             pass
     # Project main image
     if project and getattr(project, 'image', None) and project.image:
         try:
-            url = project.image.url
-            if url:
+            data_url = _file_to_data_url(project.image)
+            if data_url:
                 images.append({
-                    'url': request.build_absolute_uri(url),
+                    'url': data_url,
                     'caption': 'Project',
                 })
         except (ValueError, OSError):
