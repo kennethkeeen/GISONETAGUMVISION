@@ -1,5 +1,7 @@
 name: one-tagumvision
 region: sgp
+# Required for SSE (Server-Sent Events) - prevents CDN from buffering real-time streams
+disable_edge_cache: true
 
 databases:
 - name: gistagum-db
