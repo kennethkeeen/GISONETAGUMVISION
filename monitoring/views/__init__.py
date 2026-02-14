@@ -2450,6 +2450,47 @@ def head_engineer_analytics(request):
 def project_detail(request, pk):
     return HttpResponse("project_detail placeholder")
 
+
+def _build_uploaded_images_list(request, progress_updates, image_documents, project):
+    """Collect all uploaded images (progress photos + image documents) with absolute URLs for PDF export."""
+    images = []
+    # Progress photos from updates
+    for u in progress_updates:
+        for photo in (u.photos.all() if hasattr(u, 'photos') else []):
+            try:
+                url = photo.image.url if photo.image else None
+                if url:
+                    images.append({
+                        'url': request.build_absolute_uri(url),
+                        'caption': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else 'Progress',
+                    })
+            except (ValueError, OSError):
+                pass
+    # Image documents
+    for doc in image_documents or []:
+        try:
+            url = doc.file.url if doc.file else None
+            if url:
+                images.append({
+                    'url': request.build_absolute_uri(url),
+                    'caption': (doc.name or doc.file.name or 'Document')[:30],
+                })
+        except (ValueError, OSError):
+            pass
+    # Project main image
+    if project and getattr(project, 'image', None) and project.image:
+        try:
+            url = project.image.url
+            if url:
+                images.append({
+                    'url': request.build_absolute_uri(url),
+                    'caption': 'Project',
+                })
+        except (ValueError, OSError):
+            pass
+    return images
+
+
 @login_required
 @head_engineer_required
 def head_engineer_project_detail(request, pk):
@@ -2492,7 +2533,7 @@ def head_engineer_project_detail(request, pk):
                 continue
         
         # Get all progress updates - order by date and id to avoid duplicates and ensure consistent ordering
-        progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
+        progress_updates = ProjectProgress.objects.filter(project=project).prefetch_related('photos').order_by('date', 'id').distinct()
         assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
         # Get all cost entries with created_by prefetched
         costs = ProjectCost.objects.filter(project=project).select_related('created_by').order_by('date')
@@ -2595,6 +2636,7 @@ def head_engineer_project_detail(request, pk):
                 }
                 for c in costs
             ],
+            'uploaded_images': _build_uploaded_images_list(request, progress_updates, image_documents, project),
         }
         
         context = {
