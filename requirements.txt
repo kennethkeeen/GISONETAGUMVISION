@@ -5,6 +5,7 @@ django-tailwind==4.0.1
 django-model-utils==4.3.1
 openpyxl==3.1.2
 xhtml2pdf==0.2.11
+pdfkit==1.0.0  # Python wrapper for wkhtmltopdf
 gunicorn==23.0.0
 packaging==25.0
 pillow==11.2.1

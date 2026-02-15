@@ -20,11 +20,15 @@ import csv
 import io
 from datetime import datetime
 import openpyxl
-# Optional xhtml2pdf import
+# Optional PDF libraries
 try:
     from xhtml2pdf import pisa
 except Exception:
     pisa = None
+try:
+    import pdfkit  # requires wkhtmltopdf binary installed
+except Exception:
+    pdfkit = None
 from django.conf import settings
 from collections import Counter, defaultdict
 from monitoring.forms import ProjectForm
@@ -3848,10 +3852,6 @@ def export_project_comprehensive_pdf(request, pk):
         row.extend([{'url': '', 'caption': ''}] * (COLS - len(row)))  # pad to 5 columns
         uploaded_images_rows.append(row)
     
-    # If xhtml2pdf is unavailable, return a friendly message
-    if pisa is None:
-        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
-    
     # Render the HTML template for the PDF
     template_path = 'monitoring/project_comprehensive_report_pdf.html'
     template = get_template(template_path)
@@ -3887,16 +3887,38 @@ def export_project_comprehensive_pdf(request, pk):
         'generated_at': timezone.now(),
     }
     html = template.render(context)
-    
-    # Create PDF
-    result = io.BytesIO()
-    pdf = pisa.CreatePDF(io.BytesIO(html.encode("UTF-8")), result)
-    
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+
+    # Use wkhtmltopdf (pdfkit) if available, else fall back to xhtml2pdf
+    pdf_bytes = None
+    if pdfkit is not None:
+        try:
+            options = {
+                'page-size': 'A4',
+                'margin-top': '20mm',
+                'margin-right': '20mm',
+                'margin-bottom': '20mm',
+                'margin-left': '20mm',
+                'encoding': 'UTF-8',
+            }
+            pdf_bytes = pdfkit.from_string(html, False, options=options)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning('wkhtmltopdf failed: %s, falling back to xhtml2pdf', str(e))
+            pdf_bytes = None
+
+    if pdf_bytes is None and pisa is not None:
+        result = io.BytesIO()
+        pdf = pisa.CreatePDF(io.BytesIO(html.encode("UTF-8")), result)
+        if not pdf.err:
+            pdf_bytes = result.getvalue()
+
+    if pdf_bytes:
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
         filename = f"project_report_{project.prn or project.id}_{timezone.now().strftime('%Y%m%d')}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
+    if pisa is None and pdfkit is None:
+        return HttpResponse('PDF export unavailable. Install wkhtmltopdf and pdfkit, or xhtml2pdf.', content_type='text/plain')
     return HttpResponse('Error generating PDF', content_type='text/plain')
 
 @login_required
