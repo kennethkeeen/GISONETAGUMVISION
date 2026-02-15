@@ -34,14 +34,14 @@
                             </svg>
                         </button>
                         <div id="export-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden">
-                            <a href="{% url 'export_project_comprehensive_pdf' project.pk %}" target="_blank" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
+                            <button type="button" id="export-pdf-btn" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                     </svg>
                                     Export to PDF
                                 </div>
-                            </a>
+                            </button>
                             <a href="{% url 'export_project_comprehensive_excel' project.pk %}" target="_blank" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,6 +460,9 @@
     </div>
 </div>
 
+{{ report_data|json_script:"report-data" }}
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
 <script>
     // Toggle export dropdown
     document.getElementById('export-dropdown-btn').addEventListener('click', function(e) {
@@ -482,6 +485,134 @@
             link.addEventListener('click', function() { exportDropdownMenu.classList.add('hidden'); });
         });
     }
+
+    // Export to PDF with PDFMake (comprehensive layout matching server-side report)
+    document.getElementById('export-pdf-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        var el = document.getElementById('report-data');
+        if (!el || !el.textContent) { alert('Report data not available.'); return; }
+        var data;
+        try { data = JSON.parse(el.textContent); } catch (err) { alert('Error loading report data.'); return; }
+        exportDropdownMenu.classList.add('hidden');
+
+        var fmtNum = function(n) { return (n == null || n === '') ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        var fmtPct = function(n) { return (n == null || n === '') ? '0' : Number(n).toFixed(1) + '%'; };
+        var p = data.project || {};
+        var genAt = data.generated_at || new Date().toLocaleString();
+
+        var content = [];
+        var styles = {
+            sectionTitle: { fontSize: 12, bold: true, color: '#1e40af', margin: [0, 16, 0, 8] },
+            headerTitle: { fontSize: 18, bold: true, color: '#1e40af', alignment: 'center', margin: [0, 0, 0, 4] },
+            headerSub: { fontSize: 14, bold: true, color: '#3b82f6', alignment: 'center', margin: [0, 4, 0, 12] },
+            meta: { fontSize: 9, color: '#6b7280', alignment: 'center', margin: [0, 0, 0, 16] },
+            label: { fontSize: 9, bold: true, color: '#374151' },
+            value: { fontSize: 9 },
+            tableHeader: { bold: true, fontSize: 8, fillColor: '#3b82f6', color: 'white' },
+            cardTitle: { fontSize: 9, bold: true, color: '#374151', margin: [0, 0, 0, 2] },
+            cardValue: { fontSize: 14, bold: true, color: '#1e40af' }
+        };
+
+        // Header
+        content.push({ text: 'ONETAGUMVISION', style: 'headerTitle' });
+        content.push({ text: 'PROJECT COMPREHENSIVE REPORT', style: 'headerSub' });
+        content.push({
+            text: [
+                'Project: ', { text: p.name || '—', bold: true }, ' (PRN: ', p.prn || '—', ')\n',
+                'Generated: ', genAt, '\n',
+                'Prepared by: ', data.generated_by || '—'
+            ],
+            style: 'meta'
+        });
+        content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#1e40af' }], margin: [0, 0, 0, 12] });
+
+        // Project Information
+        content.push({ text: 'PROJECT INFORMATION', style: 'sectionTitle' });
+        content.push({
+            table: {
+                widths: [140, '*'],
+                body: [
+                    [{ text: 'Project Name:', style: 'label' }, { text: p.name || '—', style: 'value' }],
+                    [{ text: 'PRN Number:', style: 'label' }, { text: p.prn || '—', style: 'value' }],
+                    [{ text: 'Location:', style: 'label' }, { text: p.barangay || '—', style: 'value' }],
+                    [{ text: 'Status:', style: 'label' }, { text: p.status || '—', style: 'value' }],
+                    [{ text: 'Start Date:', style: 'label' }, { text: p.start_date || '—', style: 'value' }],
+                    [{ text: 'End Date:', style: 'label' }, { text: p.end_date || '—', style: 'value' }],
+                    [{ text: 'Duration:', style: 'label' }, { text: (data.days_elapsed != null && data.total_days != null) ? data.total_days + ' days (' + data.days_elapsed + ' elapsed, ' + (data.days_remaining || 0) + ' remaining)' : '—', style: 'value' }],
+                    [{ text: 'Assigned Engineers:', style: 'label' }, { text: (data.assigned_engineers || []).join(', ') || '—', style: 'value' }]
+                ]
+            },
+            layout: { hLineWidth: 0.5, vLineWidth: 0.5 },
+            margin: [0, 0, 0, 12]
+        });
+
+        // Project Progress Summary
+        content.push({ text: 'PROJECT PROGRESS SUMMARY', style: 'sectionTitle' });
+        var summaryRows = [
+            [
+                { stack: [{ text: 'Overall Progress', style: 'cardTitle' }, { text: fmtPct(data.latest_progress_pct) + ' complete', style: 'cardValue' }], fillColor: '#f3f4f6', margin: [4, 4], border: [true, true, true, true] },
+                { stack: [{ text: 'Timeline Status', style: 'cardTitle' }, { text: data.performance_label || 'N/A', style: 'cardValue' }], fillColor: '#f3f4f6', margin: [4, 4], border: [true, true, true, true] }
+            ],
+            [
+                { stack: [{ text: 'Days Elapsed', style: 'cardTitle' }, { text: String(data.days_elapsed != null ? data.days_elapsed : '—'), style: 'cardValue' }], fillColor: '#f3f4f6', margin: [4, 4], border: [true, true, true, true] },
+                { stack: [{ text: 'Days Remaining', style: 'cardTitle' }, { text: String(data.days_remaining != null ? data.days_remaining : '—'), style: 'cardValue' }], fillColor: '#f3f4f6', margin: [4, 4], border: [true, true, true, true] }
+            ]
+        ];
+        content.push({ table: { widths: ['*', '*'], body: summaryRows }, layout: { hLineWidth: 0.5, vLineWidth: 0.5 }, margin: [0, 0, 0, 12] });
+
+        // Budget Summary
+        content.push({ text: 'BUDGET SUMMARY', style: 'sectionTitle' });
+        var budgetRows = [
+            [{ text: 'Total Budget', style: 'label' }, { text: '₱' + fmtNum(data.budget), style: 'value', alignment: 'right' }],
+            [{ text: 'Total Spent', style: 'label' }, { text: '₱' + fmtNum(data.total_cost), style: 'value', alignment: 'right' }],
+            [{ text: 'Remaining Budget', style: 'label' }, { text: '₱' + fmtNum(data.remaining_budget), style: 'value', alignment: 'right' }],
+            [{ text: 'Budget Utilization', style: 'label' }, { text: fmtPct(data.budget_utilization) + ' (' + (data.budget_status_label || '—') + ')', style: 'value', alignment: 'right' }]
+        ];
+        content.push({ table: { widths: ['*', 120], body: budgetRows }, layout: { hLineWidth: 0.5, vLineWidth: 0.5 }, margin: [0, 0, 0, 12] });
+
+        // Progress Updates
+        content.push({ text: 'PROGRESS UPDATES', style: 'sectionTitle' });
+        var progRows = [[{ text: 'Date & Time', style: 'tableHeader' }, { text: 'Progress', style: 'tableHeader' }, { text: 'Description', style: 'tableHeader' }, { text: 'Engineer', style: 'tableHeader' }]];
+        (data.progress_updates || []).forEach(function(u) {
+            progRows.push([
+                (u.date || '') + (u.time ? ' ' + u.time : ''),
+                fmtPct(u.percentage_complete),
+                (u.description || '—').substring(0, 60),
+                u.engineer || '—'
+            ]);
+        });
+        if (progRows.length === 1) progRows.push([{ text: 'No progress updates recorded.', colSpan: 4, alignment: 'center' }, {}, {}, {}]);
+        content.push({ table: { headerRows: 1, widths: [70, 55, '*', 70], body: progRows }, layout: { hLineWidth: 0.5, vLineWidth: 0.5 }, margin: [0, 0, 0, 12] });
+
+        // Cost Entries
+        content.push({ text: 'COST ENTRIES', style: 'sectionTitle' });
+        var costRows = [[{ text: 'Date', style: 'tableHeader' }, { text: 'Type', style: 'tableHeader' }, { text: 'Description', style: 'tableHeader' }, { text: 'Amount', style: 'tableHeader', alignment: 'right' }, { text: 'Engineer', style: 'tableHeader' }]];
+        (data.costs || []).forEach(function(c) {
+            costRows.push([(c.date || '') + (c.time ? ' ' + c.time : ''), c.cost_type || '—', (c.description || '—').substring(0, 40), '₱' + fmtNum(c.amount), c.engineer || '—']);
+        });
+        if (costRows.length === 1) costRows.push([{ text: 'No cost entries recorded.', colSpan: 5, alignment: 'center' }, {}, {}, {}, {}]);
+        content.push({ table: { headerRows: 1, widths: [55, 50, '*', 55, 60], body: costRows }, layout: { hLineWidth: 0.5, vLineWidth: 0.5 }, margin: [0, 0, 0, 12] });
+
+        // Cost Breakdown
+        var cb = data.cost_breakdown || {};
+        var cbRows = [[{ text: 'Category', style: 'tableHeader' }, { text: 'Amount', style: 'tableHeader', alignment: 'right' }, { text: '%', style: 'tableHeader', alignment: 'right' }]];
+        Object.keys(cb).forEach(function(k) { cbRows.push([k, '₱' + fmtNum(cb[k]), data.budget > 0 ? ((cb[k] / data.budget) * 100).toFixed(1) + '%' : '—']); });
+        if (cbRows.length > 1) cbRows.push([{ text: 'TOTAL', bold: true }, { text: '₱' + fmtNum(data.total_cost), bold: true, alignment: 'right' }, { text: fmtPct(data.budget_utilization), bold: true, alignment: 'right' }]);
+        if (cbRows.length > 1) content.push({ text: 'COST BREAKDOWN BY CATEGORY', style: 'sectionTitle' }, { table: { widths: ['*', 80, 50], body: cbRows }, layout: { hLineWidth: 0.5, vLineWidth: 0.5 }, margin: [0, 0, 0, 12] });
+
+        var docDef = {
+            pageSize: 'A4',
+            pageMargins: [40, 60, 40, 60],
+            content: content,
+            styles: styles,
+            footer: function(i, n) { return { text: 'Page ' + i + ' of ' + n, fontSize: 8, color: '#666', alignment: 'center', margin: [0, 10, 0, 0] }; }
+        };
+        if (typeof pdfMake !== 'undefined') {
+            pdfMake.createPdf(docDef).download('project_report_' + (p.prn || p.name || 'project').replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
+        } else {
+            alert('PDF library not loaded. Please refresh and try again.');
+        }
+    });
 
     // Forward to Finance Modal Functions
     function showForwardToFinanceModal() {

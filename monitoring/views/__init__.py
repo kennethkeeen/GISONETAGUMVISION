@@ -2655,11 +2655,43 @@ def head_engineer_project_detail(request, pk):
             'total_days': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
         }
         
-        # Serializable report data for client-side PDFMake
+        # Serializable report data for client-side PDFMake (comprehensive layout)
         from django.utils import timezone as tz
+        from collections import defaultdict
         today = tz.now().date()
         total_days = (project.end_date - project.start_date).days if project.start_date and project.end_date else 0
         days_elapsed = (today - project.start_date).days if project.start_date else 0
+        days_remaining = total_days - days_elapsed if total_days > 0 else 0
+        budget = float(project.project_cost) if project.project_cost else 0
+        remaining_budget = budget - total_cost if budget else 0
+        expected_progress = min(100.0, (days_elapsed / total_days * 100.0)) if total_days > 0 else None
+        progress_variance = (latest_progress.percentage_complete - expected_progress) if latest_progress and expected_progress is not None else None
+        performance_ratio = (latest_progress.percentage_complete / expected_progress) if latest_progress and expected_progress and expected_progress > 0 else None
+        performance_label = 'N/A'
+        if performance_ratio is not None:
+            if performance_ratio >= 1.05: performance_label = 'Ahead of schedule'
+            elif performance_ratio >= 0.95: performance_label = 'On schedule'
+            else: performance_label = 'Behind schedule'
+        budget_status_label = 'UNDER BUDGET'
+        if budget_utilization > 100: budget_status_label = 'OVER BUDGET'
+        elif budget_utilization >= 90: budget_status_label = 'AT RISK'
+        cost_breakdown = defaultdict(float)
+        for c in costs:
+            cost_breakdown[c.get_cost_type_display()] += float(c.amount or 0)
+        budget_requests_list = []
+        try:
+            from projeng.models import BudgetRequest
+            for br in BudgetRequest.objects.filter(project=project).order_by('-created_at')[:10]:
+                budget_requests_list.append({
+                    'date': br.created_at.strftime('%Y-%m-%d'),
+                    'requested': float(br.requested_amount or 0),
+                    'status': br.get_status_display(),
+                    'approved': float(br.approved_amount or 0) if br.approved_amount else None,
+                    'by': br.requested_by.get_full_name() or br.requested_by.username if br.requested_by else '',
+                    'reason': (br.reason or '')[:100],
+                })
+        except Exception:
+            pass
         report_data = {
             'project': {
                 'name': project.name or '',
@@ -2668,16 +2700,25 @@ def head_engineer_project_detail(request, pk):
                 'status': project.get_status_display() if hasattr(project, 'get_status_display') else (project.status or ''),
                 'start_date': project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
                 'end_date': project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
-                'project_cost': float(project.project_cost) if project.project_cost is not None else 0,
+                'project_cost': budget,
                 'source_of_funds': project.source_of_funds or '',
                 'description': (project.description or '')[:200],
             },
             'assigned_engineers': [u.get_full_name() or u.username for u in project.assigned_engineers.all()],
             'latest_progress_pct': latest_progress.percentage_complete if latest_progress else 0,
             'total_cost': float(total_cost),
+            'budget': budget,
+            'remaining_budget': remaining_budget,
             'budget_utilization': float(budget_utilization),
+            'budget_status_label': budget_status_label,
             'days_elapsed': days_elapsed,
             'total_days': total_days,
+            'days_remaining': days_remaining,
+            'performance_label': performance_label,
+            'cost_breakdown': dict(cost_breakdown),
+            'budget_requests': budget_requests_list,
+            'generated_by': request.user.get_full_name() or request.user.username,
+            'generated_at': tz.now().strftime('%B %d, %Y at %I:%M %p'),
             'progress_updates': [
                 {
                     'date': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else '',
