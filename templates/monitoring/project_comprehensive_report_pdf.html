@@ -20,86 +20,109 @@
         }
         .header {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #366092;
+            padding-bottom: 12px;
         }
-        .header .company {
-            font-size: 20pt;
+        .header .gov-line {
+            font-size: 8pt;
+            color: #555;
+            margin: 0;
+            line-height: 1.4;
+        }
+        .header .city {
+            font-size: 11pt;
             font-weight: bold;
-            color: #1e40af;
-            letter-spacing: 0.02em;
-            margin-bottom: 0;
+            color: #366092;
+            margin: 2px 0;
+        }
+        .header .office {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #366092;
+            margin: 2px 0;
         }
         .header .report-title {
-            font-size: 13pt;
+            font-size: 12pt;
             font-weight: bold;
-            color: #1e40af;
+            color: #366092;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin: 8px 0 0 0;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #1e40af;
+            letter-spacing: 0.02em;
+            margin: 6px 0 0 0;
         }
         .header .meta {
-            color: #6b7280;
+            color: #666;
             font-size: 9pt;
-            margin-top: 12px;
-            line-height: 1.6;
+            margin-top: 8px;
+            line-height: 1.5;
         }
         .section {
             margin-top: 28px;
             page-break-inside: avoid;
         }
         .section-title {
-            font-size: 11pt;
-            font-weight: bold;
-            color: #1e40af;
-            letter-spacing: 0.02em;
-            border-bottom: 1px solid #3b82f6;
-            padding-bottom: 6px;
-            margin-bottom: 14px;
-        }
-        .project-info-text {
             font-size: 10pt;
-            line-height: 1.8;
-            color: #374151;
-        }
-        .project-info-text strong {
-            color: #1f2937;
             font-weight: bold;
+            color: #366092;
+            border-bottom: 1px solid #366092;
+            padding-bottom: 4px;
+            margin-bottom: 10px;
         }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        .info-table td {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+        }
+        .info-table .info-label {
+            font-weight: bold;
+            background-color: #f8f9fa;
+            color: #495057;
+        }
+        .info-table .info-label { width: 18%; }
+        .info-table.analysis-table .info-label { width: 38%; }
         .summary-cards {
             display: table;
             width: 100%;
-            margin: 12px 0;
+            margin: 10px 0;
+            border-collapse: separate;
+            border-spacing: 8px;
         }
         .summary-card {
             display: table-cell;
-            width: 50%;
-            padding: 0 8px 0 0;
+            width: 25%;
+            padding: 10px;
             vertical-align: top;
+            text-align: center;
+            border-radius: 4px;
         }
-        .summary-card:last-child {
-            padding: 0 0 0 8px;
-        }
+        .summary-card.bg-blue { background-color: #dbeafe; border: 1px solid #93c5fd; }
+        .summary-card.bg-amber { background-color: #ffedd5; border: 1px solid #fdba74; }
+        .summary-card.bg-red { background-color: #fee2e2; border: 1px solid #fca5a5; }
+        .summary-card.bg-yellow { background-color: #fef3c7; border: 1px solid #fcd34d; }
+        .summary-card.bg-slate { background-color: #f1f5f9; border: 1px solid #cbd5e1; }
         .card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px 14px;
-            margin-bottom: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
         }
         .card-title {
             font-weight: bold;
-            color: #475569;
-            font-size: 9pt;
+            color: #495057;
+            font-size: 8pt;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin-bottom: 6px;
+            letter-spacing: 0.02em;
+            margin-bottom: 4px;
         }
         .card-value {
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: bold;
-            color: #1e40af;
+            color: #366092;
         }
         table {
             width: 100%;
@@ -110,7 +133,7 @@
             table-layout: fixed;
         }
         th {
-            background-color: #1e40af;
+            background-color: #366092;
             color: white;
             padding: 10px 10px;
             text-align: left;
@@ -167,14 +190,15 @@
             color: #92400e;
         }
         .footer {
-            margin-top: 40px;
-            padding-top: 16px;
-            border-top: 2px solid #e5e7eb;
+            margin-top: 28px;
+            padding-top: 12px;
+            border-top: 1px solid #dee2e6;
             text-align: center;
             font-size: 8pt;
-            color: #6b7280;
-            line-height: 1.6;
+            color: #666;
+            line-height: 1.5;
         }
+        .footer p { margin: 2px 0; }
         .alert-box {
             background-color: #fffbeb;
             border: 1px solid #fcd34d;
@@ -188,99 +212,74 @@
             color: #92400e;
             margin-bottom: 6px;
         }
-        .analysis-grid {
-            display: table;
+        .images-table {
             width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            border: 1px solid #dee2e6;
         }
-        .analysis-row {
-            display: table-row;
+        .images-table td {
+            width: 20%;
+            padding: 6px;
+            vertical-align: top;
+            border: 1px solid #dee2e6;
+            text-align: center;
         }
-        .analysis-label {
-            display: table-cell;
-            font-weight: bold;
-            width: 45%;
-            padding: 6px 0;
-            color: #374151;
+        .images-table img {
+            width: 100%;
+            max-width: 100px;
+            height: 70px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 4px;
         }
-        .analysis-value {
-            display: table-cell;
-            padding: 6px 0;
+        .img-caption {
+            font-size: 7pt;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="company">ONETAGUMVISION</div>
-        <div class="report-title">Project Comprehensive Report</div>
-        <div class="meta">
-            Project: {{ project.name }} (PRN: {{ project.prn|default:"N/A" }})<br>
-            Generated: {{ generated_at|date:"F d, Y \a\t g:i A" }}<br>
-            Prepared by: {{ generated_by }}
-        </div>
+        <p class="gov-line">REPUBLIC OF THE PHILIPPINES</p>
+        <p class="gov-line">PROVINCE OF DAVAO DEL NORTE</p>
+        <p class="city">CITY OF TAGUM</p>
+        <p class="office">OFFICE OF THE CITY ENGINEER</p>
+        <p class="report-title">Project Comprehensive Report</p>
+        <p class="meta">Project: {{ project.name }} (PRN: {{ project.prn|default:"N/A" }})</p>
+        <p class="meta">Generated: {{ generated_at|date:"F d, Y \a\t g:i A" }} &nbsp;|&nbsp; Prepared by: {{ generated_by }}</p>
     </div>
 
     <div class="section">
         <div class="section-title">Project Information</div>
-        <div class="project-info-text">
-            <strong>Project Name:</strong> {{ project.name }} &nbsp;|&nbsp;
-            <strong>PRN Number:</strong> {{ project.prn|default:"N/A" }} &nbsp;|&nbsp;
-            <strong>Location:</strong> {{ project.barangay|default:"N/A" }} &nbsp;|&nbsp;
-            <strong>Status:</strong> {{ project.get_status_display }}<br>
-            <strong>Start Date:</strong> {{ project.start_date|date:"F d, Y"|default:"N/A" }} &nbsp;|&nbsp;
-            <strong>End Date:</strong> {{ project.end_date|date:"F d, Y"|default:"N/A" }} &nbsp;|&nbsp;
-            <strong>Duration:</strong>
-            {% if total_days %}
-                {{ total_days }} days ({{ days_elapsed }} elapsed, {{ days_remaining }} remaining)
-            {% else %}
-                N/A
-            {% endif %}
-            <br>
-            <strong>Assigned Engineers:</strong>
-            {% if assigned_engineers %}
-                {% for engineer in assigned_engineers %}
-                    {{ engineer.get_full_name|default:engineer.username }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            {% else %}
-                No engineers assigned
-            {% endif %}
-        </div>
+        <table class="info-table">
+            <tr><td class="info-label">Project Name</td><td>{{ project.name }}</td><td class="info-label">PRN</td><td>{{ project.prn|default:"N/A" }}</td></tr>
+            <tr><td class="info-label">Location</td><td>{{ project.barangay|default:"N/A" }}</td><td class="info-label">Status</td><td>{{ project.get_status_display }}</td></tr>
+            <tr><td class="info-label">Start Date</td><td>{{ project.start_date|date:"F d, Y"|default:"N/A" }}</td><td class="info-label">End Date</td><td>{{ project.end_date|date:"F d, Y"|default:"N/A" }}</td></tr>
+            <tr><td class="info-label">Duration</td><td colspan="3">{% if total_days %}{{ total_days }} days ({{ days_elapsed }} elapsed, {{ days_remaining }} remaining){% else %}N/A{% endif %}</td></tr>
+            <tr><td class="info-label">Assigned Engineers</td><td colspan="3">{% if assigned_engineers %}{% for engineer in assigned_engineers %}{{ engineer.get_full_name|default:engineer.username }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}No engineers assigned{% endif %}</td></tr>
+        </table>
     </div>
 
     <div class="section">
         <div class="section-title">Project Progress Summary</div>
         <div class="summary-cards">
-            <div class="summary-card">
-                <div class="card">
-                    <div class="card-title">Overall Progress</div>
-                    <div class="card-value">{{ total_progress }}%</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ total_progress }}%">{{ total_progress }}%</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Timeline Status</div>
-                    <div class="card-value">
-                        {% if days_elapsed and total_days %}
-                            {% if days_elapsed <= total_days %}
-                                On Schedule
-                            {% else %}
-                                Behind Schedule
-                            {% endif %}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </div>
-                </div>
+            <div class="summary-card bg-blue">
+                <div class="card-title">Overall Progress</div>
+                <div class="card-value">{{ total_progress }}%</div>
+                <div class="progress-bar"><div class="progress-fill" style="width: {{ total_progress }}%">{{ total_progress }}%</div></div>
             </div>
-            <div class="summary-card">
-                <div class="card">
-                    <div class="card-title">Days Elapsed</div>
-                    <div class="card-value">{{ days_elapsed|default:"N/A" }}</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Days Remaining</div>
-                    <div class="card-value">{{ days_remaining|default:"N/A" }}</div>
-                </div>
+            <div class="summary-card bg-slate">
+                <div class="card-title">Timeline Status</div>
+                <div class="card-value">{% if days_elapsed and total_days %}{% if days_elapsed <= total_days %}On Schedule{% else %}Behind Schedule{% endif %}{% else %}N/A{% endif %}</div>
+            </div>
+            <div class="summary-card bg-amber">
+                <div class="card-title">Days Elapsed</div>
+                <div class="card-value">{{ days_elapsed|default:"N/A" }}</div>
+            </div>
+            <div class="summary-card bg-amber">
+                <div class="card-title">Days Remaining</div>
+                <div class="card-value">{{ days_remaining|default:"N/A" }}</div>
             </div>
         </div>
     </div>
@@ -288,39 +287,24 @@
     <div class="section">
         <div class="section-title">Budget Summary</div>
         <div class="summary-cards">
-            <div class="summary-card">
-                <div class="card">
-                    <div class="card-title">Total Budget</div>
-                    <div class="card-value">₱{{ budget|floatformat:2|default:"0.00"|intcomma }}</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Total Spent</div>
-                    <div class="card-value">₱{{ total_cost|floatformat:2|default:"0.00"|intcomma }}</div>
-                </div>
+            <div class="summary-card bg-blue">
+                <div class="card-title">Total Budget</div>
+                <div class="card-value">₱{{ budget|floatformat:2|default:"0.00"|intcomma }}</div>
             </div>
-            <div class="summary-card">
-                <div class="card">
-                    <div class="card-title">Remaining Budget</div>
-                    <div class="card-value">₱{{ remaining_budget|floatformat:2|default:"0.00"|intcomma }}</div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Budget Utilization</div>
-                    <div class="card-value">{{ budget_utilization|floatformat:2|default:"0.00" }}%</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {% if budget_utilization > 100 %}100{% else %}{{ budget_utilization }}{% endif %}%">
-                            {{ budget_utilization|floatformat:1 }}%
-                        </div>
-                    </div>
-                    <div style="margin-top: 5px;">
-                        {% if budget_utilization > 100 %}
-                            <span class="budget-status status-over">OVER BUDGET</span>
-                        {% elif budget_utilization > 90 %}
-                            <span class="budget-status status-risk">AT RISK</span>
-                        {% else %}
-                            <span class="budget-status status-under">UNDER BUDGET</span>
-                        {% endif %}
-                    </div>
-                </div>
+            <div class="summary-card bg-amber">
+                <div class="card-title">Total Spent</div>
+                <div class="card-value">₱{{ total_cost|floatformat:2|default:"0.00"|intcomma }}</div>
+                <div style="font-size: 8pt; margin-top: 4px;">Remaining: ₱{{ remaining_budget|floatformat:2|default:"0.00"|intcomma }}</div>
+            </div>
+            <div class="summary-card bg-red">
+                <div class="card-title">Over Budget</div>
+                <div class="card-value">{% if budget_utilization > 100 %}Yes{% else %}0{% endif %}</div>
+                <div style="font-size: 8pt; margin-top: 4px;">{% if budget_utilization > 100 %}Requires attention{% else %}All within budget{% endif %}</div>
+            </div>
+            <div class="summary-card bg-yellow">
+                <div class="card-title">At Risk (90%+)</div>
+                <div class="card-value">{% if budget_utilization > 90 and budget_utilization <= 100 %}Yes{% else %}0{% endif %}</div>
+                <div style="font-size: 8pt; margin-top: 4px;">{{ budget_utilization|floatformat:1 }}% utilized</div>
             </div>
         </div>
     </div>
@@ -328,14 +312,14 @@
     {% if uploaded_images_rows %}
     <div class="section">
         <div class="section-title">Uploaded Images</div>
-        <table style="width: 100%; table-layout: fixed; border: 1px solid #e5e7eb;">
+        <table class="images-table">
             {% for row in uploaded_images_rows %}
             <tr>
                 {% for img in row %}
-                <td style="width: 20%; padding: 8px; vertical-align: top; border: 1px solid #e5e7eb; background: #f9fafb;">
+                <td>
                     {% if img.url %}
-                    <img src="{{ img.url }}" alt="{{ img.caption }}" style="width: 100%; max-width: 110px; height: 75px; object-fit: contain; display: block; margin: 0 auto; border-radius: 4px;" />
-                    <div style="font-size: 7pt; text-align: center; margin-top: 4px; color: #6b7280;">{{ img.caption|truncatechars:20 }}</div>
+                    <img src="{{ img.url }}" alt="{{ img.caption }}" />
+                    <div class="img-caption">{{ img.caption|truncatechars:22 }}</div>
                     {% endif %}
                 </td>
                 {% endfor %}
@@ -597,59 +581,22 @@
 
     <div class="section">
         <div class="section-title">Progress vs Budget Analysis</div>
-        <div class="card">
-            <div class="analysis-grid">
-                <div class="analysis-row">
-                    <div class="analysis-label">Progress Completion (Actual):</div>
-                    <div class="analysis-value">{{ total_progress }}%</div>
-                </div>
-                <div class="analysis-row">
-                    <div class="analysis-label">Budget Utilization:</div>
-                    <div class="analysis-value">{{ budget_used_pct|floatformat:2 }}% ({{ budget_status_label }})</div>
-                </div>
-                {% if expected_progress is not None %}
-                <div class="analysis-row">
-                    <div class="analysis-label">Expected Progress (Timeline):</div>
-                    <div class="analysis-value">{{ expected_progress|floatformat:2 }}%</div>
-                </div>
-                <div class="analysis-row">
-                    <div class="analysis-label">Progress Variance:</div>
-                    <div class="analysis-value">{{ progress_variance|floatformat:2 }}%</div>
-                </div>
-                {% endif %}
-                <div class="analysis-row">
-                    <div class="analysis-label">Performance Ratio (Schedule):</div>
-                    <div class="analysis-value">
-                        {% if performance_ratio is not None %}{{ performance_ratio|floatformat:2 }} ({{ performance_label }}){% else %}N/A{% endif %}
-                    </div>
-                </div>
-                <div class="analysis-row">
-                    <div class="analysis-label">Efficiency Ratio (Progress ÷ Budget):</div>
-                    <div class="analysis-value">
-                        {% if efficiency_ratio is not None %}
-                            {{ efficiency_ratio|floatformat:2 }}
-                            {% if efficiency_ratio >= 0.95 and efficiency_ratio <= 1.05 %}(Aligned)
-                            {% elif efficiency_ratio >= 0.85 and efficiency_ratio < 0.95 %}(Slightly ahead)
-                            {% elif efficiency_ratio > 1.05 and efficiency_ratio <= 1.15 %}(Slightly behind)
-                            {% else %}(Needs attention){% endif %}
-                        {% else %}N/A{% endif %}
-                    </div>
-                </div>
-                <div class="analysis-row">
-                    <div class="analysis-label">Satisfaction Score:</div>
-                    <div class="analysis-value">
-                        {% if satisfaction_score is not None %}{{ satisfaction_score|floatformat:1 }}/100 ({{ satisfaction_label }}){% else %}N/A{% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
+        <table class="info-table analysis-table">
+            <tr><td class="info-label">Progress Completion (Actual)</td><td>{{ total_progress }}%</td></tr>
+            <tr><td class="info-label">Budget Utilization</td><td>{{ budget_used_pct|floatformat:2 }}% ({{ budget_status_label }})</td></tr>
+            {% if expected_progress is not None %}
+            <tr><td class="info-label">Expected Progress (Timeline)</td><td>{{ expected_progress|floatformat:2 }}%</td></tr>
+            <tr><td class="info-label">Progress Variance</td><td>{{ progress_variance|floatformat:2 }}%</td></tr>
+            {% endif %}
+            <tr><td class="info-label">Performance Ratio (Schedule)</td><td>{% if performance_ratio is not None %}{{ performance_ratio|floatformat:2 }} ({{ performance_label }}){% else %}N/A{% endif %}</td></tr>
+            <tr><td class="info-label">Efficiency Ratio</td><td>{% if efficiency_ratio is not None %}{{ efficiency_ratio|floatformat:2 }}{% if efficiency_ratio >= 0.95 and efficiency_ratio <= 1.05 %} (Aligned){% elif efficiency_ratio >= 0.85 and efficiency_ratio < 0.95 %} (Ahead){% elif efficiency_ratio > 1.05 and efficiency_ratio <= 1.15 %} (Behind){% else %} (Needs attention){% endif %}{% else %}N/A{% endif %}</td></tr>
+            <tr><td class="info-label">Satisfaction Score</td><td>{% if satisfaction_score is not None %}{{ satisfaction_score|floatformat:1 }}/100 ({{ satisfaction_label }}){% else %}N/A{% endif %}</td></tr>
+        </table>
     </div>
 
     <div class="footer">
-        <div>Report Generated: {{ generated_at|date:"F d, Y \a\t g:i A" }}</div>
-        <div>Prepared by: {{ generated_by }}</div>
-        <div>Project: {{ project.name }} (PRN: {{ project.prn|default:"N/A" }})</div>
-        <div>System: OneTagumVision Project Management System</div>
+        <p>Report Generated: {{ generated_at|date:"F d, Y \a\t g:i A" }} &nbsp;|&nbsp; Prepared by: {{ generated_by }} &nbsp;|&nbsp; Project: {{ project.name }} ({{ project.prn|default:"N/A" }})</p>
+        <p>OneTagumVision Project Management System</p>
     </div>
 </body>
 </html>
