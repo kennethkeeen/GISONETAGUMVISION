@@ -3,462 +3,339 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Project Comprehensive Report - {{ project.name }}</title>
+    <title>Individual Project Information - {{ project.name }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 1.5cm;
-        }
+        @page { size: A4; margin: 1.5cm; }
         * { box-sizing: border-box; }
         body {
             font-family: "Times New Roman", Times, serif;
             font-size: 10pt;
             line-height: 1.4;
             color: #000;
-            background-color: #fafaf8;
-        }
-        .report-wrapper {
-            border: 3px solid #000;
-            padding: 20px;
             background: #fff;
         }
-        .header {
+        .report-wrapper { padding: 0 16px; }
+        .header-top {
             text-align: center;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #000;
-            margin-bottom: 20px;
+            margin-bottom: 0;
         }
-        .header .gov-line {
-            font-size: 9pt;
-            color: #000;
-            margin: 0;
-            line-height: 1.5;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
+        .header-top .gov { font-size: 9pt; margin: 0; line-height: 1.4; }
+        .green-bands {
+            display: table;
+            width: 100%;
+            margin: 8px 0 12px 0;
+            border-collapse: collapse;
         }
-        .header .report-title {
+        .green-bands > div {
+            display: table-cell;
+            background-color: #2d5016;
+            color: #fff;
+            padding: 8px 12px;
+            font-weight: bold;
+            font-size: 11pt;
+            text-align: center;
+        }
+        .green-bands .band-left { width: 50%; }
+        .green-bands .band-right { width: 50%; }
+        .main-title-box {
+            background: #1a1a1a;
+            color: #fff;
+            text-align: center;
+            padding: 10px 16px;
             font-size: 12pt;
             font-weight: bold;
-            color: #000;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            margin: 8px 0 0 0;
+            margin-bottom: 4px;
+            border: 1px solid #000;
         }
-        .section {
-            margin-top: 18px;
-            page-break-inside: avoid;
-        }
-        .section-title {
-            font-size: 10pt;
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 8px;
-        }
-        .two-col {
+        .as-of { text-align: center; font-size: 10pt; margin-bottom: 16px; }
+        hr { border: none; border-top: 1px solid #000; margin: 12px 0; }
+        .field-row {
             display: table;
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 12px 0;
+            margin: 6px 0;
         }
-        .two-col > div {
+        .field-row .label {
             display: table-cell;
-            width: 50%;
+            width: 38%;
+            padding: 4px 8px 4px 0;
+            font-weight: bold;
             vertical-align: top;
         }
-        table.formal-table {
+        .field-row .value {
+            display: table-cell;
+            width: 62%;
+            padding: 4px 8px;
+            border: 1px solid #000;
+        }
+        .section-title {
+            font-weight: bold;
+            margin: 14px 0 8px 0;
+            font-size: 10pt;
+        }
+        .remarks-band {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 20px 0 16px 0;
+            font-weight: bold;
+        }
+        .remarks-band .status { margin-left: 16px; }
+        .signature-block {
+            display: table;
+            width: 100%;
+            margin-top: 24px;
+            border-collapse: separate;
+            border-spacing: 40px 0;
+        }
+        .signature-block > div {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+        }
+        .signature-block .sig-line {
+            border-bottom: 1px solid #000;
+            height: 40px;
+            margin: 8px 0 4px 0;
+        }
+        .signature-block .name { font-weight: bold; }
+        .signature-block .title { font-size: 9pt; }
+        .data-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 9pt;
-            margin-top: 4px;
+            margin-top: 8px;
         }
-        table.formal-table th,
-        table.formal-table td {
+        .data-table th, .data-table td {
             border: 1px solid #000;
             padding: 6px 8px;
-            text-align: left;
         }
-        table.formal-table th {
-            font-weight: bold;
-            background: #fff;
-            color: #000;
-        }
-        .info-grid {
+        .data-table th { font-weight: bold; background: #f5f5f5; }
+        .img-grid {
             display: table;
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4px;
+            margin-top: 8px;
         }
-        .info-grid-row { display: table-row; }
-        .info-grid-cell {
-            display: table-cell;
-            width: 25%;
-            padding: 8px 10px;
-            border: 1px solid #000;
-            vertical-align: top;
-        }
-        .info-grid-cell .label {
-            font-size: 8pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            color: #000;
-        }
-        .info-grid-cell .value { font-size: 9pt; color: #000; }
-        .summary-boxes {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 4px;
-        }
-        .summary-box {
-            display: table-cell;
-            width: 25%;
-            padding: 10px;
-            border: 1px solid #000;
-            text-align: center;
-            vertical-align: top;
-        }
-        .summary-box .label {
-            font-size: 8pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            color: #000;
-        }
-        .summary-box .value { font-size: 10pt; font-weight: bold; color: #000; }
-        .images-grid {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 4px;
-        }
-        .images-grid-row { display: table-row; }
-        .images-grid-cell {
+        .img-grid-row { display: table-row; }
+        .img-cell {
             display: table-cell;
             width: 25%;
             padding: 6px;
             border: 1px solid #000;
-            vertical-align: top;
             text-align: center;
+            vertical-align: top;
         }
-        .images-grid-cell img {
-            width: 100%;
-            max-width: 120px;
-            height: 80px;
+        .img-cell img {
+            max-width: 100%;
+            height: 70px;
             object-fit: contain;
             display: block;
             margin: 0 auto 4px;
         }
-        .images-grid-cell .caption { font-size: 7pt; color: #000; }
-        .analysis-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 4px;
-        }
-        .analysis-table td {
-            border: 1px solid #000;
-            padding: 8px 12px;
-        }
-        .analysis-table .label { font-weight: bold; width: 45%; }
-        .footer-box {
-            margin-top: 24px;
-            padding: 10px 12px;
-            border: 1px solid #000;
-            font-size: 8pt;
-            color: #000;
-        }
-        .footer-box p { margin: 4px 0; }
-        .progress-bar-outer {
-            border: 1px solid #000;
-            height: 16px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-        .progress-bar-inner {
-            background: #333;
-            height: 100%;
-            text-align: center;
-            color: #fff;
-            font-size: 7pt;
-            line-height: 16px;
-        }
+        .img-cell .cap { font-size: 7pt; }
     </style>
 </head>
 <body>
     <div class="report-wrapper">
-        <div class="header">
-            <p class="gov-line">REPUBLIC OF THE PHILIPPINES</p>
-            <p class="gov-line">PROVINCE OF DAVAO DEL NORTE</p>
-            <p class="gov-line">CITY OF TAGUM</p>
-            <p class="gov-line">OFFICE OF THE CITY ENGINEER</p>
-            <p class="report-title">PROJECT COMPREHENSIVE REPORT</p>
+        <div class="header-top">
+            <p class="gov">REPUBLIC OF THE PHILIPPINES</p>
+            <p class="gov">PROVINCE OF DAVAO DEL NORTE</p>
+            <p class="gov">CITY OF TAGUM</p>
         </div>
 
-        <div class="section">
-            <div class="section-title">Project Information</div>
-            <div class="info-grid">
-                <div class="info-grid-row">
-                    <div class="info-grid-cell">
-                        <div class="label">Project Name</div>
-                        <div class="value">{{ project.name }}</div>
-                    </div>
-                    <div class="info-grid-cell">
-                        <div class="label">PRN</div>
-                        <div class="value">{{ project.prn|default:"N/A" }}</div>
-                    </div>
-                    <div class="info-grid-cell">
-                        <div class="label">Location</div>
-                        <div class="value">{{ project.barangay|default:"N/A" }}</div>
-                    </div>
-                    <div class="info-grid-cell">
-                        <div class="label">Status</div>
-                        <div class="value">{{ project.get_status_display }}</div>
-                    </div>
-                </div>
-                <div class="info-grid-row">
-                    <div class="info-grid-cell">
-                        <div class="label">Start Date</div>
-                        <div class="value">{{ project.start_date|date:"F d, Y"|default:"N/A" }}</div>
-                    </div>
-                    <div class="info-grid-cell">
-                        <div class="label">End Date</div>
-                        <div class="value">{{ project.end_date|date:"F d, Y"|default:"N/A" }}</div>
-                    </div>
-                    <div class="info-grid-cell">
-                        <div class="label">Duration</div>
-                        <div class="value">{% if total_days %}{{ total_days }} days ({{ days_elapsed }} elapsed, {{ days_remaining }} remaining){% else %}N/A{% endif %}</div>
-                    </div>
-                    <div class="info-grid-cell">
-                        <div class="label">Assigned Engineers</div>
-                        <div class="value">{% if assigned_engineers %}{% for engineer in assigned_engineers %}{{ engineer.get_full_name|default:engineer.username }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}No engineers assigned{% endif %}</div>
-                    </div>
-                </div>
-            </div>
+        <div class="green-bands">
+            <div class="band-left">CITY OF TAGUM</div>
+            <div class="band-right">CEO - CONSTRUCTION DIVISION</div>
         </div>
 
-        <div class="section">
-            <div class="section-title">Project Progress Summary</div>
-            <div class="summary-boxes">
-                <div class="summary-box">
-                    <div class="label">Overall Progress</div>
-                    <div class="value">{{ total_progress }}%</div>
-                    <div class="progress-bar-outer"><div class="progress-bar-inner" style="width: {{ total_progress }}%">{{ total_progress }}%</div></div>
-                </div>
-                <div class="summary-box">
-                    <div class="label">Timeline Status</div>
-                    <div class="value">{% if days_elapsed and total_days %}{% if days_elapsed <= total_days %}On Schedule{% else %}Behind Schedule{% endif %}{% else %}N/A{% endif %}</div>
-                </div>
-                <div class="summary-box">
-                    <div class="label">Days Elapsed</div>
-                    <div class="value">{{ days_elapsed|default:"N/A" }}</div>
-                </div>
-                <div class="summary-box">
-                    <div class="label">Days Remaining</div>
-                    <div class="value">{{ days_remaining|default:"N/A" }}</div>
-                </div>
-            </div>
+        <div class="main-title-box">INDIVIDUAL PROJECT INFORMATION</div>
+        <div class="as-of">AS OF: {{ generated_at|date:"F d, Y" }}</div>
+
+        <hr>
+        <div class="field-row">
+            <span class="label">Project Name :</span>
+            <span class="value">{{ project.name }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Location :</span>
+            <span class="value">{{ project.barangay|default:"N/A" }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Reference Number :</span>
+            <span class="value">{{ project.prn|default:"N/A" }}</span>
+        </div>
+        <hr>
+        <div class="field-row">
+            <span class="label">Project Cost :</span>
+            <span class="value">₱{{ budget|floatformat:2|default:"0.00"|intcomma }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Source of Fund :</span>
+            <span class="value">{{ project.source_of_funds|default:"N/A" }}</span>
+        </div>
+        <hr>
+        <div class="field-row">
+            <span class="label">Date Started :</span>
+            <span class="value">{{ project.start_date|date:"F d, Y"|default:"N/A" }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Target Date of Completion :</span>
+            <span class="value">{{ project.end_date|date:"F d, Y"|default:"N/A" }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Project Duration :</span>
+            <span class="value">{% if total_days %}{{ total_days }} DAYS{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">No. of Time Extension (if any) :</span>
+            <span class="value">N/A</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Revised target date of completion :</span>
+            <span class="value">N/A</span>
+        </div>
+        <div class="field-row">
+            <span class="label">No. of Days Elapsed to date :</span>
+            <span class="value">{{ days_elapsed|default:"N/A" }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Remaining No. of Days :</span>
+            <span class="value">{{ days_remaining|default:"N/A" }}</span>
         </div>
 
-        <div class="section">
-            <div class="section-title">Budget Summary</div>
-            <div class="summary-boxes">
-                <div class="summary-box">
-                    <div class="label">Total Budget</div>
-                    <div class="value">₱{{ budget|floatformat:2|default:"0.00"|intcomma }}</div>
-                </div>
-                <div class="summary-box">
-                    <div class="label">Total Spent</div>
-                    <div class="value">₱{{ total_cost|floatformat:2|default:"0.00"|intcomma }}</div>
-                </div>
-                <div class="summary-box">
-                    <div class="label">Remaining Budget</div>
-                    <div class="value">₱{{ remaining_budget|floatformat:2|default:"0.00"|intcomma }}</div>
-                </div>
-                <div class="summary-box">
-                    <div class="label">Budget Utilization</div>
-                    <div class="value">{{ budget_utilization|floatformat:2|default:"0.00" }}%</div>
-                </div>
-            </div>
+        <hr>
+        <div class="section-title">Project Description :</div>
+        <div class="field-row">
+            <span class="label"></span>
+            <span class="value">{{ project.description|default:"N/A" }}</span>
+        </div>
+
+        <hr>
+        <div class="field-row">
+            <span class="label">Mode of Implementation :</span>
+            <span class="value">BY ADMINISTRATION</span>
+        </div>
+
+        <hr>
+        <div class="section-title">Project Accomplishment</div>
+        <div class="field-row">
+            <span class="label">Scheduled Project Accomplishment :</span>
+            <span class="value">{% if expected_progress is not None %}{{ expected_progress|floatformat:2 }}%{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Actual Project Accomplishment :</span>
+            <span class="value">{{ total_progress }}%</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Slippage :</span>
+            <span class="value">{% if progress_variance is not None %}{{ progress_variance|floatformat:2 }}%{% else %}N/A{% endif %}</span>
+        </div>
+        <div class="field-row">
+            <span class="label"></span>
+            <span class="value" style="border:none; font-size:8pt;">(if negative, State Reason)</span>
+        </div>
+
+        <div class="section-title">Budget Summary</div>
+        <div class="field-row">
+            <span class="label">Total Budget :</span>
+            <span class="value">₱{{ budget|floatformat:2|default:"0.00"|intcomma }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Total Spent :</span>
+            <span class="value">₱{{ total_cost|floatformat:2|default:"0.00"|intcomma }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Remaining Budget :</span>
+            <span class="value">₱{{ remaining_budget|floatformat:2|default:"0.00"|intcomma }}</span>
+        </div>
+        <div class="field-row">
+            <span class="label">Budget Utilization :</span>
+            <span class="value">{{ budget_utilization|floatformat:2 }}% ({{ budget_status_label }})</span>
         </div>
 
         {% if uploaded_images_rows %}
-        <div class="section">
-            <div class="section-title">Uploaded Images</div>
-            <div class="images-grid">
-                {% for row in uploaded_images_rows %}
-                <div class="images-grid-row">
-                    {% for img in row %}
-                    <div class="images-grid-cell">
-                        {% if img.url %}
-                        <img src="{{ img.url }}" alt="{{ img.caption }}" />
-                        <div class="caption">{{ img.caption|truncatechars:24 }}</div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+        <hr>
+        <div class="section-title">Uploaded Images</div>
+        <div class="img-grid">
+            {% for row in uploaded_images_rows %}
+            <div class="img-grid-row">
+                {% for img in row %}
+                <div class="img-cell">
+                    {% if img.url %}
+                    <img src="{{ img.url }}" alt="{{ img.caption }}" />
+                    <div class="cap">{{ img.caption|truncatechars:20 }}</div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
+            {% endfor %}
         </div>
         {% endif %}
 
-        <div class="section">
-            <div class="two-col">
-                <div>
-                    <div class="section-title">Budget Request History</div>
-                    <table class="formal-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th style="text-align:right;">Amount</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if budget_requests %}
-                                {% for br in budget_requests %}
-                                <tr>
-                                    <td>{{ br.created_at|date:"M d, Y" }}</td>
-                                    <td style="text-align:right;">₱{{ br.requested_amount|floatformat:2|intcomma }}</td>
-                                    <td>{{ br.get_status_display }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" style="font-size:8pt;">{{ br.reason|default:"-"|truncatewords:30 }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr><td colspan="3" style="text-align:center;">No budget requests available</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-                <div>
-                    <div class="section-title">Progress History</div>
-                    <table class="formal-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th style="text-align:right;">%</th>
-                                <th>Engineer</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if progress_updates %}
-                                {% for update in progress_updates %}
-                                <tr>
-                                    <td>{{ update.date|date:"M d, Y" }}</td>
-                                    <td style="text-align:right;">{{ update.percentage_complete }}%</td>
-                                    <td>{{ update.created_by.get_full_name|default:update.created_by.username|default:"N/A" }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" style="font-size:8pt;">{{ update.description|default:"-"|truncatewords:15 }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr><td colspan="3" style="text-align:center;">No progress updates available</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+        <div class="section-title">Cost Breakdown by Category</div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Category</th><th style="text-align:right;">Amount Spent</th><th style="text-align:right;">%</th></tr>
+            </thead>
+            <tbody>
+                {% if cost_breakdown %}
+                    {% for category, amount in cost_breakdown.items %}
+                    <tr>
+                        <td>{{ category }}</td>
+                        <td style="text-align:right;">₱{{ amount|floatformat:2|intcomma }}</td>
+                        <td style="text-align:right;">{% if budget > 0 %}{% widthratio amount budget 100 as pct %}{{ pct|floatformat:1 }}%{% else %}N/A{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="font-weight:bold;">
+                        <td>TOTAL</td>
+                        <td style="text-align:right;">₱{{ total_cost|floatformat:2|intcomma }}</td>
+                        <td style="text-align:right;">{{ budget_utilization|floatformat:2 }}%</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="3" style="text-align:center;">No cost entries available</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="section-title">Progress History</div>
+        <table class="data-table">
+            <thead>
+                <tr><th>Date</th><th style="text-align:right;">%</th><th>Description</th><th>Engineer</th></tr>
+            </thead>
+            <tbody>
+                {% if progress_updates %}
+                    {% for update in progress_updates %}
+                    <tr>
+                        <td>{{ update.date|date:"M d, Y" }}</td>
+                        <td style="text-align:right;">{{ update.percentage_complete }}%</td>
+                        <td>{{ update.description|default:"-"|truncatewords:15 }}</td>
+                        <td>{{ update.created_by.get_full_name|default:update.created_by.username|default:"N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="4" style="text-align:center;">No progress updates available</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="remarks-band">
+            REMARKS
+            <span class="status">{{ project.get_status_display|upper }} | Generated: {{ generated_at|date:"M d, Y" }} | {{ generated_by }}</span>
+        </div>
+
+        <div class="signature-block">
+            <div>
+                <div>Prepared by:</div>
+                <div class="sig-line"></div>
+                <div class="name">{% if assigned_engineers %}{{ assigned_engineers.0.get_full_name|default:assigned_engineers.0.username }}{% else %}{{ generated_by }}{% endif %}</div>
+                <div class="title">Project In-Charge</div>
             </div>
-        </div>
-
-        <div class="section">
-            <div class="two-col">
-                <div>
-                    <div class="section-title">Cost Breakdown</div>
-                    <table class="formal-table">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th style="text-align:right;">Amount</th>
-                                <th style="text-align:right;">%</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if cost_breakdown %}
-                                {% for category, amount in cost_breakdown.items %}
-                                <tr>
-                                    <td>{{ category }}</td>
-                                    <td style="text-align:right;">₱{{ amount|floatformat:2|intcomma }}</td>
-                                    <td style="text-align:right;">{% if budget > 0 %}{% widthratio amount budget 100 as pct %}{{ pct|floatformat:1 }}%{% else %}N/A{% endif %}</td>
-                                </tr>
-                                {% endfor %}
-                                <tr style="font-weight:bold;">
-                                    <td>TOTAL</td>
-                                    <td style="text-align:right;">₱{{ total_cost|floatformat:2|intcomma }}</td>
-                                    <td style="text-align:right;">{{ budget_utilization|floatformat:2 }}%</td>
-                                </tr>
-                            {% else %}
-                                <tr><td colspan="3" style="text-align:center;">No cost entries available</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-                <div>
-                    <div class="section-title">Detailed Cost Entries</div>
-                    <table class="formal-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Category</th>
-                                <th style="text-align:right;">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if costs %}
-                                {% for cost in costs %}
-                                <tr>
-                                    <td>{{ cost.date|date:"M d, Y" }}</td>
-                                    <td>{{ cost.get_cost_type_display|truncatewords:3 }}</td>
-                                    <td style="text-align:right;">₱{{ cost.amount|floatformat:2|intcomma }}</td>
-                                </tr>
-                                {% endfor %}
-                                <tr style="font-weight:bold;">
-                                    <td colspan="2" style="text-align:right;">TOTAL:</td>
-                                    <td style="text-align:right;">₱{{ total_cost|floatformat:2|intcomma }}</td>
-                                </tr>
-                            {% else %}
-                                <tr><td colspan="3" style="text-align:center;">No cost entries available</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+            <div>
+                <div>Concurred by:</div>
+                <div class="sig-line"></div>
+                <div class="name">{{ generated_by }}</div>
+                <div class="title">Head Engineer</div>
             </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Progress vs Budget Analysis</div>
-            <table class="formal-table analysis-table">
-                <tr>
-                    <td class="label">Progress Completion (Actual)</td>
-                    <td>{{ total_progress }}%</td>
-                    <td class="label">Budget Utilization</td>
-                    <td>{{ budget_used_pct|floatformat:2 }}% ({{ budget_status_label }})</td>
-                </tr>
-                <tr>
-                    <td class="label">Expected Progress (Timeline)</td>
-                    <td>{% if expected_progress is not None %}{{ expected_progress|floatformat:2 }}%{% else %}N/A{% endif %}</td>
-                    <td class="label">Progress Variance</td>
-                    <td>{% if progress_variance is not None %}{{ progress_variance|floatformat:2 }}%{% else %}N/A{% endif %}</td>
-                </tr>
-                <tr>
-                    <td class="label">Performance Ratio (Schedule)</td>
-                    <td colspan="3">{% if performance_ratio is not None %}{{ performance_ratio|floatformat:2 }} ({{ performance_label }}){% else %}N/A{% endif %}</td>
-                </tr>
-                <tr>
-                    <td class="label">Efficiency Ratio</td>
-                    <td colspan="3">{% if efficiency_ratio is not None %}{{ efficiency_ratio|floatformat:2 }}{% if efficiency_ratio >= 0.95 and efficiency_ratio <= 1.05 %} (Aligned){% elif efficiency_ratio >= 0.85 %} (Ahead){% elif efficiency_ratio <= 1.15 %} (Behind){% else %} (Needs attention){% endif %}{% else %}N/A{% endif %}</td>
-                </tr>
-                <tr>
-                    <td class="label">Satisfaction Score</td>
-                    <td colspan="3">{% if satisfaction_score is not None %}{{ satisfaction_score|floatformat:1 }}/100 ({{ satisfaction_label }}){% else %}N/A{% endif %}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="footer-box">
-            <p>Report Generated: {{ generated_at|date:"F d, Y \a\t g:i A" }} | User: {{ generated_by }}</p>
-            <p>Document ID: {{ project.prn|default:"N/A" }}-{{ generated_at|date:"Ymd" }}</p>
         </div>
     </div>
 </body>
