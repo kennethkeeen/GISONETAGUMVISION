@@ -528,17 +528,32 @@ def upload_docs_view(request):
 
 @user_passes_test(is_project_or_head_engineer, login_url='/accounts/login/')
 def my_reports_view(request):
+    from .models import ProjectType
     # Build base queryset
     if is_head_engineer(request.user):
         assigned_projects = Project.objects.all()
     else:
         assigned_projects = Project.objects.filter(assigned_engineers=request.user)
     
+    # Get filter options from base queryset (before applying filters)
+    base_queryset = assigned_projects
+    source_of_funds_options = list(
+        base_queryset.filter(source_of_funds__isnull=False)
+        .exclude(source_of_funds='')
+        .values_list('source_of_funds', flat=True)
+        .distinct()
+        .order_by('source_of_funds')
+    )
+    project_type_options = ProjectType.objects.order_by('name')
+    
     # Apply filters
     barangay_filter = request.GET.get('barangay')
     status_filter = request.GET.get('status')
     start_date_filter = request.GET.get('start_date')
     end_date_filter = request.GET.get('end_date')
+    source_of_funds_filter = request.GET.get('source_of_funds')
+    project_type_filter = request.GET.get('project_type')
+    
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
     if status_filter:
@@ -558,6 +573,13 @@ def my_reports_view(request):
             end_date = datetime.strptime(end_date_filter, '%Y-%m-%d').date()
             assigned_projects = assigned_projects.filter(end_date__lte=end_date)
         except ValueError:
+            pass
+    if source_of_funds_filter:
+        assigned_projects = assigned_projects.filter(source_of_funds=source_of_funds_filter)
+    if project_type_filter:
+        try:
+            assigned_projects = assigned_projects.filter(project_type_id=int(project_type_filter))
+        except (ValueError, TypeError):
             pass
     
     # Optimize status counts - use aggregation instead of multiple queries (single query)
@@ -582,7 +604,7 @@ def my_reports_view(request):
     ]
     
     # Optimize query - use select_related and prefetch_related to avoid N+1 queries
-    assigned_projects = assigned_projects.select_related('created_by').prefetch_related('assigned_engineers')
+    assigned_projects = assigned_projects.select_related('created_by', 'project_type').prefetch_related('assigned_engineers')
     
     paginator = Paginator(assigned_projects, 10)
     page_number = request.GET.get('page')
@@ -617,6 +639,8 @@ def my_reports_view(request):
             'barangay': project.barangay or '',
             'project_cost': str(project.project_cost) if project.project_cost is not None else '',
             'source_of_funds': project.source_of_funds or '',
+            'project_type_id': project.project_type_id,
+            'project_type_name': project.project_type.name if project.project_type else '',
             'start_date': str(project.start_date) if project.start_date else '',
             'end_date': str(project.end_date) if project.end_date else '',
             'status': project.status or '',
@@ -630,10 +654,14 @@ def my_reports_view(request):
         'status_counts': status_counts,
         'barangays': barangays,
         'statuses': statuses,
+        'source_of_funds_options': source_of_funds_options,
+        'project_type_options': project_type_options,
         'selected_barangay': barangay_filter,
         'selected_status': status_filter,
         'selected_start_date': start_date_filter,
         'selected_end_date': end_date_filter,
+        'selected_source_of_funds': source_of_funds_filter,
+        'selected_project_type': project_type_filter,
         'delayed_count': delayed_count,
     }
     return render(request, 'projeng/my_reports.html', context)
@@ -2123,6 +2151,8 @@ def export_reports_csv(request):
     status_filter = request.GET.get('status')
     start_date_filter = request.GET.get('start_date')
     end_date_filter = request.GET.get('end_date')
+    source_of_funds_filter = request.GET.get('source_of_funds')
+    project_type_filter = request.GET.get('project_type')
     
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
@@ -2146,6 +2176,13 @@ def export_reports_csv(request):
             assigned_projects = assigned_projects.filter(end_date__lte=end_date)
         except ValueError:
             pass
+    if source_of_funds_filter:
+        assigned_projects = assigned_projects.filter(source_of_funds=source_of_funds_filter)
+    if project_type_filter:
+        try:
+            assigned_projects = assigned_projects.filter(project_type_id=int(project_type_filter))
+        except (ValueError, TypeError):
+            pass
 
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
@@ -2153,10 +2190,10 @@ def export_reports_csv(request):
 
     writer = csv.writer(response)
     # Write the header row
-    writer.writerow(['#', 'PRN#', 'Name of Project', 'Project Description', 'Barangay', 'Project Cost', 'Source of Funds', 'Date Started', 'Date Ended', 'Status'])
+    writer.writerow(['#', 'PRN#', 'Name of Project', 'Project Description', 'Barangay', 'Project Cost', 'Source of Funds', 'Project Type', 'Date Started', 'Date Ended', 'Status'])
 
-    # Write data rows
-    for i, project in enumerate(assigned_projects):
+    # Write data rows (use select_related for project_type)
+    for i, project in enumerate(assigned_projects.select_related('project_type')):
         writer.writerow([
             i + 1,
             project.prn or '',
@@ -2165,6 +2202,7 @@ def export_reports_csv(request):
             project.barangay or '',
             project.project_cost if project.project_cost is not None else '',
             project.source_of_funds or '',
+            project.project_type.name if project.project_type else '',
             project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
             project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
             project.get_status_display() or '',
@@ -2186,6 +2224,8 @@ def export_reports_excel(request):
     status_filter = request.GET.get('status')
     start_date_filter = request.GET.get('start_date')
     end_date_filter = request.GET.get('end_date')
+    source_of_funds_filter = request.GET.get('source_of_funds')
+    project_type_filter = request.GET.get('project_type')
     
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
@@ -2209,6 +2249,13 @@ def export_reports_excel(request):
             assigned_projects = assigned_projects.filter(end_date__lte=end_date)
         except ValueError:
             pass
+    if source_of_funds_filter:
+        assigned_projects = assigned_projects.filter(source_of_funds=source_of_funds_filter)
+    if project_type_filter:
+        try:
+            assigned_projects = assigned_projects.filter(project_type_id=int(project_type_filter))
+        except (ValueError, TypeError):
+            pass
 
     # Create a new workbook and select the active sheet
     workbook = openpyxl.Workbook()
@@ -2216,11 +2263,11 @@ def export_reports_excel(request):
     sheet.title = "Assigned Projects"
 
     # Write the header row
-    headers = ['#', 'PRN#', 'Name of Project', 'Project Description', 'Barangay', 'Project Cost', 'Source of Funds', 'Date Started', 'Date Ended', 'Status']
+    headers = ['#', 'PRN#', 'Name of Project', 'Project Description', 'Barangay', 'Project Cost', 'Source of Funds', 'Project Type', 'Date Started', 'Date Ended', 'Status']
     sheet.append(headers)
 
     # Write data rows
-    for i, project in enumerate(assigned_projects):
+    for i, project in enumerate(assigned_projects.select_related('project_type')):
         sheet.append([
             i + 1,
             project.prn or '',
@@ -2229,6 +2276,7 @@ def export_reports_excel(request):
             project.barangay or '',
             project.project_cost if project.project_cost is not None else '',
             project.source_of_funds or '',
+            project.project_type.name if project.project_type else '',
             project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
             project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
             project.get_status_display() or '',
@@ -2259,6 +2307,8 @@ def export_reports_pdf(request):
     status_filter = request.GET.get('status')
     start_date_filter = request.GET.get('start_date')
     end_date_filter = request.GET.get('end_date')
+    source_of_funds_filter = request.GET.get('source_of_funds')
+    project_type_filter = request.GET.get('project_type')
     
     if barangay_filter:
         assigned_projects = assigned_projects.filter(barangay=barangay_filter)
@@ -2282,6 +2332,13 @@ def export_reports_pdf(request):
             assigned_projects = assigned_projects.filter(end_date__lte=end_date)
         except ValueError:
             pass
+    if source_of_funds_filter:
+        assigned_projects = assigned_projects.filter(source_of_funds=source_of_funds_filter)
+    if project_type_filter:
+        try:
+            assigned_projects = assigned_projects.filter(project_type_id=int(project_type_filter))
+        except (ValueError, TypeError):
+            pass
 
     # If xhtml2pdf is unavailable, return a friendly message
     if pisa is None:
@@ -2290,7 +2347,7 @@ def export_reports_pdf(request):
     # Render the HTML template for the PDF
     template_path = 'projeng/reports/assigned_projects_pdf.html'
     template = get_template(template_path)
-    context = {'projects': assigned_projects}
+    context = {'projects': assigned_projects.select_related('project_type')}
     html = template.render(context)
 
     # Create a PDF
