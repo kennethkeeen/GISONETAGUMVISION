@@ -34,14 +34,14 @@
                             </svg>
                         </button>
                         <div id="export-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden">
-                            <button type="button" id="export-pdf-btn" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
+                            <a href="#" id="export-pdf-btn" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                     </svg>
                                     Export to PDF
                                 </div>
-                            </button>
+                            </a>
                             <a href="{% url 'export_project_comprehensive_excel' project.pk %}" target="_blank" class="block px-4 py-3 text-gray-700 hover:bg-blue-50 transition-colors border-b border-gray-100">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@
                     </svg>
                     Project Documents
                 </h2>
-                {% if documents|length > 5 %}
+                {% if documents|length > 3 %}
                 <button onclick="openDocumentsModal()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -331,7 +331,7 @@
             </div>
             {% if documents %}
                 <div class="space-y-3">
-                    {% for doc in documents|slice:":5" %}
+                    {% for doc in documents|slice:":3" %}
                         <div class="flex items-start justify-between gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 mb-2">
@@ -379,10 +379,10 @@
                         </div>
                     {% endfor %}
                 </div>
-                {% if documents|length > 5 %}
+                {% if documents|length > 3 %}
                 <div class="mt-4 text-center">
                     <button onclick="openDocumentsModal()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                        View {{ documents|length|add:"-5" }} more document{{ documents|length|add:"-5"|pluralize }}
+                        View {{ documents|length|add:"-3" }} more document{{ documents|length|add:"-3"|pluralize }}
                     </button>
                 </div>
                 {% endif %}
@@ -460,9 +460,6 @@
     </div>
 </div>
 
-{{ report_data|json_script:"report-data" }}
-<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
 <script>
     // Toggle export dropdown
     document.getElementById('export-dropdown-btn').addEventListener('click', function(e) {
@@ -478,170 +475,13 @@
             dropdown.classList.add('hidden');
         }
     });
-    // Close dropdown when Excel or CSV is clicked (links open in new tab)
+    // Close dropdown when any export link is clicked
     var exportDropdownMenu = document.getElementById('export-dropdown');
     if (exportDropdownMenu) {
         exportDropdownMenu.querySelectorAll('a[target="_blank"]').forEach(function(link) {
             link.addEventListener('click', function() { exportDropdownMenu.classList.add('hidden'); });
         });
     }
-
-    // Generate PDF with PDFMake (formal, clean layout)
-    document.getElementById('export-pdf-btn').addEventListener('click', function(e) {
-        e.preventDefault();
-        const el = document.getElementById('report-data');
-        if (!el || !el.textContent) { alert('Report data not available.'); return; }
-        let data;
-        try { data = JSON.parse(el.textContent); } catch (err) { alert('Error loading report data.'); return; }
-        document.getElementById('export-dropdown').classList.add('hidden');
-
-        const fmtDate = function(s) { if (!s) return '—'; return s; };
-        const fmtNum = function(n) { return (n == null || n === '') ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-        const fmtPct = function(n) { return (n == null || n === '') ? '0' : Number(n).toFixed(1) + '%'; };
-        const now = new Date();
-        const reportDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-        const headerLines = [
-            { text: 'REPUBLIC OF THE PHILIPPINES', fontSize: 8, alignment: 'center', margin: [0, 0, 0, 0] },
-            { text: 'PROVINCE OF DAVAO DEL NORTE', fontSize: 8, alignment: 'center', margin: [0, 1, 0, 0] },
-            { text: 'CITY OF TAGUM', fontSize: 11, bold: true, alignment: 'center', margin: [0, 1, 0, 0] },
-            { text: 'OFFICE OF THE CITY ENGINEER', fontSize: 11, bold: true, alignment: 'center', margin: [0, 1, 0, 0] },
-            { text: 'PROJECT REPORT', fontSize: 12, bold: true, alignment: 'center', margin: [0, 4, 0, 0] },
-            { text: 'As of ' + reportDate, fontSize: 9, alignment: 'center', margin: [0, 2, 0, 0] }
-        ];
-
-        const p = data.project || {};
-        const content = [
-            { stack: headerLines, alignment: 'center' },
-            { text: p.name || 'Project', fontSize: 14, bold: true, margin: [0, 12, 0, 6] },
-            {
-                table: {
-                    widths: [120, '*', 120, '*'],
-                    body: [
-                        [
-                            { text: 'PRN', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: p.prn || '—', fontSize: 8 },
-                            { text: 'Barangay', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: p.barangay || '—', fontSize: 8 }
-                        ],
-                        [
-                            { text: 'Status', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: p.status || '—', fontSize: 8 },
-                            { text: 'Source of Funds', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: p.source_of_funds || '—', fontSize: 8 }
-                        ],
-                        [
-                            { text: 'Start Date', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: fmtDate(p.start_date), fontSize: 8 },
-                            { text: 'End Date', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: fmtDate(p.end_date), fontSize: 8 }
-                        ],
-                        [
-                            { text: 'Project Cost', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: '₱' + fmtNum(p.project_cost), fontSize: 8 },
-                            { text: 'Assigned Engineers', fontSize: 8, fillColor: '#f3f4f6' },
-                            { text: (data.assigned_engineers && data.assigned_engineers.length) ? data.assigned_engineers.join(', ') : '—', fontSize: 8 }
-                        ]
-                    ]
-                },
-                layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
-                margin: [0, 0, 0, 8]
-            },
-            { text: 'Overall Progress', fontSize: 10, bold: true, margin: [0, 8, 0, 4] },
-            { text: fmtPct(data.latest_progress_pct) + ' complete', fontSize: 9, margin: [0, 0, 0, 8] },
-            { text: 'Progress Updates', fontSize: 10, bold: true, margin: [0, 4, 0, 4] }
-        ];
-
-        const progressRows = [[
-            { text: 'Date & Time', style: 'tableHeader', alignment: 'center' },
-            { text: 'Progress', style: 'tableHeader', alignment: 'center' },
-            { text: 'Description', style: 'tableHeader' },
-            { text: 'Engineer', style: 'tableHeader' }
-        ]];
-        (data.progress_updates || []).forEach(function(u) {
-            progressRows.push([
-                { text: (u.date || '') + (u.time ? ' ' + u.time : ''), fontSize: 7, alignment: 'center' },
-                { text: fmtPct(u.percentage_complete), fontSize: 7, alignment: 'center' },
-                { text: (u.description || '—').substring(0, 50), fontSize: 7 },
-                { text: u.engineer || '—', fontSize: 7 }
-            ]);
-        });
-        if (progressRows.length === 1) {
-            progressRows.push([{ text: 'No progress updates recorded.', colSpan: 4, alignment: 'center', fontSize: 8 }, {}, {}, {}]);
-        }
-        content.push({
-            table: { headerRows: 1, widths: [70, 45, '*', 60], body: progressRows },
-            layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
-            margin: [0, 0, 0, 8]
-        });
-
-        content.push({ text: 'Cost Entries', fontSize: 10, bold: true, margin: [0, 8, 0, 4] });
-        const costRows = [[
-            { text: 'Date', style: 'tableHeader', alignment: 'center' },
-            { text: 'Type', style: 'tableHeader' },
-            { text: 'Description', style: 'tableHeader' },
-            { text: 'Amount', style: 'tableHeader', alignment: 'right' },
-            { text: 'Engineer', style: 'tableHeader' }
-        ]];
-        (data.costs || []).forEach(function(c) {
-            costRows.push([
-                { text: (c.date || '') + (c.time ? ' ' + c.time : ''), fontSize: 7, alignment: 'center' },
-                { text: c.cost_type || '—', fontSize: 7 },
-                { text: (c.description || '—').substring(0, 40), fontSize: 7 },
-                { text: '₱' + fmtNum(c.amount), fontSize: 7, alignment: 'right' },
-                { text: c.engineer || '—', fontSize: 7 }
-            ]);
-        });
-        if (costRows.length === 1) {
-            costRows.push([{ text: 'No cost entries recorded.', colSpan: 5, alignment: 'center', fontSize: 8 }, {}, {}, {}, {}]);
-        }
-        content.push({
-            table: { headerRows: 1, widths: [55, 50, '*', 50, 55], body: costRows },
-            layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } },
-            margin: [0, 0, 0, 8]
-        });
-
-        content.push({ text: 'Summary', fontSize: 10, bold: true, margin: [0, 8, 0, 4] });
-        content.push({
-            table: {
-                widths: ['*', '*'],
-                body: [
-                    [
-                        { text: 'Total Cost Spent', fontSize: 8, fillColor: '#f3f4f6' },
-                        { text: '₱' + fmtNum(data.total_cost), fontSize: 8, alignment: 'right' }
-                    ],
-                    [
-                        { text: 'Budget Utilization', fontSize: 8, fillColor: '#f3f4f6' },
-                        { text: fmtPct(data.budget_utilization), fontSize: 8, alignment: 'right' }
-                    ],
-                    [
-                        { text: 'Timeline (Days)', fontSize: 8, fillColor: '#f3f4f6' },
-                        { text: (data.days_elapsed != null && data.total_days != null) ? data.days_elapsed + ' / ' + data.total_days + ' (elapsed / total)' : '—', fontSize: 8, alignment: 'right' }
-                    ]
-                ]
-            },
-            layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } }
-        });
-
-        const docDef = {
-            pageSize: 'A4',
-            pageOrientation: 'portrait',
-            pageMargins: [40, 80, 40, 50],
-            header: function() { return { stack: headerLines, alignment: 'center', margin: [0, 20, 0, 0] }; },
-            footer: function(currentPage, pageCount) {
-                return { text: 'Page ' + currentPage + ' of ' + pageCount, fontSize: 8, color: '#666', alignment: 'center', margin: [0, 0, 0, 20] };
-            },
-            content: content,
-            styles: {
-                tableHeader: { bold: true, fontSize: 7, fillColor: '#166534', color: 'white' }
-            }
-        };
-        if (typeof pdfMake !== 'undefined') {
-            pdfMake.createPdf(docDef).download('project_report_' + (p.prn || p.name || 'project').replace(/\s+/g, '_') + '_' + now.toISOString().slice(0, 10) + '.pdf');
-        } else {
-            alert('PDF library not loaded. Please refresh and try again.');
-        }
-    });
 
     // Forward to Finance Modal Functions
     function showForwardToFinanceModal() {
@@ -922,4 +762,162 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 
+{% if report_data %}
+{{ report_data|json_script:"report-data" }}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if report_data %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+<script>
+(function() {
+    function fmtNum(n) { return n != null ? Number(n).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'; }
+    function fmtPct(n) { return n != null ? Number(n).toFixed(2) + '%' : 'N/A'; }
+
+    document.getElementById('export-pdf-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        var dd = document.getElementById('export-dropdown');
+        if (dd) dd.classList.add('hidden');
+        try {
+            var data = JSON.parse(document.getElementById('report-data').textContent);
+            var p = data.project || {};
+            var scheduled = data.expected_progress != null ? Number(data.expected_progress).toFixed(2) + '%' : 'N/A';
+            var actual = data.latest_progress_pct != null ? Number(data.latest_progress_pct).toFixed(2) + '%' : 'N/A';
+            var slippage = data.progress_variance != null ? Number(data.progress_variance).toFixed(2) + '%' : 'N/A';
+
+            var body = [
+                { text: 'Project Name', style: 'label', margin: [0, 4, 0, 0] }, { text: p.name || 'N/A' },
+                { text: 'Location', style: 'label', margin: [0, 4, 0, 0] }, { text: p.barangay || 'N/A' },
+                { text: 'Reference Number', style: 'label', margin: [0, 4, 0, 0] }, { text: p.prn || 'N/A' },
+                { text: 'Project Cost', style: 'label', margin: [0, 4, 0, 0] }, { text: '₱' + fmtNum(p.project_cost) },
+                { text: 'Source of Fund', style: 'label', margin: [0, 4, 0, 0] }, { text: p.source_of_funds || 'N/A' },
+                { text: 'Date Started', style: 'label', margin: [0, 4, 0, 0] }, { text: p.start_date || 'N/A' },
+                { text: 'Target Date of Completion', style: 'label', margin: [0, 4, 0, 0] }, { text: p.end_date || 'N/A' },
+                { text: 'Project Duration', style: 'label', margin: [0, 4, 0, 0] }, { text: (data.total_days ? data.total_days + ' DAYS' : 'N/A') },
+                { text: 'No. of Time Extension (if any)', style: 'label', margin: [0, 4, 0, 0] }, { text: 'N/A' },
+                { text: 'Revised target date of completion', style: 'label', margin: [0, 4, 0, 0] }, { text: 'N/A' },
+                { text: 'No. of Days Elapsed to date', style: 'label', margin: [0, 4, 0, 0] }, { text: String(data.days_elapsed ?? 'N/A') },
+                { text: 'Remaining No. of Days', style: 'label', margin: [0, 4, 0, 0] }, { text: String(data.days_remaining ?? 'N/A') },
+            ];
+            var descRow = [
+                { text: 'Project Description', style: 'sectionTitle', margin: [0, 12, 0, 4] },
+                { text: (p.description || 'N/A').substring(0, 500) } ];
+            var modeRow = [
+                { text: 'Mode of Implementation', style: 'label', margin: [0, 4, 0, 0] }, { text: 'BY ADMINISTRATION' } ];
+            var accomplishRows = [
+                { text: 'Scheduled Project Accomplishment', style: 'label', margin: [0, 4, 0, 0] }, { text: scheduled },
+                { text: 'Actual Project Accomplishment', style: 'label', margin: [0, 4, 0, 0] }, { text: actual },
+                { text: 'Slippage', style: 'label', margin: [0, 4, 0, 0] }, { text: slippage },
+            ];
+            var budgetRows = [
+                { text: 'Total Budget', style: 'label', margin: [0, 4, 0, 0] }, { text: '₱' + fmtNum(data.budget) },
+                { text: 'Total Spent', style: 'label', margin: [0, 4, 0, 0] }, { text: '₱' + fmtNum(data.total_cost) },
+                { text: 'Remaining Budget', style: 'label', margin: [0, 4, 0, 0] }, { text: '₱' + fmtNum(data.remaining_budget) },
+                { text: 'Budget Utilization', style: 'label', margin: [0, 4, 0, 0] }, { text: fmtPct(data.budget_utilization) + ' (' + (data.budget_status_label || '') + ')' },
+            ];
+
+            var costTableBody = [];
+            if (data.cost_breakdown && Object.keys(data.cost_breakdown).length) {
+                for (var k in data.cost_breakdown) {
+                    var amt = data.cost_breakdown[k];
+                    var pct = data.budget > 0 ? ((amt / data.budget) * 100).toFixed(1) + '%' : 'N/A';
+                    costTableBody.push([k, { text: '₱' + fmtNum(amt), alignment: 'right' }, { text: pct, alignment: 'right' }]);
+                }
+                costTableBody.push([{ text: 'TOTAL', bold: true }, { text: '₱' + fmtNum(data.total_cost), alignment: 'right', bold: true }, { text: fmtPct(data.budget_utilization), alignment: 'right', bold: true }]);
+            } else {
+                costTableBody.push([{ text: 'No cost entries available', colSpan: 3, alignment: 'center' }, {}, {}]);
+            }
+
+            var progressTableBody = [];
+            if (data.progress_updates && data.progress_updates.length) {
+                data.progress_updates.forEach(function(u) {
+                    progressTableBody.push([u.date || '', (u.percentage_complete != null ? u.percentage_complete + '%' : ''), (u.description || '-').substring(0, 60), u.engineer || '']);
+                });
+            } else {
+                progressTableBody.push([{ text: 'No progress updates available', colSpan: 4, alignment: 'center' }, {}, {}, {}]);
+            }
+
+            var imgRows = [];
+            if (data.uploaded_images && data.uploaded_images.length) {
+                var COLS = 4, imgs = data.uploaded_images;
+                for (var i = 0; i < imgs.length; i += COLS) {
+                    var row = [];
+                    for (var j = 0; j < COLS; j++) {
+                        var img = imgs[i + j];
+                        if (img && img.url && String(img.url).indexOf('data:image') === 0) {
+                            try {
+                                row.push({ image: img.url, width: 80, height: 55 });
+                            } catch (ex) {
+                                row.push({ text: (img.caption || '').substring(0, 20), fontSize: 7 });
+                            }
+                        } else {
+                            row.push({ text: (img && img.caption) ? String(img.caption).substring(0, 20) : '', fontSize: 7 });
+                        }
+                    }
+                    imgRows.push(row);
+                }
+            }
+
+            var content = [
+                { text: 'REPUBLIC OF THE PHILIPPINES', alignment: 'center', fontSize: 9 },
+                { text: 'PROVINCE OF DAVAO DEL NORTE', alignment: 'center', fontSize: 9 },
+                { text: 'CITY OF TAGUM', alignment: 'center', fontSize: 9 },
+                { table: { widths: ['*', '*'], body: [[{ text: 'CITY OF TAGUM', fillColor: '#2d5016', color: 'white', alignment: 'center', bold: true }, { text: 'CEO - CONSTRUCTION DIVISION', fillColor: '#2d5016', color: 'white', alignment: 'center', bold: true }]] }, layout: 'noBorders', margin: [0, 8, 0, 8] },
+                { text: 'INDIVIDUAL PROJECT INFORMATION', alignment: 'center', fillColor: '#1a1a1a', color: 'white', bold: true, margin: [0, 0, 0, 4] },
+                { text: 'AS OF: ' + (data.generated_at || ''), alignment: 'center', fontSize: 10, margin: [0, 0, 0, 12] },
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0 }], margin: [0, 4, 0, 12] },
+                { table: { widths: ['*', '*'], body: body }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } } },
+                { table: { widths: ['*', '*'], body: [descRow] }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } }, margin: [0, 12, 0, 0] },
+                { table: { widths: ['*', '*'], body: [modeRow] }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } }, margin: [0, 8, 0, 0] },
+                { text: 'Project Accomplishment', bold: true, margin: [0, 12, 0, 4] },
+                { table: { widths: ['*', '*'], body: accomplishRows }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } } },
+                { text: 'Budget Summary', bold: true, margin: [0, 12, 0, 4] },
+                { table: { widths: ['*', '*'], body: budgetRows }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } } },
+            ];
+
+            if (imgRows.length) {
+                content.push({ text: 'Uploaded Images', bold: true, margin: [0, 12, 0, 4] });
+                content.push({ table: { widths: [85, 85, 85, 85], body: imgRows }, layout: 'noBorders', margin: [0, 4, 0, 0] });
+            }
+            content.push(
+                { text: 'Cost Breakdown by Category', bold: true, margin: [0, 12, 0, 4] },
+                { table: { headerRows: 1, widths: ['*', 70, 50], body: [['Category', { text: 'Amount Spent', alignment: 'right' }, { text: '%', alignment: 'right' }]].concat(costTableBody) }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } } },
+                { text: 'Progress History', bold: true, margin: [0, 12, 0, 4] },
+                { table: { headerRows: 1, widths: [60, 40, '*', 70], body: [['Date', { text: '%', alignment: 'right' }, 'Description', 'Engineer']].concat(progressTableBody) }, layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; } } },
+                { table: { widths: ['*'], body: [[{ text: 'REMARKS  ' + (p.status || '').toUpperCase() + ' | Generated: ' + (data.generated_at || '') + ' | ' + (data.generated_by || ''), fillColor: '#1a1a1a', color: 'white', bold: true }]] }, layout: 'noBorders', margin: [0, 20, 0, 16] },
+                { columns: [
+                    { stack: [{ text: 'Prepared by:' }, { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 140, y2: 0 }], margin: [0, 4, 0, 4] }, { text: (data.assigned_engineers && data.assigned_engineers[0]) ? data.assigned_engineers[0] : (data.generated_by || ''), bold: true }, { text: 'Project In-Charge', fontSize: 9 }], width: 160 },
+                    { stack: [{ text: 'Concurred by:' }, { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 140, y2: 0 }], margin: [0, 4, 0, 4] }, { text: data.generated_by || '', bold: true }, { text: 'Head Engineer', fontSize: 9 }], width: 160 }
+                ], margin: [0, 0, 0, 0] }
+            );
+
+            var doc = {
+                pageSize: 'A4',
+                pageMargins: [40, 40, 40, 60],
+                defaultStyle: { fontSize: 10, font: 'Roboto' },
+                styles: { label: { bold: true }, sectionTitle: { bold: true, fontSize: 10 } },
+                footer: function(i, n) { return { text: 'Page ' + i + ' of ' + n, alignment: 'center', fontSize: 8 }; },
+                content: content
+            };
+            pdfMake.createPdf(doc).open();
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            alert('Failed to generate PDF: ' + (err.message || 'Unknown error'));
+        }
+    });
+})();
+</script>
+{% else %}
+<script>
+document.getElementById('export-pdf-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    var dd = document.getElementById('export-dropdown');
+    if (dd) dd.classList.add('hidden');
+    window.open('{% url "export_project_comprehensive_pdf" project.pk %}', '_blank');
+});
+</script>
+{% endif %}
 {% endblock %} 

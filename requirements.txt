@@ -5,6 +5,7 @@ django-tailwind==4.0.1
 django-model-utils==4.3.1
 openpyxl==3.1.2
 xhtml2pdf==0.2.11
+pdfkit==1.0.0  # Python wrapper for wkhtmltopdf
 gunicorn==23.0.0
 packaging==25.0
 pillow==11.2.1
@@ -14,6 +15,7 @@ tzdata==2025.2
 django-extensions
 whitenoise==6.7.0
 dj-database-url==2.2.0
+python-dotenv==1.0.1
 django-redis==5.4.0  # For Redis caching (optional - only needed if you add Redis)
 celery==5.3.4  # For background task processing
 channels==4.0.0  # For WebSocket support (Django Channels)

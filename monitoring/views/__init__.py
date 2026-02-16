@@ -20,11 +20,15 @@ import csv
 import io
 from datetime import datetime
 import openpyxl
-# Optional xhtml2pdf import
+# Optional PDF libraries
 try:
     from xhtml2pdf import pisa
 except Exception:
     pisa = None
+try:
+    import pdfkit  # requires wkhtmltopdf binary installed
+except Exception:
+    pdfkit = None
 from django.conf import settings
 from collections import Counter, defaultdict
 from monitoring.forms import ProjectForm
@@ -2450,6 +2454,111 @@ def head_engineer_analytics(request):
 def project_detail(request, pk):
     return HttpResponse("project_detail placeholder")
 
+
+def _file_to_data_url(file_field):
+    """Convert a FileField/ImageField to base64 JPEG dataURL for pdfMake.
+    Uses Pillow to normalize to JPEG (pdfMake supports JPEG/PNG; WebP/etc cause 'Unknown image format').
+    """
+    import base64
+    import io
+    if not file_field or not getattr(file_field, 'name', None):
+        return None
+    try:
+        from PIL import Image
+        with file_field.open('rb') as fh:
+            content = fh.read()
+        if not content:
+            return None
+        img = Image.open(io.BytesIO(content))
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=85, optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+        return f'data:image/jpeg;base64,{b64}'
+    except Exception:
+        return None
+
+
+def _build_uploaded_images_for_pdf_urls(request, progress_updates, image_documents, project):
+    """Build image list with absolute URLs for server-side xhtml2pdf (fetches URLs; data URIs not well supported)."""
+    images = []
+    for u in progress_updates:
+        for photo in (u.photos.all() if hasattr(u, 'photos') else []):
+            try:
+                url = photo.image.url if photo.image else None
+                if url:
+                    images.append({
+                        'url': request.build_absolute_uri(url),
+                        'caption': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else 'Progress',
+                    })
+            except (ValueError, OSError):
+                pass
+    for doc in image_documents or []:
+        try:
+            url = doc.file.url if doc.file else None
+            if url:
+                images.append({
+                    'url': request.build_absolute_uri(url),
+                    'caption': (doc.name or (doc.file.name if doc.file else '') or 'Document')[:30],
+                })
+        except (ValueError, OSError):
+            pass
+    if project and getattr(project, 'image', None) and project.image:
+        try:
+            url = project.image.url
+            if url:
+                images.append({
+                    'url': request.build_absolute_uri(url),
+                    'caption': 'Project',
+                })
+        except (ValueError, OSError):
+            pass
+    return images
+
+
+def _build_uploaded_images_list(request, progress_updates, image_documents, project):
+    """Collect all uploaded images as base64 dataURLs for PDF export (pdfMake requires dataURL, not remote URLs)."""
+    images = []
+    # Progress photos from updates
+    for u in progress_updates:
+        for photo in (u.photos.all() if hasattr(u, 'photos') else []):
+            try:
+                data_url = _file_to_data_url(photo.image)
+                if data_url:
+                    images.append({
+                        'url': data_url,
+                        'caption': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else 'Progress',
+                    })
+            except (ValueError, OSError):
+                pass
+    # Image documents
+    for doc in image_documents or []:
+        try:
+            data_url = _file_to_data_url(doc.file)
+            if data_url:
+                images.append({
+                    'url': data_url,
+                    'caption': (doc.name or (doc.file.name if doc.file else '') or 'Document')[:30],
+                })
+        except (ValueError, OSError):
+            pass
+    # Project main image
+    if project and getattr(project, 'image', None) and project.image:
+        try:
+            data_url = _file_to_data_url(project.image)
+            if data_url:
+                images.append({
+                    'url': data_url,
+                    'caption': 'Project',
+                })
+        except (ValueError, OSError):
+            pass
+    return images
+
+
 @login_required
 @head_engineer_required
 def head_engineer_project_detail(request, pk):
@@ -2492,7 +2601,7 @@ def head_engineer_project_detail(request, pk):
                 continue
         
         # Get all progress updates - order by date and id to avoid duplicates and ensure consistent ordering
-        progress_updates = ProjectProgress.objects.filter(project=project).order_by('date', 'id').distinct()
+        progress_updates = ProjectProgress.objects.filter(project=project).prefetch_related('photos').order_by('date', 'id').distinct()
         assigned_to = list(project.assigned_engineers.values_list('username', flat=True))
         # Get all cost entries with created_by prefetched
         costs = ProjectCost.objects.filter(project=project).select_related('created_by').order_by('date')
@@ -2550,11 +2659,43 @@ def head_engineer_project_detail(request, pk):
             'total_days': (project.end_date - project.start_date).days if project.start_date and project.end_date else None,
         }
         
-        # Serializable report data for client-side PDFMake
+        # Serializable report data for client-side PDFMake (comprehensive layout)
         from django.utils import timezone as tz
+        from collections import defaultdict
         today = tz.now().date()
         total_days = (project.end_date - project.start_date).days if project.start_date and project.end_date else 0
         days_elapsed = (today - project.start_date).days if project.start_date else 0
+        days_remaining = total_days - days_elapsed if total_days > 0 else 0
+        budget = float(project.project_cost) if project.project_cost else 0
+        remaining_budget = budget - total_cost if budget else 0
+        expected_progress = min(100.0, (days_elapsed / total_days * 100.0)) if total_days > 0 else None
+        progress_variance = (latest_progress.percentage_complete - expected_progress) if latest_progress and expected_progress is not None else None
+        performance_ratio = (latest_progress.percentage_complete / expected_progress) if latest_progress and expected_progress and expected_progress > 0 else None
+        performance_label = 'N/A'
+        if performance_ratio is not None:
+            if performance_ratio >= 1.05: performance_label = 'Ahead of schedule'
+            elif performance_ratio >= 0.95: performance_label = 'On schedule'
+            else: performance_label = 'Behind schedule'
+        budget_status_label = 'UNDER BUDGET'
+        if budget_utilization > 100: budget_status_label = 'OVER BUDGET'
+        elif budget_utilization >= 90: budget_status_label = 'AT RISK'
+        cost_breakdown = defaultdict(float)
+        for c in costs:
+            cost_breakdown[c.get_cost_type_display()] += float(c.amount or 0)
+        budget_requests_list = []
+        try:
+            from projeng.models import BudgetRequest
+            for br in BudgetRequest.objects.filter(project=project).order_by('-created_at')[:10]:
+                budget_requests_list.append({
+                    'date': br.created_at.strftime('%Y-%m-%d'),
+                    'requested': float(br.requested_amount or 0),
+                    'status': br.get_status_display(),
+                    'approved': float(br.approved_amount or 0) if br.approved_amount else None,
+                    'by': br.requested_by.get_full_name() or br.requested_by.username if br.requested_by else '',
+                    'reason': (br.reason or '')[:100],
+                })
+        except Exception:
+            pass
         report_data = {
             'project': {
                 'name': project.name or '',
@@ -2563,16 +2704,27 @@ def head_engineer_project_detail(request, pk):
                 'status': project.get_status_display() if hasattr(project, 'get_status_display') else (project.status or ''),
                 'start_date': project.start_date.strftime('%Y-%m-%d') if project.start_date else '',
                 'end_date': project.end_date.strftime('%Y-%m-%d') if project.end_date else '',
-                'project_cost': float(project.project_cost) if project.project_cost is not None else 0,
+                'project_cost': budget,
                 'source_of_funds': project.source_of_funds or '',
                 'description': (project.description or '')[:200],
             },
             'assigned_engineers': [u.get_full_name() or u.username for u in project.assigned_engineers.all()],
             'latest_progress_pct': latest_progress.percentage_complete if latest_progress else 0,
             'total_cost': float(total_cost),
+            'budget': budget,
+            'remaining_budget': remaining_budget,
             'budget_utilization': float(budget_utilization),
+            'budget_status_label': budget_status_label,
             'days_elapsed': days_elapsed,
             'total_days': total_days,
+            'days_remaining': days_remaining,
+            'expected_progress': expected_progress,
+            'progress_variance': progress_variance,
+            'performance_label': performance_label,
+            'cost_breakdown': dict(cost_breakdown),
+            'budget_requests': budget_requests_list,
+            'generated_by': request.user.get_full_name() or request.user.username,
+            'generated_at': tz.now().strftime('%B %d, %Y at %I:%M %p'),
             'progress_updates': [
                 {
                     'date': u.date.strftime('%Y-%m-%d') if getattr(u, 'date', None) else '',
@@ -2595,6 +2747,7 @@ def head_engineer_project_detail(request, pk):
                 }
                 for c in costs
             ],
+            'uploaded_images': _build_uploaded_images_list(request, progress_updates, image_documents, project),
         }
         
         context = {
@@ -3687,10 +3840,19 @@ def export_project_comprehensive_pdf(request, pk):
         .prefetch_related('attachments')
         .order_by('created_at')
     )
-    
-    # If xhtml2pdf is unavailable, return a friendly message
-    if pisa is None:
-        return HttpResponse('PDF export is temporarily unavailable (missing xhtml2pdf/reportlab).', content_type='text/plain')
+
+    # Uploaded images for PDF (xhtml2pdf works best with URLs, not data URIs) - 4 per row
+    from projeng.models import ProjectDocument
+    all_docs = ProjectDocument.objects.filter(project=project).select_related('uploaded_by').order_by('-uploaded_at')
+    image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+    image_documents = [d for d in all_docs if d.file and any((d.file.name or '').lower().endswith(ext) for ext in image_extensions)]
+    flat_images = _build_uploaded_images_for_pdf_urls(request, progress_updates, image_documents, project)
+    COLS = 4
+    uploaded_images_rows = []
+    for i in range(0, len(flat_images), COLS):
+        row = flat_images[i:i + COLS]
+        row.extend([{'url': '', 'caption': ''}] * (COLS - len(row)))  # pad to 5 columns
+        uploaded_images_rows.append(row)
     
     # Render the HTML template for the PDF
     template_path = 'monitoring/project_comprehensive_report_pdf.html'
@@ -3722,20 +3884,45 @@ def export_project_comprehensive_pdf(request, pk):
         'assigned_engineers': assigned_engineers,
         'budget_requests': budget_requests,
         'has_progress_photos': any(getattr(u, 'photos', None) and u.photos.all() for u in progress_updates),
+        'uploaded_images_rows': uploaded_images_rows,
         'generated_by': request.user.get_full_name() or request.user.username,
         'generated_at': timezone.now(),
     }
     html = template.render(context)
-    
-    # Create PDF
-    result = io.BytesIO()
-    pdf = pisa.CreatePDF(io.BytesIO(html.encode("UTF-8")), result)
-    
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+
+    # Use wkhtmltopdf (pdfkit) if available, else fall back to xhtml2pdf
+    pdf_bytes = None
+    if pdfkit is not None:
+        try:
+            options = {
+                'page-size': 'A4',
+                'margin-top': '20mm',
+                'margin-right': '20mm',
+                'margin-bottom': '24mm',
+                'margin-left': '20mm',
+                'encoding': 'UTF-8',
+                'footer-center': 'Page [page] of [topage]',
+                'footer-font-size': '8',
+            }
+            pdf_bytes = pdfkit.from_string(html, False, options=options)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning('wkhtmltopdf failed: %s, falling back to xhtml2pdf', str(e))
+            pdf_bytes = None
+
+    if pdf_bytes is None and pisa is not None:
+        result = io.BytesIO()
+        pdf = pisa.CreatePDF(io.BytesIO(html.encode("UTF-8")), result)
+        if not pdf.err:
+            pdf_bytes = result.getvalue()
+
+    if pdf_bytes:
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
         filename = f"project_report_{project.prn or project.id}_{timezone.now().strftime('%Y%m%d')}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
+    if pisa is None and pdfkit is None:
+        return HttpResponse('PDF export unavailable. Install wkhtmltopdf and pdfkit, or xhtml2pdf.', content_type='text/plain')
     return HttpResponse('Error generating PDF', content_type='text/plain')
 
 @login_required

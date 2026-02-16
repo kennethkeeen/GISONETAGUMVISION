@@ -2,7 +2,7 @@
 Real-time updates using Server-Sent Events (SSE)
 Provides live notifications, dashboard updates, and project status changes
 """
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET
 from django.views.decorators.cache import never_cache
