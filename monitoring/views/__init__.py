@@ -137,32 +137,59 @@ def dashboard(request):
                 if latest and latest.percentage_complete is not None:
                     latest_progress[item['project_id']] = int(latest.percentage_complete)
         
-        # Calculate status counts dynamically
+        # Helper to standardize status logic across dashboards
+        def _compute_dynamic_status(project, progress_value):
+            """
+            Normalize a project's status using the same rules as the
+            Project Engineer dashboard so counts match.
+            Priority: completed > delayed > in_progress > planned.
+            """
+            status = (project.status or '').lower()
+            progress = int(progress_value or 0)
+
+            # Completed if progress is effectively done, regardless of stored status
+            if progress >= 99:
+                return 'completed'
+
+            # Delayed if end_date has passed and project is not completed,
+            # regardless of stored status value
+            if project.end_date and project.end_date < today and progress < 99:
+                return 'delayed'
+
+            # Explicit delayed status in DB (covers projects without end_date)
+            if status == 'delayed':
+                return 'delayed'
+
+            if status in ['in_progress', 'ongoing']:
+                return 'in_progress'
+            if status in ['planned', 'pending']:
+                return 'planned'
+            if status == 'completed':
+                return 'completed'
+
+            # Fallback: return raw status (or empty string)
+            return status
+
+        # Calculate status counts dynamically using the normalized status
         completed_count = 0
         in_progress_count = 0
         planned_count = 0
         delayed_count = 0
-        
+        normalized_status_by_id = {}
+
         for p in projects:
             progress = latest_progress.get(p.id, 0)
-            stored_status = p.status or ''
-            
-            # Calculate actual status dynamically
-            # Priority: completed > delayed > in_progress > planned
-            if progress >= 99:
+            normalized_status = _compute_dynamic_status(p, progress)
+            normalized_status_by_id[p.id] = normalized_status
+
+            if normalized_status == 'completed':
                 completed_count += 1
-            elif stored_status == 'delayed':
-                # Already marked as delayed in database
-                delayed_count += 1
-            elif progress < 99 and p.end_date and p.end_date < today and stored_status in ['in_progress', 'ongoing']:
-                # Project is delayed if: end_date passed, progress < 99%, and status is in_progress/ongoing
-                delayed_count += 1
-            elif stored_status in ['in_progress', 'ongoing']:
+            elif normalized_status == 'in_progress':
                 in_progress_count += 1
-            elif stored_status in ['planned', 'pending']:
+            elif normalized_status == 'planned':
                 planned_count += 1
-            elif stored_status == 'completed':
-                completed_count += 1
+            elif normalized_status == 'delayed':
+                delayed_count += 1
         # Projects created per month (last 12 months)
         from django.db.models import Count
         from django.db.models.functions import TruncMonth
@@ -188,15 +215,19 @@ def dashboard(request):
         for p in projects:
             if p.barangay and isinstance(p.barangay, str) and p.barangay.strip():
                 collab_by_barangay[p.barangay.strip()] += 1
-            if p.status and isinstance(p.status, str) and p.status.strip():
-                # Use display-friendly status
-                status = (
-                    'Ongoing' if p.status in ['in_progress', 'ongoing'] else
-                    'Planned' if p.status in ['planned', 'pending'] else
-                    'Completed' if p.status == 'completed' else
-                    'Delayed' if p.status == 'delayed' else p.status.title()
+
+            # Use the same normalized status used for the metric cards so
+            # the "Projects per Status" chart matches the header counts.
+            normalized_status = normalized_status_by_id.get(p.id)
+            if normalized_status:
+                display_status = (
+                    'Ongoing' if normalized_status == 'in_progress' else
+                    'Planned' if normalized_status == 'planned' else
+                    'Completed' if normalized_status == 'completed' else
+                    'Delayed' if normalized_status == 'delayed' else
+                    normalized_status.title()
                 )
-                collab_by_status[status] += 1
+                collab_by_status[display_status] += 1
         # Sort keys for consistent chart order
         collab_by_barangay = {k: collab_by_barangay[k] for k in sorted(collab_by_barangay.keys())}
         collab_by_status = {k: collab_by_status[k] for k in sorted(collab_by_status.keys())}
