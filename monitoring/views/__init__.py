@@ -147,8 +147,8 @@ def dashboard(request):
             status = (project.status or '').lower()
             progress = int(progress_value or 0)
 
-            # Completed if progress is effectively done, regardless of stored status
-            if progress >= 99:
+            # Completed: progress effectively done OR explicitly marked completed in DB
+            if progress >= 99 or status == 'completed':
                 return 'completed'
 
             # Delayed if end_date has passed and project is not completed,
@@ -164,8 +164,6 @@ def dashboard(request):
                 return 'in_progress'
             if status in ['planned', 'pending']:
                 return 'planned'
-            if status == 'completed':
-                return 'completed'
 
             # Fallback: return raw status (or empty string)
             return status
