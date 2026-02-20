@@ -264,9 +264,9 @@ class SimpleChoropleth {
                 const color = (name && colorByBarangay.get(name)) || feature.properties.color || '#FF6B6B';
                 return {
                     fillColor: color,
-                    weight: 0,
-                    opacity: 0,
-                    color: 'transparent',
+                    weight: 1,
+                    opacity: 0.9,
+                    color: '#374151',
                     fillOpacity: 0.7
                 };
             },
@@ -308,7 +308,7 @@ class SimpleChoropleth {
                     mouseover: (e) => {
                         const layer = e.target;
                         layer.setStyle({
-                            weight: 0,
+                            weight: 1,
                             fillOpacity: 0.9
                         });
                         layer.bringToFront();
@@ -1139,9 +1139,9 @@ class SimpleChoropleth {
                 
                 return {
                     fillColor: color,
-                    weight: 0,
-                    opacity: 0,
-                    color: 'transparent',
+                    weight: 1,
+                    opacity: 0.9,
+                    color: '#374151',
                     fillOpacity: 0.7 // Slightly more opaque for better visibility
                 };
             },
@@ -1179,12 +1179,12 @@ class SimpleChoropleth {
                 const popupContent = this.createZoningPopup(name, barangay, stats, zoneInfo, viewType);
                 layer.bindPopup(popupContent, { maxWidth: 400 });
                 
-                // Add hover effects (no outline, only fill brightens)
+                // Add hover effects (thin stroke stays, fill brightens)
                 layer.on({
                     mouseover: (e) => {
                         const layer = e.target;
                         layer.setStyle({
-                            weight: 0,
+                            weight: 1,
                             fillOpacity: 0.9
                         });
                         layer.bringToFront();

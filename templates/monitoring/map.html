@@ -1346,8 +1346,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (cityOutlineCheckbox && cityOutlineCheckbox.checked) {
                         if (typeof choroplethMap.switchView === 'function') choroplethMap.switchView('none');
                         if (typeof choroplethMap.setCityOutlineVisible === 'function') choroplethMap.setCityOutlineVisible(true);
+                    } else {
+                        if (typeof choroplethMap.setCityOutlineVisible === 'function') choroplethMap.setCityOutlineVisible(false);
                     }
-                    // When unchecked (default): do not add any zoning layer or outline — map shows only markers
                 }).catch((error) => {
                     choroplethMapReady = false;
                     console.error('Error during choropleth initialization:', error);
