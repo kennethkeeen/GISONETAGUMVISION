@@ -258,7 +258,7 @@ class SimpleChoropleth {
                 colorByBarangay.set(name, f.properties.color || barangayColors[colorIdx++ % barangayColors.length]);
             }
         });
-        const layer = L.geoJSON(this.barangayData, {
+        const geoJsonLayer = L.geoJSON(this.barangayData, {
             style: (feature) => {
                 const name = feature.properties?.name;
                 const color = (name && colorByBarangay.get(name)) || feature.properties.color || '#FF6B6B';
@@ -303,25 +303,25 @@ class SimpleChoropleth {
                 
                 layer.bindPopup(popupContent, { maxWidth: 400 });
                 
-                // Add hover effects
+                // Add hover effects (geoJsonLayer.resetStyle is on the GeoJSON group, not the polygon)
                 layer.on({
                     mouseover: (e) => {
-                        const layer = e.target;
-                        layer.setStyle({
+                        const target = e.target;
+                        target.setStyle({
                             weight: 1,
                             fillOpacity: 0.9
                         });
-                        layer.bringToFront();
+                        target.bringToFront();
                     },
                     mouseout: (e) => {
-                        layer.resetStyle(e.target);
+                        if (geoJsonLayer.resetStyle) geoJsonLayer.resetStyle(e.target);
                     }
                 });
             }
         });
 
         if (DEBUG_CHOROPLETH) console.log('Choropleth layer created (projects)');
-        return layer;
+        return geoJsonLayer;
     }
 
     createLegend(activeViewTypes) {
@@ -1068,7 +1068,7 @@ class SimpleChoropleth {
         let coloredCount = 0;
         let defaultCount = 0;
 
-        const layer = L.geoJSON(this.barangayData, {
+        const geoJsonLayer = L.geoJSON(this.barangayData, {
             style: (feature) => {
                 const barangayName = feature.properties.name;
                 const barangay = this.zoningData[barangayName];
@@ -1179,25 +1179,25 @@ class SimpleChoropleth {
                 const popupContent = this.createZoningPopup(name, barangay, stats, zoneInfo, viewType);
                 layer.bindPopup(popupContent, { maxWidth: 400 });
                 
-                // Add hover effects (thin stroke stays, fill brightens)
+                // Add hover effects (geoJsonLayer.resetStyle is on the GeoJSON group, not the polygon)
                 layer.on({
                     mouseover: (e) => {
-                        const layer = e.target;
-                        layer.setStyle({
+                        const target = e.target;
+                        target.setStyle({
                             weight: 1,
                             fillOpacity: 0.9
                         });
-                        layer.bringToFront();
+                        target.bringToFront();
                     },
                     mouseout: (e) => {
-                        layer.resetStyle(e.target);
+                        if (geoJsonLayer.resetStyle) geoJsonLayer.resetStyle(e.target);
                     }
                 });
             }
         });
 
         if (DEBUG_CHOROPLETH) console.log('Zoning layer created:', viewType, 'Colored:', coloredCount, 'Default:', defaultCount);
-        return layer;
+        return geoJsonLayer;
     }
 
     createZoningPopup(name, barangay, stats, zoneInfo = null, viewType = 'projects') {
