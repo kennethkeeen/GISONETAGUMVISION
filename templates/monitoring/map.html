@@ -292,26 +292,26 @@
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">City outline only</span>
                             </label>
                         </div>
-                        <label class="block text-xs font-semibold mb-2 text-gray-700">View Type</label>
+                        <label class="block text-xs font-semibold mb-2 text-gray-700" title="Check one to show that layer. Uncheck it to return to markers only.">View Type</label>
                         <div class="space-y-1.5" id="zoning-view-controls">
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="projects" id="view-projects" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                                <input type="checkbox" class="zoning-view-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer" value="projects" id="view-projects">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Barangay Boundaries</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="urban_rural" id="view-urban-rural" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                                <input type="checkbox" class="zoning-view-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer" value="urban_rural" id="view-urban-rural">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Urban / Rural</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="economic" id="view-economic" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                                <input type="checkbox" class="zoning-view-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer" value="economic" id="view-economic">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Economic Classification</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="elevation" id="view-elevation" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                                <input type="checkbox" class="zoning-view-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer" value="elevation" id="view-elevation">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Elevation Type</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="zoning-view-type" value="zone_type" id="view-zone-type" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                                <input type="checkbox" class="zoning-view-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer" value="zone_type" id="view-zone-type">
                                 <span class="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors cursor-pointer">Zone Type</span>
                             </label>
                         </div>
@@ -1363,9 +1363,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (typeof choroplethMap.switchView === 'function') choroplethMap.switchView('none');
                 if (typeof choroplethMap.setCityOutlineVisible === 'function') choroplethMap.setCityOutlineVisible(true);
             } else {
-                const selectedRadio = document.querySelector('input[name="zoning-view-type"]:checked');
-                if (selectedRadio && typeof choroplethMap.switchView === 'function') {
-                    choroplethMap.switchView(selectedRadio.value);
+                const checked = Array.from(document.querySelectorAll('.zoning-view-checkbox:checked')).map(cb => cb.value);
+                if (typeof choroplethMap.setActiveViews === 'function') {
+                    choroplethMap.setActiveViews(checked);
+                } else if (checked.length && typeof choroplethMap.switchView === 'function') {
+                    choroplethMap.switchView(checked[checked.length - 1]);
                 }
             }
         }
@@ -1428,44 +1430,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Unified "City outline only" checkbox: on = view 'none' + outline visible; off = outline hidden + view 'projects'
+    // Unified "City outline only" checkbox: on = view 'none' + outline visible; off = outline hidden, show checked view type if any
     const zoningCityOutlineToggle = document.getElementById('zoning-city-outline-toggle');
-    const viewProjectsRadio = document.getElementById('view-projects');
+    const zoningViewCheckboxes = document.querySelectorAll('.zoning-view-checkbox');
+    function getCheckedViewType() {
+        const el = document.querySelector('.zoning-view-checkbox:checked');
+        return el ? el.value : null;
+    }
+    function uncheckAllViewTypes() {
+        zoningViewCheckboxes.forEach(cb => { cb.checked = false; });
+    }
     if (zoningCityOutlineToggle) {
         zoningCityOutlineToggle.addEventListener('change', function() {
             const cityOutlineOnly = !!this.checked;
             if (!choroplethMap || !choroplethMapReady) return;
             if (cityOutlineOnly) {
-                if (viewProjectsRadio) viewProjectsRadio.checked = false;
+                uncheckAllViewTypes();
                 if (typeof choroplethMap.switchView === 'function') choroplethMap.switchView('none');
                 if (typeof choroplethMap.setCityOutlineVisible === 'function') choroplethMap.setCityOutlineVisible(true);
             } else {
                 if (typeof choroplethMap.setCityOutlineVisible === 'function') choroplethMap.setCityOutlineVisible(false);
-                if (viewProjectsRadio) viewProjectsRadio.checked = true;
-                if (typeof choroplethMap.switchView === 'function') choroplethMap.switchView('projects');
+                applyZoningViewCheckboxes();
             }
         });
     }
 
-    // View type radios: selecting one turns off "City outline only" and switches view
-    let lastZoningViewType = null;
-    const zoningViewRadios = document.querySelectorAll('input[name="zoning-view-type"]');
-    if (zoningViewRadios.length > 0) {
-        zoningViewRadios.forEach(radio => {
-            radio.addEventListener('change', function(e) {
-                const viewType = e.target.value;
-                lastZoningViewType = viewType;
-                if (zoningCityOutlineToggle) zoningCityOutlineToggle.checked = false;
-                handleZoningViewChange(viewType);
-            });
-            radio.addEventListener('click', function() {
-                if (this.checked && this.value === lastZoningViewType) {
-                    lastZoningViewType = null;
-                    if (zoningCityOutlineToggle) {
-                        zoningCityOutlineToggle.checked = true;
-                        zoningCityOutlineToggle.dispatchEvent(new Event('change'));
-                    }
+    // View type: only ONE can be active (no layering). City outline only + Project density heatmap can layer with the selected view.
+    function applyZoningViewCheckboxes() {
+        if (!choroplethMap || !choroplethMapReady) return;
+        const checked = Array.from(document.querySelectorAll('.zoning-view-checkbox:checked')).map(cb => cb.value);
+        // Only one view type allowed — use first checked or none
+        const viewTypes = checked.length ? [checked[0]] : [];
+        if (zoningCityOutlineToggle && zoningCityOutlineToggle.checked) {
+            zoningCityOutlineToggle.checked = false;
+        }
+        if (typeof choroplethMap.setActiveViews === 'function') {
+            choroplethMap.setActiveViews(viewTypes);
+        } else {
+            if (viewTypes.length === 0) {
+                if (typeof choroplethMap.switchView === 'function') choroplethMap.switchView('none');
+                if (typeof choroplethMap.setCityOutlineVisible === 'function') choroplethMap.setCityOutlineVisible(false);
+            } else {
+                handleZoningViewChange(viewTypes[0]);
+            }
+        }
+    }
+    if (zoningViewCheckboxes.length > 0) {
+        zoningViewCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (this.checked) {
+                    if (zoningCityOutlineToggle) zoningCityOutlineToggle.checked = false;
+                    zoningViewCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
                 }
+                applyZoningViewCheckboxes();
             });
         });
     }

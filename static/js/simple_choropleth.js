@@ -10,7 +10,8 @@ class SimpleChoropleth {
         this.projectsData = projectsData || [];
         this.legendContainerId = legendContainerId; // Optional: render legend into this DOM element instead of Leaflet control
         this.cityBoundaryUrl = cityBoundaryUrl; // Optional: GeoJSON URL for whole Tagum City boundary (OSM admin boundary)
-        this.choroplethLayer = null;
+        this.choroplethLayer = null; // Kept for backward compat; use choroplethLayers when multiple views
+        this.choroplethLayers = {};   // viewType -> L.layer; allows multiple view types on at once
         this.cityBoundaryLayer = null; // Blue outline of whole Tagum City when choropleth is off
         this.showCityOutline = true;   // Toggle for city outline in Zoning Control (independent of view)
         this.legend = null;
@@ -247,12 +248,7 @@ class SimpleChoropleth {
             this.calculateBarangayStats();
         }
 
-        // Clear existing choropleth layer
-        if (this.choroplethLayer) {
-            this.map.removeLayer(this.choroplethLayer);
-        }
-
-        // Create choropleth layer - same color assignment as legend for consistency
+        // Create choropleth layer (caller adds to map; used for single or multiple views)
         const barangayColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7'];
         const colorByBarangay = new Map();
         let colorIdx = 0;
@@ -262,15 +258,15 @@ class SimpleChoropleth {
                 colorByBarangay.set(name, f.properties.color || barangayColors[colorIdx++ % barangayColors.length]);
             }
         });
-        this.choroplethLayer = L.geoJSON(this.barangayData, {
+        const layer = L.geoJSON(this.barangayData, {
             style: (feature) => {
                 const name = feature.properties?.name;
                 const color = (name && colorByBarangay.get(name)) || feature.properties.color || '#FF6B6B';
                 return {
                     fillColor: color,
-                    weight: 2,
-                    opacity: 1,
-                    color: '#333',
+                    weight: 0,
+                    opacity: 0,
+                    color: 'transparent',
                     fillOpacity: 0.7
                 };
             },
@@ -312,43 +308,28 @@ class SimpleChoropleth {
                     mouseover: (e) => {
                         const layer = e.target;
                         layer.setStyle({
-                            weight: 3,
+                            weight: 0,
                             fillOpacity: 0.9
                         });
                         layer.bringToFront();
                     },
                     mouseout: (e) => {
-                        this.choroplethLayer.resetStyle(e.target);
+                        layer.resetStyle(e.target);
                     }
                 });
             }
         });
 
-        // Add to map
-        this.choroplethLayer.addTo(this.map);
-        if (DEBUG_CHOROPLETH) console.log('Choropleth layer added to map');
-
-        // Create legend and summary panel
-        this.createLegend();
-        this.createSummaryPanel();
-
-        // Fit map to choropleth bounds
-        if (this.choroplethLayer.getBounds().isValid()) {
-            this.map.fitBounds(this.choroplethLayer.getBounds());
-        } else {
-            // Fallback center for Tagum City
-            this.map.setView([7.4475, 125.8096], 12);
-        }
+        if (DEBUG_CHOROPLETH) console.log('Choropleth layer created (projects)');
+        return layer;
     }
 
-    createLegend() {
-        // Build legend HTML content (shared by both custom container and Leaflet control)
-        const buildLegendHtml = () => {
+    createLegend(activeViewTypes) {
+        // activeViewTypes: optional array e.g. ['projects', 'urban_rural']; if not passed, use this.currentView (single)
+        const viewTypes = Array.isArray(activeViewTypes) ? activeViewTypes : (this.currentView && this.currentView !== 'none' ? [this.currentView] : []);
+        const buildLegendHtmlForView = (viewType) => {
             let html = '';
-            if (this.currentView === 'none') {
-                return '';
-            }
-            if (this.currentView === 'urban_rural') {
+            if (viewType === 'urban_rural') {
                 html = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 13px; font-weight: 600;">Urban / Rural</h4>';
                 html += `
                     <div style="margin: 4px 0; display: flex; align-items: center;">
@@ -360,7 +341,7 @@ class SimpleChoropleth {
                         <span style="font-size: 12px;">Rural</span>
                     </div>
                 `;
-            } else if (this.currentView === 'economic') {
+            } else if (viewType === 'economic') {
                 html = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 13px; font-weight: 600;">Economic Classification</h4>';
                 html += `
                     <div style="margin: 4px 0; display: flex; align-items: center;">
@@ -376,7 +357,7 @@ class SimpleChoropleth {
                         <span style="font-size: 12px;">Satellite</span>
                     </div>
                 `;
-            } else if (this.currentView === 'elevation') {
+            } else if (viewType === 'elevation') {
                 html = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 13px; font-weight: 600;">Elevation Type</h4>';
                 html += `
                     <div style="margin: 4px 0; display: flex; align-items: center;">
@@ -392,7 +373,7 @@ class SimpleChoropleth {
                         <span style="font-size: 12px;">Coastal</span>
                     </div>
                 `;
-            } else if (this.currentView === 'zone_type') {
+            } else if (viewType === 'zone_type') {
                 html = '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 13px; font-weight: 600;">TAG Zone Type</h4>';
                 const zoneTypes = ['R-1', 'R-2', 'R-3', 'SHZ', 'C-1', 'C-2', 'I-1', 'I-2', 'AGRO', 'INS-1', 'PARKS', 'AGRICULTURAL', 'ECO-TOURISM', 'SPECIAL'];
                 zoneTypes.forEach(zoneType => {
@@ -433,8 +414,11 @@ class SimpleChoropleth {
             }
             return html;
         };
-
-        const legendHtml = buildLegendHtml();
+        let legendHtml = '';
+        viewTypes.forEach(vt => {
+            legendHtml += buildLegendHtmlForView(vt);
+            if (legendHtml && !legendHtml.endsWith('</div>')) legendHtml += '<div style="margin-top: 8px;"></div>';
+        });
 
         // When nothing is active (view 'none'), remove legend entirely - no choropleth legend shown
         if (!legendHtml) {
@@ -890,71 +874,82 @@ class SimpleChoropleth {
         };
     }
 
-    switchView(viewType) {
-        if (DEBUG_CHOROPLETH) console.log('=== switchView called ===');
-        if (DEBUG_CHOROPLETH) console.log('viewType:', viewType);
-        if (DEBUG_CHOROPLETH) console.log('currentView:', this.currentView);
-        if (DEBUG_CHOROPLETH) console.log('zoningData available:', this.zoningData ? Object.keys(this.zoningData).length + ' barangays' : 'none');
-        if (DEBUG_CHOROPLETH) console.log('barangayData available:', this.barangayData.length + ' features');
-        
-        this.currentView = viewType;
-        
-        // Check if zoning data is loaded
-        if (viewType !== 'projects' && (!this.zoningData || Object.keys(this.zoningData).length === 0)) {
-            if (DEBUG_CHOROPLETH) console.warn('Zoning data not loaded yet. Loading...');
+    /**
+     * Set which view types are active (multiple can be on). viewTypes: array e.g. ['projects', 'urban_rural', 'economic'].
+     * Empty array = no choropleth layers (markers only, or city outline only if enabled).
+     */
+    setActiveViews(viewTypes) {
+        if (!Array.isArray(viewTypes)) viewTypes = [];
+        const order = ['projects', 'urban_rural', 'economic', 'elevation', 'zone_type'];
+        const sorted = viewTypes.filter(v => order.indexOf(v) >= 0).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+        // Remove layers that are no longer active
+        Object.keys(this.choroplethLayers).forEach(key => {
+            if (sorted.indexOf(key) === -1) {
+                try {
+                    this.map.removeLayer(this.choroplethLayers[key]);
+                } catch (e) { /* ignore */ }
+                delete this.choroplethLayers[key];
+            }
+        });
+
+        // Ensure zoning data for non-projects views
+        const needsZoning = sorted.some(v => v !== 'projects');
+        if (needsZoning && (!this.zoningData || Object.keys(this.zoningData).length === 0)) {
             this.loadZoningData().then(() => {
-                if (DEBUG_CHOROPLETH) console.log('Zoning data loaded, retrying switchView');
-                this.switchView(viewType); // Retry after loading
-            }).catch((error) => {
-                console.error('Failed to load zoning data:', error);
-            });
+                this.setActiveViews(viewTypes);
+            }).catch((err) => console.error('Failed to load zoning data:', err));
             return;
         }
-        
-        // Remove current choropleth layer
-        if (this.choroplethLayer) {
-            try {
-                if (DEBUG_CHOROPLETH) console.log('Removing existing choropleth layer');
-                this.map.removeLayer(this.choroplethLayer);
-            } catch (e) {
-                if (DEBUG_CHOROPLETH) console.log('Error removing layer:', e);
-            }
-            this.choroplethLayer = null;
-        }
 
-        // Remove city boundary layer when switching view (we may re-add if showCityOutline is on)
-        if (this.cityBoundaryLayer) {
-            try {
-                this.map.removeLayer(this.cityBoundaryLayer);
-            } catch (e) {
-                if (DEBUG_CHOROPLETH) console.log('Error removing city boundary layer:', e);
+        // Add layers for each active view type (in order, so last is on top)
+        sorted.forEach(viewType => {
+            if (this.choroplethLayers[viewType]) return;
+            let layer = null;
+            if (viewType === 'projects') {
+                layer = this.createChoropleth();
+            } else {
+                layer = this.createZoningLayer(viewType);
             }
+            if (layer) {
+                this.choroplethLayers[viewType] = layer;
+                layer.addTo(this.map);
+            }
+        });
+
+        this.currentView = sorted.length ? sorted[sorted.length - 1] : 'none';
+        this.choroplethLayer = this.choroplethLayers[this.currentView] || null;
+
+        // City boundary: remove then re-add on top if enabled
+        if (this.cityBoundaryLayer) {
+            try { this.map.removeLayer(this.cityBoundaryLayer); } catch (e) {}
             this.cityBoundaryLayer = null;
         }
-
-        // Create and add new layer based on view
-        if (viewType === 'none') {
-            if (this.showCityOutline) {
-                if (DEBUG_CHOROPLETH) console.log('Showing Tagum City boundary outline (no choropleth)');
-                this.createCityBoundaryLayer();
-            }
-        } else if (viewType === 'projects') {
-            if (DEBUG_CHOROPLETH) console.log('Creating projects choropleth');
-            this.createChoropleth();
-        } else {
-            if (DEBUG_CHOROPLETH) console.log('Creating zoning layer for:', viewType);
-            this.createZoningLayer(viewType);
-        }
-        
-        // Re-add city outline on top when a choropleth view is active and outline is enabled
-        if (viewType !== 'none' && this.showCityOutline) {
+        if (this.showCityOutline) {
             this.createCityBoundaryLayer();
         }
 
-        // Update legend
-        if (DEBUG_CHOROPLETH) console.log('Updating legend');
-        this.createLegend();
-        if (DEBUG_CHOROPLETH) console.log('=== View switched successfully to:', viewType, '===');
+        this.createLegend(sorted);
+        if (sorted.indexOf('projects') >= 0) {
+            if (!this.summaryPanel) this.createSummaryPanel();
+        } else if (this.summaryPanel) {
+            try { this.map.removeControl(this.summaryPanel); } catch (e) {}
+            this.summaryPanel = null;
+        }
+        if (DEBUG_CHOROPLETH) console.log('setActiveViews:', sorted);
+    }
+
+    switchView(viewType) {
+        this.currentView = viewType;
+        if (viewType === 'none') {
+            this.setActiveViews([]);
+            if (this.showCityOutline) {
+                this.createCityBoundaryLayer();
+            }
+            this.createLegend([]);
+            return;
+        }
+        this.setActiveViews([viewType]);
     }
 
     /** Toggle city outline visibility from Zoning Control. Call from map page checkbox. */
@@ -1068,21 +1063,12 @@ class SimpleChoropleth {
             this.calculateBarangayStats();
         }
 
-        // Clear existing layer
-        if (this.choroplethLayer) {
-            try {
-                this.map.removeLayer(this.choroplethLayer);
-            } catch (e) {
-                if (DEBUG_CHOROPLETH) console.log('Error removing existing layer:', e);
-            }
-        }
-
-        // Create zoning layer based on view type
-        if (DEBUG_CHOROPLETH) console.log('Creating GeoJSON layer with zoning colors...');
+        // Create zoning layer (caller adds to map; used for single or multiple views)
+        if (DEBUG_CHOROPLETH) console.log('Creating GeoJSON layer with zoning colors...', viewType);
         let coloredCount = 0;
         let defaultCount = 0;
-        
-        this.choroplethLayer = L.geoJSON(this.barangayData, {
+
+        const layer = L.geoJSON(this.barangayData, {
             style: (feature) => {
                 const barangayName = feature.properties.name;
                 const barangay = this.zoningData[barangayName];
@@ -1153,9 +1139,9 @@ class SimpleChoropleth {
                 
                 return {
                     fillColor: color,
-                    weight: 2,
-                    opacity: 1,
-                    color: '#333',
+                    weight: 0,
+                    opacity: 0,
+                    color: 'transparent',
                     fillOpacity: 0.7 // Slightly more opaque for better visibility
                 };
             },
@@ -1193,28 +1179,25 @@ class SimpleChoropleth {
                 const popupContent = this.createZoningPopup(name, barangay, stats, zoneInfo, viewType);
                 layer.bindPopup(popupContent, { maxWidth: 400 });
                 
-                // Add hover effects
+                // Add hover effects (no outline, only fill brightens)
                 layer.on({
                     mouseover: (e) => {
                         const layer = e.target;
                         layer.setStyle({
-                            weight: 3,
+                            weight: 0,
                             fillOpacity: 0.9
                         });
                         layer.bringToFront();
                     },
                     mouseout: (e) => {
-                        this.choroplethLayer.resetStyle(e.target);
+                        layer.resetStyle(e.target);
                     }
                 });
             }
         });
 
-        // Add to map
-        this.choroplethLayer.addTo(this.map);
-        if (DEBUG_CHOROPLETH) console.log('Zoning layer created and added to map');
-        if (DEBUG_CHOROPLETH) console.log('Colored barangays:', coloredCount, 'Default (gray):', defaultCount);
-        if (DEBUG_CHOROPLETH) console.log('=== createZoningLayer completed ===');
+        if (DEBUG_CHOROPLETH) console.log('Zoning layer created:', viewType, 'Colored:', coloredCount, 'Default:', defaultCount);
+        return layer;
     }
 
     createZoningPopup(name, barangay, stats, zoneInfo = null, viewType = 'projects') {
