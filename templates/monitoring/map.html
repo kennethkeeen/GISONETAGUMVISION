@@ -1578,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Update legend
+    // Update legend (shows Project Status for markers, or Heatmap description when heatmap is on)
     function updateLegend() {
         if (!map) return;
         
@@ -1588,32 +1588,40 @@ document.addEventListener('DOMContentLoaded', function() {
             mapLegend = null;
         }
         
-        // Create new legend
         mapLegend = L.control({ position: 'bottomleft' });
         
         mapLegend.onAdd = function(map) {
             const div = L.DomUtil.create('div', 'legend');
-            
-            div.innerHTML = `
-                <h4>Project Status</h4>
-                <div style="display: flex; align-items: center; margin: 4px 0;">
-                    <i style="background: #10b981; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
-                    <span>Completed</span>
-                </div>
-                <div style="display: flex; align-items: center; margin: 4px 0;">
-                    <i style="background: #3b82f6; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
-                    <span>In Progress</span>
-                </div>
-                <div style="display: flex; align-items: center; margin: 4px 0;">
-                    <i style="background: #f59e0b; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
-                    <span>Planned</span>
-                </div>
-                <div style="display: flex; align-items: center; margin: 4px 0;">
-                    <i style="background: #ef4444; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
-                    <span>Delayed</span>
-                </div>
-            `;
-            
+            if (heatmapEnabled) {
+                div.innerHTML = `
+                    <h4>Project density heatmap</h4>
+                    <div style="margin: 6px 0; font-size: 11px; color: #475569;">Warmer colors = more projects in the area</div>
+                    <div style="display: flex; align-items: center; margin: 4px 0; font-size: 11px;">
+                        <span style="display: inline-block; width: 24px; height: 12px; background: linear-gradient(to right, #3b82f6, #10b981); border-radius: 2px; margin-right: 6px;"></span>
+                        <span>Low → High density</span>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <h4>Project Status</h4>
+                    <div style="display: flex; align-items: center; margin: 4px 0;">
+                        <i style="background: #10b981; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
+                        <span>Completed</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin: 4px 0;">
+                        <i style="background: #3b82f6; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
+                        <span>In Progress</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin: 4px 0;">
+                        <i style="background: #f59e0b; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
+                        <span>Planned</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin: 4px 0;">
+                        <i style="background: #ef4444; width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 8px;"></i>
+                        <span>Delayed</span>
+                    </div>
+                `;
+            }
             return div;
         };
         
@@ -1662,6 +1670,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectHeatLayer = null;
                 renderMarkers(); // show project markers again when heatmap is off
             }
+            if (typeof updateLegend === 'function') updateLegend(); // show heatmap legend when on, project status when off
         });
     }
 
