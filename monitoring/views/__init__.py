@@ -1230,17 +1230,10 @@ def map_view(request):
                     if progress_value is None:
                         progress_value = 0
                 
-                # Calculate actual status dynamically (including delayed)
-                calculated_status = p.status or ''
-                if progress_value >= 99:
-                    calculated_status = 'completed'
-                elif progress_value < 99 and p.end_date and p.end_date < today and p.status in ['in_progress', 'ongoing']:
-                    # Project is delayed if: end_date passed, progress < 99%, and status is in_progress/ongoing
-                    calculated_status = 'delayed'
-                elif p.status in ['in_progress', 'ongoing']:
-                    calculated_status = 'in_progress'
-                elif p.status in ['planned', 'pending']:
-                    calculated_status = 'planned'
+                # Use same status logic as Overall Project Metrics so map markers match metrics
+                calculated_status = _get_display_status(
+                    progress_value, p.end_date, (p.status or ''), today
+                )
                 
                 # Safely get image URL
                 image_url = ""
@@ -1359,40 +1352,24 @@ def overall_project_metrics_api(request):
                 if latest and latest.percentage_complete is not None:
                     latest_progress[item['project_id']] = int(latest.percentage_complete)
         
-        # Calculate status counts dynamically
+        # Calculate status counts using same logic as map markers (_get_display_status)
         today = timezone.now().date()
-        total_projects = 0
+        total_projects = len(projects_list)
         completed_count = 0
         in_progress_count = 0
         planned_count = 0
         delayed_count = 0
         
         for p in projects_list:
-            total_projects += 1
             progress = latest_progress.get(p.id, 0)
-            stored_status = (p.status or '').lower().strip()
-            
-            # Calculate actual status dynamically using new rules:
-            # Completed: progress == 100
-            # Delayed: end date has passed AND progress < 99
-            if progress == 100:
+            display_status = _get_display_status(progress, p.end_date, (p.status or ''), today)
+            if display_status == 'completed':
                 completed_count += 1
-                logger.debug(f'Project {p.id} ({p.name}): COMPLETED - progress={progress}%, status="{p.status}"')
-            elif p.end_date and p.end_date < today and progress < 99:
+            elif display_status == 'delayed':
                 delayed_count += 1
-                logger.debug(f'Project {p.id} ({p.name}): DELAYED (overdue) - progress={progress}%, status="{p.status}", end_date={p.end_date}')
-            elif stored_status == 'delayed':
-                delayed_count += 1
-                logger.debug(f'Project {p.id} ({p.name}): DELAYED - progress={progress}%, status="{p.status}"')
-            elif stored_status in ['in_progress', 'ongoing']:
+            elif display_status == 'in_progress':
                 in_progress_count += 1
-                logger.debug(f'Project {p.id} ({p.name}): IN PROGRESS - progress={progress}%, status="{p.status}"')
-            elif stored_status in ['planned', 'pending']:
-                planned_count += 1
-                logger.debug(f'Project {p.id} ({p.name}): PLANNED - progress={progress}%, status="{p.status}"')
             else:
-                # If status doesn't match any category, default to planned or log it
-                logger.warning(f'Project {p.id} ({p.name}) has unrecognized status: "{p.status}", defaulting to planned. Progress: {progress}%')
                 planned_count += 1
         
         metrics = {
@@ -1419,6 +1396,26 @@ def overall_project_metrics_api(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+def _get_display_status(progress, end_date, stored_status, today):
+    """
+    Single source of truth for project display status (used by map markers and Overall Project Metrics).
+    Returns one of: 'completed', 'delayed', 'in_progress', 'planned'.
+    """
+    progress = progress or 0
+    stored_status = (stored_status or '').lower().strip()
+    if progress == 100:
+        return 'completed'
+    if end_date and end_date < today and progress < 99:
+        return 'delayed'
+    if stored_status == 'delayed':
+        return 'delayed'
+    if stored_status in ('in_progress', 'ongoing'):
+        return 'in_progress'
+    if stored_status in ('planned', 'pending'):
+        return 'planned'
+    return 'planned'
 
 
 def _compute_project_progress_map(project_qs):

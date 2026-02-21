@@ -1162,16 +1162,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Applying filters: Status=', statusFilter, 'Barangay=', barangay, 'StartDate=', startDate, 'EndDate=', endDate);
 
         window.projects.forEach(project => {
+            // Use same status as Overall Project Metrics (backend sends computed status; treat missing as 'planned')
+            let projectStatus = (project.status || 'planned').toLowerCase();
             let statusMatch = false;
-            let projectStatus = (project.status || '').toLowerCase();
             if (!statusFilter) {
                 statusMatch = true;
             } else if (statusFilter === 'ongoing') {
-                statusMatch = (projectStatus === 'ongoing' || projectStatus === 'in_progress') && projectStatus !== 'delayed';
+                statusMatch = (projectStatus === 'ongoing' || projectStatus === 'in_progress');
             } else if (statusFilter === 'planned') {
                 statusMatch = (projectStatus === 'planned' || projectStatus === 'pending');
             } else if (statusFilter === 'delayed') {
                 statusMatch = projectStatus === 'delayed';
+            } else if (statusFilter === 'completed') {
+                statusMatch = projectStatus === 'completed';
             } else {
                 statusMatch = projectStatus === statusFilter;
             }
@@ -1187,8 +1190,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate coordinates as numbers
             const hasValidCoords = project.latitude && !isNaN(parseFloat(project.latitude)) && project.longitude && !isNaN(parseFloat(project.longitude));
 
-
-            if (statusMatch && barangayMatch && dateMatch && hasValidCoords && project.status) {
+            if (statusMatch && barangayMatch && dateMatch && hasValidCoords) {
                 results.push(project);
             }
         });
